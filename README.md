@@ -4,8 +4,18 @@
 
 
 ## About this project
-This project is a telegram bot that, when instagram receives a link to a profile or post, uploads it to dropbox.
-![bot-preview](doc/bot-preview.gif "bot-preview")
+This project is a telegram boat that allows you to upload content from your Instagram profile to the Dropbox cloud.
+Main functions:
+- unloading all posts from the profile
+- unloading of one post
+
+The vault is used for:
+- storage of sensitive configuration parameters
+- storing the history of already uploaded posts
+- storing user authorization events
+
+![instagram-profile.png](doc/instagram-profile.png "instagram-profile")
+![bot-preview.gif](doc/bot-preview.gif "bot-preview")
 
 ## Repository map
 ```sh
