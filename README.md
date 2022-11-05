@@ -1,4 +1,5 @@
 # Pyinstabot-downloader
+![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/obervinov/pyinstabot-downloader?style=for-the-badge)
 ![GitHub last commit](https://img.shields.io/github/last-commit/obervinov/pyinstabot-downloader?style=for-the-badge)
 ![GitHub Release Date](https://img.shields.io/github/release-date/obervinov/pyinstabot-downloader?style=for-the-badge)
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/instaloader?style=for-the-badge)
