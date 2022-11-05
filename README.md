@@ -9,13 +9,16 @@ Main functions:
 - unloading all posts from the profile
 - unloading of one post
 
+
 The vault is used for:
 - storage of sensitive configuration parameters
 - storing the history of already uploaded posts
 - storing user authorization events
 
-![instagram-profile.png](doc/instagram-profile.png "instagram-profile")
-![bot-preview.gif](doc/bot-preview.gif "bot-preview")
+<p align="center">
+  <img src="doc/bot-preview.gif" width="1000" title="bot-preview">
+  <img src="doc/instagram-profile.png" width="500" alt="instagram-profile">
+</p>
 
 ## Repository map
 ```sh
