@@ -5,9 +5,6 @@
 ![GitHub issues](https://img.shields.io/github/issues/obervinov/pyinstabot-downloader?style=for-the-badge)
 ![GitHub repo size](https://img.shields.io/github/repo-size/obervinov/pyinstabot-downloader?style=for-the-badge)
 
-| [**Releases**](https://github.com/obervinov/pyinstabot-downloader/releases) | [**Images**](https://github.com/obervinov/pyinstabot-downloader/pkgs/container) |
-
-
 ## About this project
 This project is a telegram boat that allows you to upload content from your Instagram profile to the Dropbox cloud.
 Main functions:
@@ -28,27 +25,29 @@ The vault is used for:
 ## Repository map
 ```sh
 .
-├── Dockerfile          ### Manifest for building docker-image
-├── LICENSE             ### License info
-├── README.md           ### The file you're reading now
-├── CHANGELOG.md        ### All notable changes to this project will be documented in this file
-├── bot.py              ### Main file with code this project
-├── docker-compose.yml  ### Manifest for building and running project with all dependencies
-├── requirements.txt    ### List of python dependencies
-└── src                 ### Extended modules
-    ├── dropbox.py        # A code file containing a class for processing and sending data to dropbox
-    ├── instagram.py      # A code file containing a class for receiving and processing data from the instagram api
-    └── progressbar.py    # A code file containing a class for calculating and rendering the progress bar
+├── Dockerfile                ### Manifest for building docker-image
+├── LICENSE                   ### License info
+├── README.md                 ### The file you're reading now
+├── CHANGELOG.md              ### All notable changes to this project will be documented in this file
+├── bot.py                    ### Main file with code this project
+├── docker-compose.yml        ### Manifest for building and running project with all dependencies
+├── requirements.txt          ### List of python dependencies
+└── doc                       ### Directory with content for documentation
+    ├── bot-preview.gif         # Gif animation with a demonstration of the work of bots
+    └── instagram-profile.png   # Png image with screenshot of instagram profile for demonstration
+-── src                       ### Extended modules
+    ├── dropbox.py              # A code file containing a class for processing and sending data to dropbox
+    ├── instagram.py            # A code file containing a class for receiving and processing data from the instagram api
+    └── progressbar.py          # A code file containing a class for calculating and rendering the progress bar
 
-1 directory, 10 files
+2 directory, 12 files
 ```
 
 ## Requirements
-- Vault server - [a storage of secrets for bot with kv v2 engine](https://developer.hashicorp.com/vault/docs/secrets/kv/kv-v2)
-- Dropbox api token - [instructions for generating a token of api](https://dropbox.tech/developers/generate-an-access-token-for-your-own-account)
-- Telegram bot api token - [instructions for creating bot and getting a token of api](https://learn.microsoft.com/en-us/azure/bot-service/bot-service-channel-connect-telegram?view=azure-bot-service-4.0)
-- Instagram login/password - [login and password from the instagram account, it is advisable to create a new account](https://www.instagram.com/accounts/emailsignup/)
-
+- <img src="https://www.datocms-assets.com/2885/1597163356-vault-favicon.png?h=16&w=16" width="15" title="vault-ico"> Vault server - [a storage of secrets for bot with kv v2 engine](https://developer.hashicorp.com/vault/docs/secrets/kv/kv-v2)
+- <img src="https://cfl.dropboxstatic.com/static/metaserver/static/images/favicon.ico" width="15" title="dropbox-ico"> Dropbox api token - [instructions for generating a token of api](https://dropbox.tech/developers/generate-an-access-token-for-your-own-account)
+- <img src="https://telegram.org/img/t_logo.png" width="15" title="telegram-ico"> Telegram bot api token - [instructions for creating bot and getting a token of api](https://learn.microsoft.com/en-us/azure/bot-service/bot-service-channel-connect-telegram?view=azure-bot-service-4.0)
+- <img src="https://static.cdninstagram.com/rsrc.php/v3/yb/r/lswP1OF1o6P.png" width="15" title="instagram-ico"> Instagram login/password - [login and password from the instagram account, it is advisable to create a new account](https://www.instagram.com/accounts/emailsignup/)
 
 ## Environment variables
 
