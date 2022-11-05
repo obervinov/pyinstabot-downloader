@@ -36,7 +36,7 @@ The vault is used for:
 └── doc                       ### Directory with content for documentation
     ├── bot-preview.gif         # Gif animation with a demonstration of the work of bots
     └── instagram-profile.png   # Png image with screenshot of instagram profile for demonstration
--── src                       ### Extended modules
+─── src                       ### Extended modules
     ├── dropbox.py              # A code file containing a class for processing and sending data to dropbox
     ├── instagram.py            # A code file containing a class for receiving and processing data from the instagram api
     └── progressbar.py          # A code file containing a class for calculating and rendering the progress bar
