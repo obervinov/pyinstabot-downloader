@@ -140,12 +140,12 @@ expot BOT_VAULT_APPROLE_SECRET_ID="change_me"
 
 5. Running bot
 ```sh
-docker-compose up -d pyinstabot-downloader
+docker-compose up -d ${BOT_NAME}
 ```
 
 6. Viewing logs
 ```sh
-docker logs -f pyinstabot-downloader
+docker logs -f ${BOT_NAME}
 ```
 
 ## How to run a bot locally without a docker
