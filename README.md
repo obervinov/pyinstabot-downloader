@@ -6,7 +6,8 @@
 ![GitHub repo size](https://img.shields.io/github/repo-size/obervinov/pyinstabot-downloader?style=for-the-badge)
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/instaloader?style=for-the-badge)
 
-## About this project
+
+## <img src="https://github.com/obervinov/content/blob/main/ico/1945958.png" width="25" title="about"> About this project
 This project is a telegram boat that allows you to upload content from your Instagram profile to the Dropbox cloud.
 Main functions:
 - unloading all posts from the profile
@@ -23,7 +24,8 @@ The vault is used for:
   <img src="doc/instagram-profile.png" width="500" alt="instagram-profile">
 </p>
 
-## Repository map
+
+## <img src="https://github.com/obervinov/content/blob/main/ico/7711245.png" width="25" title="map"> Repository map
 ```sh
 .
 ├── Dockerfile                ### Manifest for building docker-image
@@ -44,13 +46,15 @@ The vault is used for:
 2 directory, 12 files
 ```
 
-## Requirements
-- <img src="https://www.datocms-assets.com/2885/1597163356-vault-favicon.png?h=16&w=16" width="15" title="vault-ico"> Vault server - [a storage of secrets for bot with kv v2 engine](https://developer.hashicorp.com/vault/docs/secrets/kv/kv-v2)
-- <img src="https://cfl.dropboxstatic.com/static/metaserver/static/images/favicon.ico" width="15" title="dropbox-ico"> Dropbox api token - [instructions for generating a token of api](https://dropbox.tech/developers/generate-an-access-token-for-your-own-account)
-- <img src="https://telegram.org/img/t_logo.png" width="15" title="telegram-ico"> Telegram bot api token - [instructions for creating bot and getting a token of api](https://learn.microsoft.com/en-us/azure/bot-service/bot-service-channel-connect-telegram?view=azure-bot-service-4.0)
-- <img src="https://static.cdninstagram.com/rsrc.php/v3/yb/r/lswP1OF1o6P.png" width="15" title="instagram-ico"> Instagram login/password - [login and password from the instagram account, it is advisable to create a new account](https://www.instagram.com/accounts/emailsignup/)
 
-## Environment variables
+## <img src="https://github.com/obervinov/content/blob/main/ico/8823344.png" width="25" title="requirements"> Requirements
+- <img src="https://github.com/obervinov/content/blob/main/ico/1597163356-vault-favicon.png" width="15" title="vault-ico"> Vault server - [a storage of secrets for bot with kv v2 engine](https://developer.hashicorp.com/vault/docs/secrets/kv/kv-v2)
+- <img src="https://github.com/obervinov/content/blob/main/ico/favicon.ico" width="15" title="dropbox-ico"> Dropbox api token - [instructions for generating a token of api](https://dropbox.tech/developers/generate-an-access-token-for-your-own-account)
+- <img src="https://github.com/obervinov/content/blob/main/ico/t_logo.png" width="15" title="telegram-ico"> Telegram bot api token - [instructions for creating bot and getting a token of api](https://learn.microsoft.com/en-us/azure/bot-service/bot-service-channel-connect-telegram?view=azure-bot-service-4.0)
+- <img src="https://github.com/obervinov/content/blob/main/ico/lswP1OF1o6P.png" width="15" title="instagram-ico"> Instagram login/password - [login and password from the instagram account, it is advisable to create a new account](https://www.instagram.com/accounts/emailsignup/)
+
+
+## <img src="https://github.com/obervinov/content/blob/main/ico/4072573.png" width="25" title="vars"> Environment variables
 
 | Variable  | Description | Default |
 | ------------- | ------------- | ------------- |
@@ -63,7 +67,7 @@ The vault is used for:
 | `BOT_VAULT_MOUNT_PATH` | The point of mounting secrets in the vault | `secretv2` |
 | `BOT_INSTAGRAM_SESSION_FILE` | The path for storing the file with the instagram session | `instaloader/.instaloader.session` |
 
-## How to run with docker-compose
+## <img src="https://github.com/obervinov/content/blob/main/ico/2366710.png" width="25" title="docker"> How to run with docker-compose
 1. Building and launching docker container with vault-server
 ```sh
 docker-compose up -d vault-server
@@ -148,7 +152,7 @@ docker-compose up -d ${BOT_NAME}
 docker logs -f ${BOT_NAME}
 ```
 
-## How to run a bot locally without a docker
+## <img src="https://github.com/obervinov/content/blob/main/ico/8840892.png" width="25" title="locally"> How to run a bot locally without a docker
 **You need an already running and configured vault to use the approle and kv v2 engine**
 1. Installing python requirements
 ```sh
@@ -174,7 +178,7 @@ expot BOT_VAULT_APPROLE_SECRET_ID="change_me"
 python3 bot.py
 ```
 
-## How to build a docker image with a bot
+## <img src="https://github.com/obervinov/content/blob/main/ico/7264022.png" width="25" title="build"> How to build a docker image with a bot
 ```sh
 export BOT_VERSION=v1.0.0
 export BOT_NAME="pyinstabot-downloader"
