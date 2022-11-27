@@ -8,7 +8,7 @@
 
 
 ## <img src="https://github.com/obervinov/content/blob/main/ico/1945958.png" width="25" title="about"> About this project
-This project is a telegram boat that allows you to upload content from your Instagram profile to the Dropbox cloud.
+This project is a telegram boat that allows you to upload content from your Instagram profile to the Dropbox cloud.<br></br>
 Main functions:
 - unloading all posts from the profile
 - unloading of one post
