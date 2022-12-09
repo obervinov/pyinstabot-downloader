@@ -6,7 +6,7 @@ ARG BOT_NAME
 ### Labels ###
 LABEL org.opencontainers.image.source https://github.com/obervinov/${BOT_NAME}
 
-### Envermoment variables ###
+### Environment variables ###
 ENV PATH=/home/python_user/.local/bin:$PATH
 
 ### Install packages ###
