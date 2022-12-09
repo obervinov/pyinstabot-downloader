@@ -46,10 +46,6 @@ Instagram = InstagramDownloader(
             telegram_bot
             )
 
-# Logger initialization #
-logging.getLogger('bot.bot').setLevel(logging.INFO)
-
-
 # DEBUG: Printing environment variables and classes#
 log.debug(globals())
 
