@@ -1,0 +1,17 @@
+name: Tests and checks
+
+on:
+  push:
+    branches:    
+      - '*'
+      - '*/*'
+      - '**'
+      - '!main'
+
+jobs:
+  pylint:
+    uses: obervinov/_templates/.github/workflows/pylint.yml@v1.0.1
+  flake8:
+    uses: obervinov/_templates/.github/workflows/flake8.yml@v1.0.1
+  package-version:
+    uses: obervinov/_templates/.github/workflows/version.yml@v1.0.1

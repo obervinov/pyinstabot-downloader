@@ -1,12 +1,12 @@
 FROM python:3.9.15-alpine3.16
 
 ### External argumetns ###
-ARG BOT_NAME
+ARG PROJECT_NAME
 
 ### Labels ###
-LABEL org.opencontainers.image.source https://github.com/obervinov/${BOT_NAME}
+LABEL org.opencontainers.image.source https://github.com/obervinov/${PROJECT_NAME}
 
-### Envermoment variables ###
+### Environment variables ###
 ENV PATH=/home/python_user/.local/bin:$PATH
 
 ### Install packages ###
@@ -22,11 +22,10 @@ RUN adduser -D -h /home/python_user -s /bin/sh python_user && \
 
 ### Switching context ###
 USER python_user
-WORKDIR /home/python_user/${BOT_NAME}
+WORKDIR /home/python_user/${PROJECT_NAME}
 
 ### Copy source code ###
 COPY requirements.txt ./
-COPY bot.py ./
 COPY src/ ./
 
 ### Installing a python dependeces - requirements.txt ###

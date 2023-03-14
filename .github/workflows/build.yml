@@ -1,0 +1,17 @@
+name: Create release
+
+on: [push]
+#  push:
+#    branches: [main]
+#on:
+#  push:
+#    branches: [ "main" ]
+#  pull_request:
+    # The branches below must be a subset of the branches above
+#    branches: [ "main" ]
+#  schedule:
+#    - cron: '40 16 * * 3'
+
+jobs:
+  create-release:
+    uses: obervinov/_templates/.github/workflows/docker.yml@added-trivy

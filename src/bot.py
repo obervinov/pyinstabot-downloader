@@ -6,8 +6,10 @@ from logger import log, logging
 from vault import VaultClient
 from users import UsersAuth
 from telegram import TelegramBot
-from src.instagram import InstagramDownloader
-from src.dropbox import DropboxDownloader
+from extensions.instagram import InstagramDownloader
+from extensions.dropbox import DropboxDownloader
+from extensions.progressbar import ProgressBar
+
 
 # Environment variables #
 bot_name = os.environ.get('BOT_NAME', 'pyinstabot-downloader')

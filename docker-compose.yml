@@ -18,7 +18,7 @@ services:
           context: .
           dockerfile: Dockerfile
           args:
-            BOT_NAME: pyinstabot-downloader
+            PROJECT_NAME: pyinstabot-downloader
         container_name: pyinstabot-downloader
         restart: always
         environment:
