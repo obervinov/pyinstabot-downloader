@@ -1,12 +1,12 @@
 """This module processes the content uploaded from Instagram
 and uploads the found media files (image, video) to the dropbox cloud.
+https://www.dropbox.com/developers/documentation/python
 """
 import os
-import dropbox
 from logger import log
 
 
-class DropboxAPI:
+class Uploader:
     """This class creates an instance with a connection to the dropbox api
     and uploads all the media content of the local directory to the dropbox cloud.
     """
@@ -16,7 +16,7 @@ class DropboxAPI:
                  max_retries_on_error: int = 3,
                  timeout: int = 60
     ) -> None:
-        """A function for create a new dropbox api client instance.
+        """A Method for create a new dropbox api client instance.
         :param dropbox_token: Token for authenticated in dropbox api.
         :type dropbox_token: str
         :default dropbox_token: None
@@ -31,20 +31,24 @@ class DropboxAPI:
         :type timeout: int
         :default timeout: 60
         """
+        self.dropbox_token = dropbox_token
+        self.max_connections = max_connections
+        self.max_retries_on_error = max_retries_on_error
+        self.timeout = timeout
         self.homepath = os.getcwd()
         try:
-            dropbox_session = dropbox.create_session(
-                max_connections=max_connections,
+            self.dropbox_session = dropbox.create_session(
+                max_connections=self.max_connections,
                 proxies=None
             )
             self.dropbox_client = dropbox.Dropbox(
-                dropbox_token,
-                max_retries_on_error=max_retries_on_error,
+                oauth2_access_token=self.dropbox_token,
+                max_retries_on_error=self.max_retries_on_error,
                 max_retries_on_rate_limit=None,
                 user_agent=None,
-                session=dropbox_session,
+                session=self.dropbox_session,
                 headers=None,
-                timeout=timeout
+                timeout=self.timeout
             )
         except dropbox.exceptions.DropboxException as dropboxexception:
             log.error(
@@ -59,7 +63,7 @@ class DropboxAPI:
         soruce_file: str = None,
         dropbox_dir: str = None
     ) -> str:
-        """A function for uploading the contents of the target directory
+        """A Method for uploading the contents of the target directory
         to the dropbox cloud directory.
         :param soruce_file: The path to the local file with the contents.
         :type soruce_file: str

@@ -1,0 +1,1 @@
+{ "templates":{"hello_message": {"text": "Hi, <b>{0}</b>! {1}\nAccess for your account - allowed {2}\nBot functions:\n  {3} Upload post content by instagram link to dropbox cloud\n  {3} Uploading all posts content by instagram profile-link to dropbox cloud\n<i>Just send link</i>{4}", "args": ["username", ":raised_hand:", ":unlocked:", ":pushpin:", ":raising_hands:"]}}}

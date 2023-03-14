@@ -1,98 +1,153 @@
-# THIS MAIN FUNCTION FROM TELEGRAM BOT AND ENTRYPOINT FROM DOCKER #
-
-# Importing modules #
+"""
+This module contains the main code for the bot to work
+and contains the main logic linking the extends modules.
+"""
 import os
 from logger import log, logging
 from vault import VaultClient
 from users import UsersAuth
+from messages import Messages
 from telegram import TelegramBot
-from extensions.instagram import InstagramDownloader
-from extensions.dropbox import DropboxDownloader
-from extensions.progressbar import ProgressBar
+from extensions.downloader import Downlaoder
 
 
-# Environment variables #
-bot_name = os.environ.get('BOT_NAME', 'pyinstabot-downloader')
-vault_mount_point = os.environ.get('BOT_VAULT_MOUNT_PATH', 'secretv2')
-vault_addr = os.environ.get('BOT_VAULT_ADDR', 'http://vault-server:8200')
-vault_approle_id = os.environ.get('BOT_VAULT_APPROLE_ID', 'not set')
-vault_approle_secret_id = os.environ.get('BOT_VAULT_APPROLE_SECRET_ID', 'not set')
-instagram_session_file = os.environ.get('BOT_INSTAGRAM_SESSION_FILE', 'instaloader/.session')
-ratelimit_timeout = int(os.environ.get('BOT_INSTA_RATE_LIMIT_TIMEOUT', 15))
-ratelimit_max_timeout = int(os.environ.get('BOT_INSTA_RATE_LIMIT_MAX_TIMEOUT', 360))
+# Environment variables
+bot_name = os.environ.get(
+    'BOT_NAME',
+    'pyinstabot-downloader'
+)
+storage_type = os.environ.get(
+    'STORAGE_TYPE',
+    'local'
+)
+storage_path = os.environ.get(
+    'STORAGE_PATH',
+    None
+)
+vault_mount_point = os.environ.get(
+    'BOT_VAULT_MOUNT_PATH',
+    'secretv2'
+)
+vault_addr = os.environ.get(
+    'BOT_VAULT_ADDR',
+    'http://vault-server:8200'
+)
+vault_approle_id = os.environ.get(
+    'BOT_VAULT_APPROLE_ID',
+    'not set'
+)
+vault_approle_secret_id = os.environ.get(
+    'BOT_VAULT_APPROLE_SECRET_ID',
+    'not set'
+)
+instagram_session = os.environ.get(
+    'BOT_INSTAGRAM_SESSION',
+    'instaloader/.session'
+)
+instagram_useragent = os.environ.get(
+    'BOT_INSTAGRAM_USERAGENT',
+    None
+)
 
-# Vault class #
-Vault = VaultClient(vault_addr, vault_approle_id, vault_approle_secret_id, vault_mount_point)
-# Secret data
-instagram_user = Vault.vault_read_secrets(f"{bot_name}-config/config", "i_user")
-instagram_pass = Vault.vault_read_secrets(f"{bot_name}-config/config", "i_pass")
-dropbox_token = Vault.vault_read_secrets(f"{bot_name}-config/config", "d_token")
 
-# Telegram class #
-Telegram = TelegramBot(bot_name, Vault)
-telegram_bot = Telegram.telegram_bot
+# Create instances of classes
+## vault client
+vault_client = VaultClient(
+    vault_addr,
+    vault_approle_id,
+    vault_approle_secret_id,
+    vault_mount_point
+)
 
-# UsersAuth class #
-Users_auth = UsersAuth(Vault, bot_name)
+## telegram client
+telegram_client = TelegramBot(bot_name, vault_client)
+telegram_bot = telegram_client.telegram_bot
 
-# Dropbox class #
-Dropbox = DropboxDownloader(dropbox_token, 8, 4, 120)
+## user auth module
+users_auth = UsersAuth(vault_client, bot_name)
 
-# InstagramDownloader class #
-Instagram = InstagramDownloader(
-            Vault,
-            instagram_user,
-            instagram_pass,
-            instagram_session_file,
-            bot_name, Dropbox,
-            telegram_bot
-            )
+## messages module
+messages = Messages()
 
-# Logger initialization #
+## instagram client
+instagram_user = vault_client.vault_read_secrets(f"{bot_name}-config/config", "i_user")
+instagram_pass = vault_client.vault_read_secrets(f"{bot_name}-config/config", "i_pass")
+if storage_type == "local":
+    instagram_save_path = storage_path
+else:
+    instagram_save_path = 'tmp/'
+downloader_client = Downlaoder(
+    instagram_user,
+    instagram_pass,
+    instagram_session,
+    instagram_save_path,
+    instagram_useragent
+)
+## Logger handler
 logging.getLogger('bot.bot').setLevel(logging.INFO)
-
-
-# DEBUG: Printing environment variables and classes#
 log.debug(globals())
 
 
-# Decorators #
-# Start command
+# Decorators
 @telegram_bot.message_handler(commands=['start'])
-def start_message(message):
-    access_status = access_status = Users_auth.check_permission(message.chat.id)
+def start_message(message: telegram_client.telegram_types.Message = None) -> None:
+    """
+    Function for intercepting the satrt command sent to the bot.
 
+    :param message: The message received by the bot.
+    :type message: telegram_client.telegram_types.Message
+    :default message: None
+    """
+    access_status = users_auth.check_permission(message.chat.id)
     if access_status == "success":
-        log.info(f"sending startup message in chat {message.chat.id}")
-        answer = (
-            f"Hi, <b>{message.chat.username}</b>! \u270B\n"
-            f"Access for your account - allowed \U0001F513\n"
-            f"\U0001F4F1Bot functions:\n"
-            f"  \U0001F4CC Upload post content by instagram link to dropbox cloud\n"
-            f"  \U0001F4CC Uploading all posts content by instagram profile-link to dropbox cloud\n"
-            f"<i>Just send link </i>\u270C"
+        log.info(
+            '[%s] sending startup message in chat %s',
+            __name__,
+            message.chat.id
         )
-        telegram_bot.send_message(message.chat.id, answer)
+        telegram_bot.send_message(
+            message.chat.id,
+            messages.render_template(
+                'hello_message',
+                username=message.from_user.username
+            )
+        )
     else:
-        log.error(f"403: Forbidden for username: {message.from_user.username}")
+        log.error(
+            '403: Forbidden for username %s',
+            message.from_user.username
+        )
 
 
-# Get all posts in instagram account regex
 @telegram_bot.message_handler(regexp="^https://(www\.)?instagram.com/(?!p/)(?!reel/).*$")
-def profile_get_all_posts(message):
-    access_status = access_status = Users_auth.check_permission(message.chat.id)
+def profile_get_posts(message):
+    """
+    A function for intercepting links sent to the bot to the Instagram profile.
 
+    :param message: The message received by the bot.
+    :type message: telegram_client.telegram_types.Message
+    :default message: None
+    """
+    access_status = access_status = users_auth.check_permission(message.chat.id)
     if access_status == "success":
-        profile_username = str(message.text).split("/")[3].split("?")[0]
-        log.info("Decorator.profile_get_all_posts() --> call Instagram.download_all_posts()")
-        Instagram.download_all_posts(
+        profile_name = message.text.split("/")[3].split("?")[0]
+        log.info(
+            'Decorator.profile_get_posts() for url %s\nDecorator.profile_get_posts() Starting download posts for account %s',
+            message.text,
+            profile_name
+        )
+        
+        instagram_client.download_all_posts(
                   profile_username,
                   ratelimit_timeout,
                   ratelimit_max_timeout,
                   message.chat.id
                   )
     else:
-        log.error(f"403: Forbidden for username: {message.from_user.username}")
+        log.error(
+            '403: Forbidden for username %s',
+            message.from_user.username
+        )
 
 
 # Download post per instagram-link by regex input text

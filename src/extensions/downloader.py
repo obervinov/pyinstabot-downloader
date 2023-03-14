@@ -1,8 +1,9 @@
 """
-This module interacts with the instagram api.
-Supports downloading the content of the post by link,
-the entire content of posts in the account
-and getting account about.
+This module interacts with the instagram api and uploads content to a temporary local directory.
+Supports downloading the content of a post by link,
+the entire content of messages in the account,
+getting information about the account
+and storing the history of already uploaded posts.
 https://instaloader.github.io/module/instaloader.html
 """
 import os
@@ -10,12 +11,11 @@ import instaloader
 from logger import log
 
 
-class InstagramAPI:
+class Downloader:
     """
-    This class creates an instance with a connection to the instagram api.
-    Supports downloading the content of the post by link,
-    the entire content of posts in the account
-    and getting account about.
+    This class creates an instance with connection to the instagram api
+    and contains a set of all the necessary methods
+    for uploading content from Instagram accounts to the local storage.
     """
 
     def __init__(
@@ -26,10 +26,12 @@ class InstagramAPI:
         savepath: str = 'tmp/',
         useragent: str = None,
         maxretry: int = 3,
-        timeout: float = 300.0
+        timeout: float = 300.0,
+        bot_name: str = None,
+        vault_client: object = None
     ) -> None:
         """
-        Function for create a new instagram api client instance.
+        Method for create a new instagram api client instance.
         
         :param user: Username for authentication in the instagram api.
         :type user: str
@@ -52,6 +54,13 @@ class InstagramAPI:
         :param timeout: Maximum waiting time for a response from the api.
         :type timeout: float
         :default timeout: 300.0
+        :param bot_name: The name of the current instance of the bot
+            to add prefixes to secrets in the vault.
+        :type bot_name: str
+        :default bot_name: None
+        :param vault_client: Instance of vault_client for recording or reading download history.
+        :type vault_client: object
+        :default vault_client: None
         """
         self.username = username
         self.password = password
@@ -60,12 +69,14 @@ class InstagramAPI:
         self.useragent = useragent
         self.maxretry = maxretry
         self.timeout = timeout
+        self.bot_name = bot_name
+        self.vault_client = vault_client
 
         self.instaloader_client = instaloader.Instaloader(
             sleep=True,
             quiet=True,
             user_agent=self.useragent,
-            dirname_pattern=f"{self.savepath}/{{profile}}_{{shortcode}}",
+            dirname_pattern=f'{self.savepath}/{{profile}}_{{shortcode}}',
             filename_pattern='{profile}_{shortcode}_{filename}',
             download_pictures=True,
             download_videos=True,
@@ -156,7 +167,7 @@ class InstagramAPI:
         username: str = None
     ) -> list:
         """
-        Function for getting a list posts of instagram account posts.
+        Method for getting a list posts of instagram account posts.
         
         :param username: Instagram username to get a list of posts.
         :type username: str
@@ -198,7 +209,7 @@ class InstagramAPI:
         shortcode: str = None
     ) -> str:
         """
-        Function for getting the content of a post from an instagram account.
+        Method for getting the content of a post from a specified Instagram account.
         
         :param shortcode: The shortcode is the ID of the record for downloading content.
         :type shortcode: str
@@ -216,7 +227,12 @@ class InstagramAPI:
                 __class__.__name__,
                 shortcode
             )
-            return "success", post.owner_username
+            self.vault_client.vault_put_secrets(
+                f"{self.bot_name}-data/{post.owner_username}",
+                shortcode,
+                "success"
+            )
+            return "success"
         except instaloader.exceptions.BadResponseException as badresponseexception:
             log.error(
                 '[class.%s] bad response for post %s: %s',
@@ -232,3 +248,64 @@ class InstagramAPI:
                 toomanyrequestsexception
             )
         return 'faild'
+
+
+    def get_download_info(
+        self,
+        username: str = None
+    ) -> dict:
+        """
+        Method for collecting all the necessary information
+        to download all posts from the specified account.
+        Checks the history of already uploaded posts
+        and provides information for cyclic downloading.
+        
+        :param username: Instagram username to check the uploaded history.
+        :type username: str
+        :default username: None
+        """
+        try:
+            log.info(
+                '[class.%s] excluding shortcodes that are already dowloaded...',
+                __class__.__name__
+            )
+            # List of posts received from instagram
+            fresh_shortcodes = self.get_posts()
+            # A list of posts that have not been downloaded yet and will need to be downloaded again
+            actual_shortcodes = []
+            # A list of posts that have already been previously uploaded and their history is saved
+            history_shortcodes = self.vault_client.vault_read_secrets(
+                f"{self.bot_name}-data/{username}"
+            )
+            for shortcode in fresh_shortcodes:
+                if shortcode not in history_shortcodes.keys():
+                    actual_shortcodes.append(shortcode)
+            log.info(
+                '[class.%s] already downloaded shortcodes: %s\n'
+                'fresh shortcodes: %s\n'
+                'shortcodes for download: %s',
+                __class__.__name__,
+                history_shortcodes,
+                fresh_shortcodes,
+                actual_shortcodes
+            )
+            return {
+                "shortcodes_for_download": actual_shortcodes,
+                "posts_count": len(fresh_shortcodes),
+                "shortcodes_exist": len(history_shortcodes)
+            }
+        except instaloader.exceptions.BadResponseException as badresponseexception:
+            log.error(
+                '[class.%s] bad response for post %s: %s',
+                __class__.__name__,
+                shortcode,
+                badresponseexception
+            )
+        except instaloader.exceptions.TooManyRequestsException as toomanyrequestsexception:
+            log.error(
+                '[class.%s] too many requests for post %s: %s',
+                __class__.__name__,
+                shortcode,
+                toomanyrequestsexception
+            )
+        return None
