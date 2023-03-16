@@ -248,16 +248,18 @@ def get_post_account(message):
         )
 
 
-# Starting bot #
 def main():
+    """
+    The main function for launching telegram bot.
+    """
     while True:
-        try:
-            log.info(f"Starting telegram bot: {bot_name}")
-            log.info(f"Home path: {os.getcwd()}")
-            log.info(f"Vault: {vault_addr}")
-            telegram_bot.polling()
-        except Exception as ex:
-            log.error(f"Strating telegram bot exception: {ex}")
+        log.info(
+            'Starting telegram bot: %s\nHome path: %s\nVault: %s',
+            bot_name,
+            os.getcwd(),
+            vault_addr
+        )
+        telegram_bot.polling()
 
 
 if __name__ == "__main__":
