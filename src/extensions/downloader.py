@@ -244,7 +244,7 @@ class Downloader:
 
     def get_download_info(
         self,
-        username: str = None
+        account_name: str = None
     ) -> dict:
         """
         Method for collecting all the necessary information
@@ -252,38 +252,38 @@ class Downloader:
         Checks the history of already uploaded posts
         and provides information for cyclic downloading.
         
-        :param username: Instagram username to check the uploaded history.
-        :type username: str
-        :default username: None
+        :param account_name: Instagram account name to check the uploaded history.
+        :type account_name: str
+        :default account_name: None
         """
         try:
             log.info(
                 '[class.%s] excluding shortcodes that are already dowloaded...',
                 __class__.__name__
             )
-            # List of posts received from instagram
-            fresh_shortcodes = self.get_posts()
-            # A list of posts that have not been downloaded yet and will need to be downloaded again
-            actual_shortcodes = []
-            # A list of posts that have already been previously uploaded and their history is saved
+            # List of shortcodes received from instagram
+            account_shortcodes = self.get_posts()
+            # A list of shortcodes that have not been downloaded yet and will need to be downloaded again
+            fresh_shortcodes = []
+            # A list of shortcodes that have already been previously uploaded and their history is saved
             history_shortcodes = self.vault_client.vault_read_secrets(
-                f"{self.bot_name}-data/{username}"
+                f"{self.bot_name}-data/{account_name}"
             )
-            for shortcode in fresh_shortcodes:
+            for shortcode in account_shortcodes:
                 if shortcode not in history_shortcodes.keys():
-                    actual_shortcodes.append(shortcode)
+                    fresh_shortcodes.append(shortcode)
             log.info(
                 '[class.%s] already downloaded shortcodes: %s\n'
                 'fresh shortcodes: %s\n'
                 'shortcodes for download: %s',
                 __class__.__name__,
                 history_shortcodes,
-                fresh_shortcodes,
-                actual_shortcodes
+                account_shortcodes,
+                fresh_shortcodes
             )
             return {
-                "shortcodes_for_download": actual_shortcodes,
-                "posts_count": len(fresh_shortcodes),
+                "shortcodes_for_download": fresh_shortcodes,
+                "shortcodes_count": len(account_shortcodes),
                 "shortcodes_exist": len(history_shortcodes)
             }
         except instaloader.exceptions.BadResponseException as badresponseexception:

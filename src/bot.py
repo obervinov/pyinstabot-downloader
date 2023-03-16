@@ -3,12 +3,15 @@ This module contains the main code for the bot to work
 and contains the main logic linking the extends modules.
 """
 import os
+import time
+import random
+import datetime
 from logger import log, logging
 from vault import VaultClient
 from users import UsersAuth
 from messages import Messages
 from telegram import TelegramBot
-from extensions.downloader import Downlaoder
+from extensions.downloader import Downloader
 
 
 # Environment variables
@@ -73,16 +76,21 @@ messages = Messages()
 instagram_user = vault_client.vault_read_secrets(f"{bot_name}-config/config", "i_user")
 instagram_pass = vault_client.vault_read_secrets(f"{bot_name}-config/config", "i_pass")
 if storage_type == "local":
-    instagram_save_path = storage_path
+    INSTAGRAM_SAVEPATH = storage_path
 else:
-    instagram_save_path = 'tmp/'
-downloader_client = Downlaoder(
-    instagram_user,
-    instagram_pass,
-    instagram_session,
-    instagram_save_path,
-    instagram_useragent
+    INSTAGRAM_SAVEPATH = 'tmp/'
+downloader_client = Downloader(
+    auth={
+        'username': instagram_user,
+        'password': instagram_pass,
+        'sessionfile': instagram_session,
+    },
+    settings={
+        'savepath': INSTAGRAM_SAVEPATH,
+        'useragent': instagram_useragent
+    }
 )
+
 ## Logger handler
 logging.getLogger('bot.bot').setLevel(logging.INFO)
 log.debug(globals())
@@ -120,7 +128,7 @@ def start_message(message: telegram_client.telegram_types.Message = None) -> Non
 
 
 @telegram_bot.message_handler(regexp="^https://(www\.)?instagram.com/(?!p/)(?!reel/).*$")
-def profile_get_posts(message):
+def get_posts_account(message):
     """
     A function for intercepting links sent to the bot to the Instagram profile.
 
@@ -130,19 +138,77 @@ def profile_get_posts(message):
     """
     access_status = access_status = users_auth.check_permission(message.chat.id)
     if access_status == "success":
-        profile_name = message.text.split("/")[3].split("?")[0]
+        account_name = message.text.split("/")[3].split("?")[0]
         log.info(
-            'Decorator.profile_get_posts() for url %s\nDecorator.profile_get_posts() Starting download posts for account %s',
-            message.text,
-            profile_name
+            'Decorator.get_posts_account() for url %s\n',
+            message.text
         )
-        
-        instagram_client.download_all_posts(
-                  profile_username,
-                  ratelimit_timeout,
-                  ratelimit_max_timeout,
-                  message.chat.id
-                  )
+        account_info = downloader_client.get_download_info(account_name)
+        telegram_bot.send_message(
+            message.chat.id,
+            messages.render_template(
+                'account_info',
+                account_name=account_name,
+                shortcodes_count=account_info['shortcodes_count']
+            )
+        )
+        editable_message = False
+        stats_message_id = None
+        for shortcode in account_info['shortcodes_for_download']:
+            downloader_client.get_post_content(shortcode)
+            progressbar = messages.render_progressbar(
+                account_info['shortcodes_count'],
+                account_info['shortcodes_exist']
+            )
+            posts_downloaded = len(
+                vault_client.vault_read_secrets(f"{bot_name}-data/{account_name}").keys()
+            )
+            stats_response = messages.render_template(
+                'account_stats_progress',
+                account_name=account_name,
+                posts_downloaded=posts_downloaded,
+                posts_count=account_info['shortcodes_count'],
+                progressbar=progressbar
+            )
+            # check whether a message with stats has already been sent and whether we can edit it
+            if not editable_message:
+                stats_message_id = telegram_bot.send_message(
+                    message.chat.id,
+                    stats_response
+                ).id
+                editable_message = True
+            elif editable_message:
+                telegram_bot.edit_message_text(
+                    stats_response,
+                    message.chat.id,
+                    stats_message_id
+                )
+            # pause downloaded for ratelimit
+            log.warning(
+                '[%s] ratelimit aplied at %s',
+                __name__,
+                datetime.datetime.now().strftime('%H:%M:%S')
+            )
+            time.sleep(random.randrange(1, 3000, 10))
+        telegram_bot.edit_message_text(
+            messages.render_template(
+                'account_stats_done',
+                posts_downloaded=posts_downloaded,
+                posts_count=account_info['shortcodes_count'],
+                account_name=account_name,
+                progressbar=messages.render_progressbar(
+                    account_info['shortcodes_count'],
+                    posts_downloaded
+                )
+            ),
+            message.chat.id,
+            stats_message_id
+        )
+        log.info(
+            '[%s] all available posts from account %s has been downloaded',
+            __name__,
+            account_name
+        )       
     else:
         log.error(
             '403: Forbidden for username %s',

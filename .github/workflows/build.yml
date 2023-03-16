@@ -14,4 +14,4 @@ on: [push]
 
 jobs:
   build-release-image:
-    uses: obervinov/_templates/.github/workflows/docker.yml@v1.0.2
+    uses: obervinov/_templates/.github/workflows/docker.yml@docker-login-fixed
