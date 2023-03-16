@@ -127,7 +127,7 @@ def start_message(message: telegram_client.telegram_types.Message = None) -> Non
         )
 
 
-@telegram_bot.message_handler(regexp="^https://(www\.)?instagram.com/(?!p/)(?!reel/).*$")
+@telegram_bot.message_handler(regexp=r"^https://(www\.)?instagram.com/(?!p/)(?!reel/).*$")
 def get_posts_account(message):
     """
     A function for intercepting links sent to the bot to the Instagram profile.
@@ -216,20 +216,36 @@ def get_posts_account(message):
         )
 
 
-# Download post per instagram-link by regex input text
 @telegram_bot.message_handler(regexp="^https://www.instagram.com/(p|reel)/.*")
-def profile_get_link_post(message):
-    access_status = access_status = Users_auth.check_permission(message.chat.id)
+def get_post_account(message):
+    """
+    A function for intercepting links sent by a bot to an Instagram post.
 
+    :param message: The message received by the bot.
+    :type message: telegram_client.telegram_types.Message
+    :default message: None
+    """
+    access_status = access_status = users_auth.check_permission(message.chat.id)
     if access_status == "success":
-        # Get shortcode value
-        shortcode = str(message.text).split("/")[4]
-        log.info("Decorator.profile_get_link_post() --> call Instagram.download_post()")
-        response = Instagram.download_post(shortcode)
-        telegram_bot.send_message(message.chat.id, response)
-
+        shortcode = message.text.split("/")[4]
+        log.info(
+            'Decorator.get_post_account() for url %s\n',
+            message.text
+        )
+        download_response = downloader_client.get_post_content(shortcode)
+        telegram_bot.send_message(
+            message.chat.id,
+            messages.render_template(
+                'post_stats_info',
+                download_response=download_response,
+                upload_response=upload_response
+            )
+        )
     else:
-        log.error(f"403: Forbidden for username: {message.from_user.username}")
+        log.error(
+            '403: Forbidden for username %s',
+            message.from_user.username
+        )
 
 
 # Starting bot #
