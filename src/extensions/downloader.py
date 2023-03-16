@@ -20,86 +20,79 @@ class Downloader:
 
     def __init__(
         self,
-        username: str = None,
-        password: str = None,
-        sessionfile: str = None,
-        savepath: str = 'tmp/',
-        useragent: str = None,
-        maxretry: int = 3,
-        timeout: float = 300.0,
-        bot_name: str = None,
-        vault_client: object = None
+        auth: dict = {
+            'username': None,
+            'password': None,
+            'sessionfile': '.session'
+        } | None,
+        settings: dict = {
+            'savepath': 'tmp/',
+            'useragent': None
+        } | None,
+        **kwargs
     ) -> None:
         """
         Method for create a new instagram api client instance.
         
-        :param user: Username for authentication in the instagram api.
-        :type user: str
-        :default user: None
-        :param password: Password for authentication in the instagram api.
-        :type password: str
-        :default password: None
-        :param sessionfile: The path to the session file from the instagram session.
-        :type sessionfile: str
-        :default sessionfile: None
-        :param savepath: Local directory for saving downloaded content.
-        :type savepath: str
-        :default savepath: tmp/
-        :param useragent: User-Agent header.
-        :type useragent: str
-        :default useragent: None
-        :param maxretry: The maximum number of attempts to reconnect to the api in case of failure.
-        :type maxretry: int
-        :default maxretry: 3
-        :param timeout: Maximum waiting time for a response from the api.
-        :type timeout: float
-        :default timeout: 300.0
-        :param bot_name: The name of the current instance of the bot
+        :param auth: Dictionary with authorization parameters.
+            {'username': None, 'password': None, 'sessionfile': '.session'}
+        :type auth: dict
+        :default auth: None                
+        :param auth.username: Username for authentication in the instagram api.
+        :type auth.username: str
+        :default auth.username: None
+        :param auth.password: Password for authentication in the instagram api.
+        :type auth.password: str
+        :default auth.password: None
+        :param auth.sessionfile: The path to the session file from the instagram session.
+        :type auth.sessionfile: str
+        :default auth.sessionfile: None
+
+        :param settings: Dictionary with settings instaloader parameters.
+            {'savepath': 'tmp/', 'useragent': None}
+        :type settings: dict
+        :default settings: None
+        :param settings.savepath: Local directory for saving downloaded content.
+        :type settings.savepath: str
+        :default settings.savepath: tmp/
+        :param settings.useragent: User-Agent header.
+        :type settings.useragent: str
+        :default settings.useragent: None
+
+        :param **kwargs: Passing additional parameters for message assembly.
+        :type **kwargs: dict
+        :param kwargs.bot_name: The name of the current instance of the bot
             to add prefixes to secrets in the vault.
-        :type bot_name: str
-        :default bot_name: None
-        :param vault_client: Instance of vault_client for recording or reading download history.
-        :type vault_client: object
-        :default vault_client: None
+        :type kwargs.bot_name: str
+        :default kwargs.bot_name: None
+        :param kwargs.vault_client: Instance of vault_client for recording or reading download history.
+        :type kwargs.vault_client: object
+        :default kwargs.vault_client: None
         """
-        self.username = username
-        self.password = password
-        self.sessionfile = sessionfile
-        self.savepath = savepath
-        self.useragent = useragent
-        self.maxretry = maxretry
-        self.timeout = timeout
-        self.bot_name = bot_name
-        self.vault_client = vault_client
+        self.auth = auth
+        self.settings = settings
+        self.bot_name = kwargs.get('bot_name')
+        self.vault_client = kwargs.get('vault_client')
 
         self.instaloader_client = instaloader.Instaloader(
-            sleep=True,
             quiet=True,
-            user_agent=self.useragent,
-            dirname_pattern=f'{self.savepath}/{{profile}}_{{shortcode}}',
+            user_agent=self.settings['useragent'],
+            dirname_pattern=f"{settings['savepath']}/{{profile}}_{{shortcode}}",
             filename_pattern='{profile}_{shortcode}_{filename}',
             download_pictures=True,
             download_videos=True,
             download_video_thumbnails=True,
-            download_geotags=False,
-            download_comments=False,
             save_metadata=False,
             compress_json=True,
             post_metadata_txt_pattern=None,
             storyitem_metadata_txt_pattern=None,
-            max_connection_attempts=self.maxretry,
-            request_timeout=self.timeout,
-            rate_controller=None,
-            resume_prefix='iterator',
-            check_resume_bbd=True,
-            slide=None,
-            iphone_support=True
+            check_resume_bbd=True
         )
         try:
-            if os.path.exists(self.sessionfile):
+            if os.path.exists(self.settings['sessionfile']):
                 self.instaloader_client.load_session_from_file(
-                    self.username,
-                    self.sessionfile
+                    self.auth['username'],
+                    self.auth['sessionfile']
                 )
                 log.info(
                     '[class.%s] session file was load success',
@@ -107,20 +100,19 @@ class Downloader:
                 )
             else:
                 self.instaloader_client.login(
-                    self.username,
-                    self.password
+                    self.auth['username'],
+                    self.auth['password']
                 )
                 log.info(
                     '[class.%s] login with credentials was successful',
                     __class__.__name__
                 )
-                self.instaloader_client.save_session_to_file(self.sessionfile)
+                self.instaloader_client.save_session_to_file(self.auth['sessionfile'])
                 log.info(
                     '[class.%s] new session file %s was save success',
                     __class__.__name__,
-                    self.sessionfile
-                )    
-
+                    self.auth['sessionfile']
+                )
         except instaloader.exceptions.LoginRequiredException as loginrequiredexception:
             log.warning(
                 '[class.%s] login required: %s',
@@ -133,14 +125,14 @@ class Downloader:
                 )
             try:
                 self.instaloader_client.login(
-                    self.username,
-                    self.password
+                    self.auth['username'],
+                    self.auth['password']
                 )
-                self.instaloader_client.save_session_to_file(sessionfile)
+                self.instaloader_client.save_session_to_file(self.auth['sessionfile'])
                 log.info(
                     '[class.%s] new session file %s was save success',
                     __class__.__name__,
-                    sessionfile
+                    self.auth['sessionfile']
                 )
             except instaloader.exceptions.BadCredentialsException as badcredentialsexception:
                 log.error(

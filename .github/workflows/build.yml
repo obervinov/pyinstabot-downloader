@@ -13,5 +13,5 @@ on: [push]
 #    - cron: '40 16 * * 3'
 
 jobs:
-  create-release:
-    uses: obervinov/_templates/.github/workflows/docker.yml@added-trivy
+  build-release-image:
+    uses: obervinov/_templates/.github/workflows/docker.yml@v1.0.2

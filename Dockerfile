@@ -15,10 +15,10 @@ RUN apk add git --no-cache
 ### Preparing user and dirs ###
 RUN adduser -D -h /home/python_user -s /bin/sh python_user && \
     mkdir -p /home/python_user && \
-    mkdir -p /var/log/${BOT_NAME} && \
-    mkdir -p /home/python_user/${BOT_NAME} && \
+    mkdir -p /var/log/${PROJECT_NAME} && \
+    mkdir -p /home/python_user/${PROJECT_NAME} && \
     chown python_user. /home/python_user -R && \
-    chown python_user. /var/log/${BOT_NAME}
+    chown python_user. /var/log/${PROJECT_NAME}
 
 ### Switching context ###
 USER python_user
