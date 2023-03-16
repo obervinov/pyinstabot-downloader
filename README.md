@@ -13,7 +13,7 @@
 
 
 ## <img src="https://github.com/obervinov/_templates/blob/main/icons/book.png" width="25" title="about"> About this project
-This project is a telegram boat that allows you to backup content from your Instagram profile to the Dropbox, Mega.io clouds or to the local filesystem.
+This project is a telegram bot that allows you to backup content from your Instagram profile to the Dropbox, Mega.io clouds or to the local filesystem.
 
 Main functions:
 - download the content of all posts from the profile

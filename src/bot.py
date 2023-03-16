@@ -208,7 +208,7 @@ def get_posts_account(message):
             '[%s] all available posts from account %s has been downloaded',
             __name__,
             account_name
-        )       
+        )
     else:
         log.error(
             '403: Forbidden for username %s',
