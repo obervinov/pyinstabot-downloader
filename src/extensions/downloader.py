@@ -59,19 +59,14 @@ class Downloader:
         :type settings.useragent: str
         :default settings.useragent: None
 
-        :param **kwargs: Passing additional parameters for message assembly.
+        :param **kwargs: Passing additional parameters for downloader.
         :type **kwargs: dict
-        :param kwargs.bot_name: The name of the current instance of the bot
-            to add prefixes to secrets in the vault.
-        :type kwargs.bot_name: str
-        :default kwargs.bot_name: None
         :param kwargs.vault_client: Instance of vault_client for recording or reading download history.
         :type kwargs.vault_client: object
         :default kwargs.vault_client: None
         """
         self.auth = auth
         self.settings = settings
-        self.bot_name = kwargs.get('bot_name')
         self.vault_client = kwargs.get('vault_client')
 
         self.instaloader_client = instaloader.Instaloader(
@@ -220,7 +215,7 @@ class Downloader:
                 shortcode
             )
             self.vault_client.vault_put_secrets(
-                f"{self.bot_name}-data/{post.owner_username}",
+                f"history/{post.owner_username}",
                 shortcode,
                 "success"
             )
@@ -267,7 +262,7 @@ class Downloader:
             fresh_shortcodes = []
             # A list of shortcodes that have already been previously uploaded and their history is saved
             history_shortcodes = self.vault_client.vault_read_secrets(
-                f"{self.bot_name}-data/{account_name}"
+                f"history/{account_name}"
             )
             for shortcode in account_shortcodes:
                 if shortcode not in history_shortcodes.keys():

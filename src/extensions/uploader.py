@@ -1,70 +1,85 @@
-"""This module processes the content uploaded from Instagram
-and uploads the found media files (image, video) to the dropbox cloud.
-https://www.dropbox.com/developers/documentation/python
+"""
+This module processes the content uploaded from Instagram
+and uploads the found media files (image, video) to the destination storage.
 """
 import os
+import dropbox
 from logger import log
 
 
 class Uploader:
-    """This class creates an instance with a connection to the dropbox api
-    and uploads all the media content of the local directory to the dropbox cloud.
     """
-    def __init__(self,
-                 dropbox_token: str = None,
-                 max_connections: int = 3,
-                 max_retries_on_error: int = 3,
-                 timeout: int = 60
+    This class creates an instance with a connection
+    to the target storage for uploading local media content.
+    """
+    def __init__(
+        self,
+        storage: str = 'local'|'dropbox'|'meganz',
+        auth: dict = None,
+        settings: dict = None,
+        **kwargs
     ) -> None:
-        """A Method for create a new dropbox api client instance.
-        :param dropbox_token: Token for authenticated in dropbox api.
-        :type dropbox_token: str
-        :default dropbox_token: None
-            more: https://developers.dropbox.com/ru-ru/oauth-guide
-        :param max_connections: Maximum number of connections at the same time.
-        :type max_connections: int
-        :default max_connections: 3
-        :param max_retries_on_error: Maximum number of retries when request fail.
-        :type max_retries_on_error: int
-        :default max_retries_on_error: 3
-        :param timeout: Maximum waiting time for request completion.
-        :type timeout: int
-        :default timeout: 60
         """
-        self.dropbox_token = dropbox_token
-        self.max_connections = max_connections
-        self.max_retries_on_error = max_retries_on_error
-        self.timeout = timeout
+        A Method creates an instance with a connection
+        to the target storage for uploading local media content.
+
+        :param storage: Dictionary with authorization parameters.
+        :type storage: str
+        :default storage: 'local'|'dropbox'|'meganz'
+        :param auth: Dictionary with authorization parameters.
+            {'username': None, 'password': None} or {'token': None}
+        :type auth: dict
+        :default auth: None
+        :param settings: Dictionary with settings parameters.
+            {'max_connections': None, 'timeout': None}
+        :type settings: dict
+        :default settings: None
+        :param **kwargs: Passing additional parameters for uploader.
+        :type **kwargs: dict
+        :param kwargs.vault_client: Instance of vault_client for reading authorization data.
+        :type kwargs.vault_client: object
+        :default kwargs.vault_client: None
+        """
+        self.storafe = storage
+        self.auth = auth
+        self.settings = settings
         self.homepath = os.getcwd()
-        try:
-            self.dropbox_session = dropbox.create_session(
-                max_connections=self.max_connections,
-                proxies=None
-            )
-            self.dropbox_client = dropbox.Dropbox(
-                oauth2_access_token=self.dropbox_token,
-                max_retries_on_error=self.max_retries_on_error,
-                max_retries_on_rate_limit=None,
-                user_agent=None,
-                session=self.dropbox_session,
-                headers=None,
-                timeout=self.timeout
-            )
-        except dropbox.exceptions.DropboxException as dropboxexception:
-            log.error(
-                '[class.%s] creating dropbox instance faild: %s',
-                __class__.__name__,
-                dropboxexception
-            )
+        self.vault_client = kwargs.get('vault_client')
+
+        if storage == 'dropbox':
+            token = self.vault_client.vault_read_secrets('configuration/dropbox', 'token')
+            try:
+                dropbox_session = dropbox.create_session(
+                    max_connections=3,
+                    proxies=None
+                )
+                self.dropbox_client = dropbox.Dropbox(
+                    oauth2_access_token=token,
+                    max_retries_on_error=3,
+                    max_retries_on_rate_limit=None,
+                    user_agent=None,
+                    session=dropbox_session,
+                    headers=None,
+                    timeout=60
+                )
+            except dropbox.exceptions.DropboxException as dropboxexception:
+                log.error(
+                    '[class.%s] creating dropbox instance faild: %s',
+                    __class__.__name__,
+                    dropboxexception
+                )
 
 
-    def upload_file(
+    def upload_dropbox(
         self,
         soruce_file: str = None,
         dropbox_dir: str = None
     ) -> str:
-        """A Method for uploading the contents of the target directory
+        """
+        A Method for uploading the contents of the target directory
         to the dropbox cloud directory.
+        https://www.dropbox.com/developers/documentation/python
+        
         :param soruce_file: The path to the local file with the contents.
         :type soruce_file: str
         :default soruce_file: None

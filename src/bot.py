@@ -27,10 +27,6 @@ storage_path = os.environ.get(
     'STORAGE_PATH',
     None
 )
-vault_mount_point = os.environ.get(
-    'BOT_VAULT_MOUNT_PATH',
-    'secretv2'
-)
 vault_addr = os.environ.get(
     'BOT_VAULT_ADDR',
     'http://vault-server:8200'
@@ -56,10 +52,10 @@ instagram_useragent = os.environ.get(
 # Create instances of classes
 ## vault client
 vault_client = VaultClient(
-    vault_addr,
-    vault_approle_id,
-    vault_approle_secret_id,
-    vault_mount_point
+    addr=vault_addr,
+    approle_id=vault_approle_id,
+    secret_id=vault_approle_secret_id,
+    mount_point=bot_name
 )
 
 ## telegram client
@@ -75,10 +71,7 @@ messages = Messages()
 ## instagram client
 instagram_user = vault_client.vault_read_secrets(f"{bot_name}-config/config", "i_user")
 instagram_pass = vault_client.vault_read_secrets(f"{bot_name}-config/config", "i_pass")
-if storage_type == "local":
-    INSTAGRAM_SAVEPATH = storage_path
-else:
-    INSTAGRAM_SAVEPATH = 'tmp/'
+
 downloader_client = Downloader(
     auth={
         'username': instagram_user,
@@ -86,7 +79,7 @@ downloader_client = Downloader(
         'sessionfile': instagram_session,
     },
     settings={
-        'savepath': INSTAGRAM_SAVEPATH,
+        'savepath': 'tmp/',
         'useragent': instagram_useragent
     }
 )
@@ -161,7 +154,7 @@ def get_posts_account(message):
                 account_info['shortcodes_exist']
             )
             posts_downloaded = len(
-                vault_client.vault_read_secrets(f"{bot_name}-data/{account_name}").keys()
+                vault_client.vault_read_secrets(f"history/{account_name}").keys()
             )
             stats_response = messages.render_template(
                 'account_stats_progress',
