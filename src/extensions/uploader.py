@@ -143,7 +143,7 @@ class Uploader:
                     )
                 except dropbox.exceptions.DropboxException as dropboxexception:
                     log.error(
-                        '[class.%s] uploading file to dropbox api faild: %s',
+                        '[class.%s] error when uploading a file via the dropbox api: %s',
                         __class__.__name__,
                         dropboxexception
                     )
