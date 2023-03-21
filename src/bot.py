@@ -12,6 +12,7 @@ from users import UsersAuth
 from messages import Messages
 from telegram import TelegramBot
 from extensions.downloader import Downloader
+from extensions.uploader import Uploader
 
 
 # Environment variables
@@ -84,6 +85,14 @@ downloader_client = Downloader(
     }
 )
 
+uploader_client = Uploader(
+    storage_type,
+    auth={
+        'username': None,
+        'password': None,
+    }
+)
+
 ## Logger handler
 logging.getLogger('bot.bot').setLevel(logging.INFO)
 log.debug(globals())
@@ -149,6 +158,7 @@ def get_posts_account(message):
         stats_message_id = None
         for shortcode in account_info['shortcodes_for_download']:
             downloader_client.get_post_content(shortcode)
+            uploader_client.prepare_content(shortcode)
             progressbar = messages.render_progressbar(
                 account_info['shortcodes_count'],
                 account_info['shortcodes_exist']

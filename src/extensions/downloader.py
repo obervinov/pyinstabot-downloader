@@ -219,7 +219,6 @@ class Downloader:
                 shortcode,
                 "success"
             )
-            return "success"
         except instaloader.exceptions.BadResponseException as badresponseexception:
             log.error(
                 '[class.%s] bad response for post %s: %s',
@@ -234,7 +233,6 @@ class Downloader:
                 shortcode,
                 toomanyrequestsexception
             )
-        return 'faild'
 
 
     def get_download_info(
