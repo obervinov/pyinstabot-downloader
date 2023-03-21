@@ -215,7 +215,7 @@ class Downloader:
                 shortcode
             )
             self.vault_client.vault_put_secrets(
-                f"history/{post.owner_username}",
+                f'history/{post.owner_username}',
                 shortcode,
                 "success"
             )
@@ -262,7 +262,7 @@ class Downloader:
             fresh_shortcodes = []
             # A list of shortcodes that have already been previously uploaded and their history is saved
             history_shortcodes = self.vault_client.vault_read_secrets(
-                f"history/{account_name}"
+                f'history/{account_name}'
             )
             for shortcode in account_shortcodes:
                 if shortcode not in history_shortcodes.keys():

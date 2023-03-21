@@ -92,7 +92,7 @@ class Uploader:
             self.storage
         )
         transfers = {}
-        for root, _, files in os.walk(f"{self.homepath}/{dirname}"):
+        for root, _, files in os.walk(f'{self.homepath}/{dirname}'):
             for file in files:
                 if ".txt" in file:
                     os.remove(os.path.join(root, file))
@@ -100,8 +100,8 @@ class Uploader:
                     transfers[file] = self.upload_file()
                     if transfers[file] == 'uploaded':
                         os.remove(os.path.join(root, file))
-        if len(os.listdir(f"{self.homepath}/{dirname}")) == 0:
-            os.rmdir(f"{self.homepath}/{dirname}")
+        if len(os.listdir(f'{self.homepath}/{dirname}')) == 0:
+            os.rmdir(f'{self.homepath}/{dirname}')
 
 
     def upload_file(
@@ -133,7 +133,7 @@ class Uploader:
                 try:
                     response = self.dropbox_client.files_upload(
                         file_transfer.read(),
-                        f"/{destination}/{source.split('/')[-1]}"
+                        f'/{destination}/{source.split("/")[-1]}'
                     )
                     log.info(
                         '[class.%s] %s has been uploaded to %s',
