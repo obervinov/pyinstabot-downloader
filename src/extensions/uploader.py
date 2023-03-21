@@ -12,6 +12,7 @@ class Uploader:
     This class creates an instance with a connection
     to the target storage for uploading local media content.
     """
+
     def __init__(
         self,
         storage: str = 'local'|'dropbox'|'meganz',
@@ -40,13 +41,18 @@ class Uploader:
         :type kwargs.vault_client: object
         :default kwargs.vault_client: None
         """
-        self.storafe = storage
+        self.storage = storage
         self.auth = auth
         self.settings = settings
         self.homepath = os.getcwd()
         self.vault_client = kwargs.get('vault_client')
-
-        if storage == 'dropbox':
+        log.info(
+            '[class.%s] uploader instance init with %s storage type',
+            __class__.__name__,
+            storage
+        )
+        if self.storage == 'dropbox':
+            # more: https://developers.dropbox.com/ru-ru/oauth-guide
             token = self.vault_client.vault_read_secrets('configuration/dropbox', 'token')
             try:
                 dropbox_session = dropbox.create_session(
@@ -70,53 +76,84 @@ class Uploader:
                 )
 
 
-    def upload_dropbox(
+    def prepare_content(
         self,
-        soruce_file: str = None,
-        dropbox_dir: str = None
+        dirname: str = None
+    ) -> dict:
+        """
+        Method of preparing media files for transfer to the target storage (cloud or local).
+        :param dirname: Name of the directory for receiving media files.
+        :type dirname: str
+        :default dirname: None
+        """
+        log.info(
+            '[class.%s] preparing media files for transfer to the target storage -> %s ',
+            __class__.__name__,
+            self.storage
+        )
+        transfers = {}
+        for root, _, files in os.walk(f"{self.homepath}/{dirname}"):
+            for file in files:
+                if ".txt" in file:
+                    os.remove(os.path.join(root, file))
+                else:
+                    transfers[file] = self.upload_file()
+                    if transfers[file] == 'uploaded':
+                        os.remove(os.path.join(root, file))
+        if len(os.listdir(f"{self.homepath}/{dirname}")) == 0:
+            os.rmdir(f"{self.homepath}/{dirname}")
+
+
+    def upload_file(
+        self,
+        source: str = None,
+        destination: str = None
     ) -> str:
         """
-        A Method for uploading the contents of the target directory
-        to the dropbox cloud directory.
-        https://www.dropbox.com/developers/documentation/python
+        The method of uploading the contents of the target directory
+        to the cloud or local directory.
         
-        :param soruce_file: The path to the local file with the contents.
-        :type soruce_file: str
-        :default soruce_file: None
-        :param dropbox_dir: The name of the traget directory in the dropbox cloud.
-        :type dropbox_dir: str
-        :default dropbox_dir: None
+        :param source: The path to the local file to transfer to the target storage.
+        :type source: str
+        :default source: None
+        :param destination: The name of the target directory in the destination storage.
+        :type destination: str
+        :default destination: None
         """
         log.info(
-            '[class.%s] starting upload files from %s',
+            '[class.%s] starting upload file %s to %s:%s',
             __class__.__name__,
-            soruce_file
+            source,
+            self.storage,
+            destination
         )
-        with open(soruce_file, 'rb') as file_transfer:
-            try:
-                response = self.dropbox_client.files_upload(
-                    file_transfer.read(),
-                    f"/{dropbox_dir}/{soruce_file.split('/')[-1]}",
-                    autorename=True
-                )
-                log.info(
-                    '[class.%s] %s has been uploaded',
-                    __class__.__name__,
-                    response.name
-                )
-            except dropbox.exceptions.DropboxExceptiontion as dropboxexception:
-                log.error(
-                    '[class.%s] uploading file to dropbox api faild: %s',
-                    __class__.__name__,
-                    dropboxexception
-                )
-                return "faild"
-        file_transfer.close()
-
-        log.info(
-            '[class.%s] %s successful transfering %s bytes',
-            __class__.__name__,
-            response.id,
-            response.size
-        )
+        if self.storage == 'dropbox':
+            # more https://www.dropbox.com/developers/documentation/python
+            with open(source, 'rb') as file_transfer:
+                try:
+                    response = self.dropbox_client.files_upload(
+                        file_transfer.read(),
+                        f"/{destination}/{source.split('/')[-1]}",
+                        autorename=True
+                    )
+                    log.info(
+                        '[class.%s] %s has been uploaded to %s',
+                        __class__.__name__,
+                        response.name,
+                        self.storage
+                    )
+                except dropbox.exceptions.DropboxException as dropboxexception:
+                    log.error(
+                        '[class.%s] uploading file to dropbox api faild: %s',
+                        __class__.__name__,
+                        dropboxexception
+                    )
+                    return "faild"
+            file_transfer.close()
+            log.info(
+                '[class.%s] %s successful transfering %s bytes',
+                __class__.__name__,
+                response.id,
+                response.size
+            )
         return "success"

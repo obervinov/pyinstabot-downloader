@@ -72,7 +72,7 @@ class Downloader:
         self.instaloader_client = instaloader.Instaloader(
             quiet=True,
             user_agent=self.settings['useragent'],
-            dirname_pattern=f"{settings['savepath']}/{{profile}}_{{shortcode}}",
+            dirname_pattern=f"{settings['savepath']}/{{profile}}/{{shortcode}}",
             filename_pattern='{profile}_{shortcode}_{filename}',
             download_pictures=True,
             download_videos=True,
