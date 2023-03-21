@@ -2,7 +2,6 @@
 This module contains the main code for the bot to work
 and contains the main logic linking the extends modules.
 """
-import os
 import time
 import random
 import datetime
@@ -11,82 +10,46 @@ from vault import VaultClient
 from users import UsersAuth
 from messages import Messages
 from telegram import TelegramBot
+from configs import settings
 from extensions.downloader import Downloader
 from extensions.uploader import Uploader
 
-
-# Environment variables
-bot_name = os.environ.get(
-    'BOT_NAME',
-    'pyinstabot-downloader'
-)
-storage_type = os.environ.get(
-    'STORAGE_TYPE',
-    'local'
-)
-storage_path = os.environ.get(
-    'STORAGE_PATH',
-    None
-)
-vault_addr = os.environ.get(
-    'BOT_VAULT_ADDR',
-    'http://vault-server:8200'
-)
-vault_approle_id = os.environ.get(
-    'BOT_VAULT_APPROLE_ID',
-    'not set'
-)
-vault_approle_secret_id = os.environ.get(
-    'BOT_VAULT_APPROLE_SECRET_ID',
-    'not set'
-)
-instagram_session = os.environ.get(
-    'BOT_INSTAGRAM_SESSION',
-    'instaloader/.session'
-)
-instagram_useragent = os.environ.get(
-    'BOT_INSTAGRAM_USERAGENT',
-    None
-)
-
-
-# Create instances of classes
-## vault client
+# vault client
 vault_client = VaultClient(
-    addr=vault_addr,
-    approle_id=vault_approle_id,
-    secret_id=vault_approle_secret_id,
-    mount_point=bot_name
+    addr=settings.vault_addr,
+    approle_id=settings.vault_approle_id,
+    secret_id=settings.vault_approle_secret_id,
+    mount_point=settings.bot_name
 )
 
-## telegram client
-telegram_client = TelegramBot(bot_name, vault_client)
+# telegram client
+telegram_client = TelegramBot(settings.bot_name, vault_client)
 telegram_bot = telegram_client.telegram_bot
 
-## user auth module
-users_auth = UsersAuth(vault_client, bot_name)
+# user auth module
+users_auth = UsersAuth(vault_client, settings.bot_name)
 
-## messages module
+# messages module
 messages = Messages()
 
-## instagram client
-instagram_user = vault_client.vault_read_secrets(f"{bot_name}-config/config", "i_user")
-instagram_pass = vault_client.vault_read_secrets(f"{bot_name}-config/config", "i_pass")
+# instagram client
+instagram_user = vault_client.vault_read_secrets(f"{settings.bot_name}-config/config", "i_user")
+instagram_pass = vault_client.vault_read_secrets(f"{settings.bot_name}-config/config", "i_pass")
 
 downloader_client = Downloader(
     auth={
-        'username': instagram_user,
-        'password': instagram_pass,
-        'sessionfile': instagram_session,
+        'username': settings.instagram_user,
+        'password': settings.instagram_pass,
+        'sessionfile': settings.instagram_session,
     },
     settings={
         'savepath': 'tmp/',
-        'useragent': instagram_useragent
+        'useragent': settings.instagram_useragent
     }
 )
 
 uploader_client = Uploader(
-    storage_type,
+    settings.storage_type,
     auth={
         'username': None,
         'password': None,
@@ -258,9 +221,9 @@ def main():
     while True:
         log.info(
             'Starting telegram bot: %s\nHome path: %s\nVault: %s',
-            bot_name,
-            os.getcwd(),
-            vault_addr
+            settings.bot_name,
+            settings.cwd,
+            settings.vault_addr
         )
         telegram_bot.polling()
 
