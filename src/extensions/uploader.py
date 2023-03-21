@@ -133,8 +133,7 @@ class Uploader:
                 try:
                     response = self.dropbox_client.files_upload(
                         file_transfer.read(),
-                        f"/{destination}/{source.split('/')[-1]}",
-                        autorename=True
+                        f"/{destination}/{source.split('/')[-1]}"
                     )
                     log.info(
                         '[class.%s] %s has been uploaded to %s',
