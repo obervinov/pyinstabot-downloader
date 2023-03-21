@@ -136,10 +136,11 @@ class Uploader:
                         f'/{destination}/{source.split("/")[-1]}'
                     )
                     log.info(
-                        '[class.%s] %s has been uploaded to %s',
+                        '[class.%s] %s successful transfering %s: %s bytes',
                         __class__.__name__,
                         response.name,
-                        self.storage
+                        response.id,
+                        response.size
                     )
                 except dropbox.exceptions.DropboxException as dropboxexception:
                     log.error(
@@ -147,12 +148,5 @@ class Uploader:
                         __class__.__name__,
                         dropboxexception
                     )
-                    return "faild"
             file_transfer.close()
-            log.info(
-                '[class.%s] %s successful transfering %s bytes',
-                __class__.__name__,
-                response.id,
-                response.size
-            )
-        return "success"
+        return "uploaded"
