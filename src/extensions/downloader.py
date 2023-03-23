@@ -1,9 +1,9 @@
 """
 This module interacts with the instagram api and uploads content to a temporary local directory.
-Supports downloading the content of a post by link,
-the entire content of messages in the account,
+Supports downloading the content of the post by link,
+the entire content of posts in the account,
 getting information about the account
-and storing the history of already uploaded posts.
+and saving the history of already downloaded messages in the vault.
 https://instaloader.github.io/module/instaloader.html
 """
 import os
@@ -13,9 +13,9 @@ from logger import log
 
 class Downloader:
     """
-    This class creates an instance with connection to the instagram api
-    and contains a set of all the necessary methods
-    for uploading content from Instagram accounts to the local storage.
+    The Instagram api instance is created by this class
+    and contains a set of all the necessary posts
+    for uploading content from Instagram accounts to local storage.
     """
 
     def __init__(
@@ -61,14 +61,13 @@ class Downloader:
 
         :param **kwargs: Passing additional parameters for downloader.
         :type **kwargs: dict
-        :param kwargs.vault_client: Instance of vault_client for recording or reading download history.
+        :param kwargs.vault_client: Instance of vault for recording or reading download history.
         :type kwargs.vault_client: object
         :default kwargs.vault_client: None
         """
         self.auth = auth
         self.settings = settings
         self.vault_client = kwargs.get('vault_client')
-
         self.instaloader_client = instaloader.Instaloader(
             quiet=True,
             user_agent=self.settings['useragent'],
@@ -110,14 +109,11 @@ class Downloader:
                 )
         except instaloader.exceptions.LoginRequiredException as loginrequiredexception:
             log.warning(
-                '[class.%s] login required: %s',
+                '[class.%s] login required: %s -> '
+                'trying login with username/password',
                 __class__.__name__,
                 loginrequiredexception
             )
-            log.info(
-                '[class.%s] trying login with username/password...',
-                __class__.__name__
-                )
             try:
                 self.instaloader_client.login(
                     self.auth['username'],
@@ -217,7 +213,7 @@ class Downloader:
             self.vault_client.vault_put_secrets(
                 f'history/{post.owner_username}',
                 shortcode,
-                "success"
+                "downloaded"
             )
         except instaloader.exceptions.BadResponseException as badresponseexception:
             log.error(
