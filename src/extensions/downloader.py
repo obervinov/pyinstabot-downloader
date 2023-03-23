@@ -35,9 +35,8 @@ class Downloader:
         Method for create a new instagram api client instance.
         
         :param auth: Dictionary with authorization parameters.
-            {'username': None, 'password': None, 'sessionfile': '.session'}
         :type auth: dict
-        :default auth: None                
+        :default auth: {'username': None, 'password': None, 'sessionfile': '.session'} | None                
         :param auth.username: Username for authentication in the instagram api.
         :type auth.username: str
         :default auth.username: None
@@ -47,18 +46,15 @@ class Downloader:
         :param auth.sessionfile: The path to the session file from the instagram session.
         :type auth.sessionfile: str
         :default auth.sessionfile: None
-
         :param settings: Dictionary with settings instaloader parameters.
-            {'savepath': 'tmp/', 'useragent': None}
         :type settings: dict
-        :default settings: None
+        :default settings: {'savepath': 'tmp/', 'useragent': None} | None
         :param settings.savepath: Local directory for saving downloaded content.
         :type settings.savepath: str
         :default settings.savepath: tmp/
         :param settings.useragent: User-Agent header.
         :type settings.useragent: str
         :default settings.useragent: None
-
         :param **kwargs: Passing additional parameters for downloader.
         :type **kwargs: dict
         :param kwargs.vault_client: Instance of vault for recording or reading download history.
@@ -71,7 +67,7 @@ class Downloader:
         self.instaloader_client = instaloader.Instaloader(
             quiet=True,
             user_agent=self.settings['useragent'],
-            dirname_pattern=f"{settings['savepath']}/{{profile}}/{{shortcode}}",
+            dirname_pattern=f"{settings['savepath']}/{{profile}}",
             filename_pattern='{profile}_{shortcode}_{filename}',
             download_pictures=True,
             download_videos=True,
@@ -190,7 +186,7 @@ class Downloader:
     def get_post_content(
         self,
         shortcode: str = None
-    ) -> str:
+    ) -> None:
         """
         Method for getting the content of a post from a specified Instagram account.
         
