@@ -150,7 +150,7 @@ class Downloader:
         username: str = None
     ) -> list:
         """
-        Method for getting a list posts of instagram account posts.
+        Method for getting a list posts of instagram account.
         
         :param username: Instagram username to get a list of posts.
         :type username: str
