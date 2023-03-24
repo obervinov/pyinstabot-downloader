@@ -52,6 +52,7 @@ uploader_client = Uploader(
 )
 
 
+
 # Decorators
 @telegram_bot.message_handler(commands=['start'])
 def start_message(message: telegram_client.telegram_types.Message = None) -> None:
@@ -62,8 +63,7 @@ def start_message(message: telegram_client.telegram_types.Message = None) -> Non
     :type message: telegram_client.telegram_types.Message
     :default message: None
     """
-    access_status = users_auth.check_permission(message.chat.id)
-    if access_status == "success":
+    if users_auth.check_permission(message.chat.id) == "allow":
         log.info(
             '[%s] sending startup message in chat %s',
             __name__,
@@ -76,11 +76,6 @@ def start_message(message: telegram_client.telegram_types.Message = None) -> Non
                 username=message.from_user.username
             )
         )
-    else:
-        log.error(
-            '403: Forbidden for username %s',
-            message.from_user.username
-        )
 
 
 @telegram_bot.message_handler(regexp=r"^https://(www\.)?instagram.com/(?!p/)(?!reel/).*$")
@@ -92,8 +87,7 @@ def get_posts_account(message):
     :type message: telegram_client.telegram_types.Message
     :default message: None
     """
-    access_status = users_auth.check_permission(message.chat.id)
-    if access_status == "success":
+    if users_auth.check_permission(message.chat.id) == "allow":
         account_name = message.text.split("/")[3].split("?")[0]
         log.info(
             '[%s] for url %s\n',
@@ -171,11 +165,6 @@ def get_posts_account(message):
             __name__,
             account_name
         )
-    else:
-        log.error(
-            '403: Forbidden for username %s',
-            message.from_user.username
-        )
 
 
 @telegram_bot.message_handler(regexp="^https://www.instagram.com/(p|reel)/.*")
@@ -187,8 +176,7 @@ def get_post_account(message):
     :type message: telegram_client.telegram_types.Message
     :default message: None
     """
-    access_status = users_auth.check_permission(message.chat.id)
-    if access_status == "success":
+    if users_auth.check_permission(message.chat.id) == "allow":
         shortcode = message.text.split("/")[4]
         log.info(
             '[%s] for url %s\n',
@@ -203,11 +191,6 @@ def get_post_account(message):
                 download_response=download_response,
                 upload_response=upload_response
             )
-        )
-    else:
-        log.error(
-            '403: Forbidden for username %s',
-            message.from_user.username
         )
 
 
