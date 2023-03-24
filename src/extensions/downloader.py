@@ -64,6 +64,16 @@ class Downloader:
         self.auth = auth
         self.settings = settings
         self.vault_client = kwargs.get('vault_client')
+
+        # If the authorization data is not defined, read their values from the vault
+        if (not self.auth['username']) or (self.auth['password']):
+            self.auth['username'] = self.vault_client.vault_read_secrets(
+                'configuration/instagram', 'username'
+            )
+            self.auth['password'] = self.vault_client.vault_read_secrets(
+                'configuration/instagram', 'password'
+            )
+
         self.instaloader_client = instaloader.Instaloader(
             quiet=True,
             user_agent=self.settings['useragent'],

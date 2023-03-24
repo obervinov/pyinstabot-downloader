@@ -220,9 +220,8 @@ def main():
     """
     while True:
         log.info(
-            'Starting telegram bot: %s\nHome path: %s\nVault: %s',
+            'Starting telegram bot: %s\nVault: %s',
             settings.bot_name,
-            settings.cwd,
             settings.vault_addr
         )
         telegram_bot.polling()

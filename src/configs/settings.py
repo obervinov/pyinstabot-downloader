@@ -3,8 +3,6 @@ This module contains the system settings for this python project.
 """
 import os
 
-cwd = os.getcwd()
-
 bot_name = os.environ.get(
     'BOT_NAME',
     'pyinstabot-downloader'
