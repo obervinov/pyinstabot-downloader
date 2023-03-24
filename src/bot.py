@@ -32,10 +32,6 @@ users_auth = UsersAuth(vault_client, settings.bot_name)
 # messages module
 messages = Messages()
 
-# instagram client
-instagram_user = vault_client.vault_read_secrets(f"{settings.bot_name}-config/config", "i_user")
-instagram_pass = vault_client.vault_read_secrets(f"{settings.bot_name}-config/config", "i_pass")
-
 downloader_client = Downloader(
     auth={
         'username': settings.instagram_user,
