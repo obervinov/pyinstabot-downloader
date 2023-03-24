@@ -108,6 +108,7 @@ class Uploader:
                         )
         if len(os.listdir(f'{self.temporary_dir}{dirname}')) == 0:
             os.rmdir(f'{self.temporary_dir}{dirname}')
+        return transfers
 
 
     def upload_file(

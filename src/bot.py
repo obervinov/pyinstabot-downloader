@@ -183,13 +183,16 @@ def get_post_account(message):
             __name__,
             message.text
         )
-        download_response = downloader_client.get_post_content(shortcode)
+        # download the contents of an instagram post to a temporary folder
+        dresponse = downloader_client.get_post_content(shortcode)
+        # upload the received content to the destination storage
+        ureposponse = uploader_client.prepare_content(shortcode)
         telegram_bot.send_message(
             message.chat.id,
             messages.render_template(
                 'post_stats_info',
-                download_response=download_response,
-                upload_response=upload_response
+                download_response=dresponse,
+                upload_response=ureposponse
             )
         )
 

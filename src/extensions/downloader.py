@@ -196,13 +196,20 @@ class Downloader:
     def get_post_content(
         self,
         shortcode: str = None
-    ) -> None:
+    ) -> dict:
         """
         Method for getting the content of a post from a specified Instagram account.
         
         :param shortcode: The shortcode is the ID of the record for downloading content.
         :type shortcode: str
         :default shortcode: None
+        
+        return {
+                'post': shortcode,
+                'owner': post.owner_username,
+                'type': post.typename,
+                'status': 'downloaded'
+        }
         """
         try:
             post = instaloader.Post.from_shortcode(
@@ -221,6 +228,12 @@ class Downloader:
                 shortcode,
                 "downloaded"
             )
+            return {
+                'post': shortcode,
+                'owner': post.owner_username,
+                'type': post.typename,
+                'status': 'downloaded'
+            }
         except instaloader.exceptions.BadResponseException as badresponseexception:
             log.error(
                 '[class.%s] bad response for post %s: %s',
@@ -235,6 +248,7 @@ class Downloader:
                 shortcode,
                 toomanyrequestsexception
             )
+        return None
 
 
     def get_download_info(
@@ -250,6 +264,13 @@ class Downloader:
         :param account_name: Instagram account name to check the uploaded history.
         :type account_name: str
         :default account_name: None
+
+        return {
+                "shortcodes_for_download": fresh_shortcodes,
+                "shortcodes_total_count": len(account_shortcodes),
+                "shortcodes_exist": len(history_shortcodes),
+                "shortcodes_exist_count": len(history_shortcodes.keys())
+        }
         """
         try:
             log.info(
