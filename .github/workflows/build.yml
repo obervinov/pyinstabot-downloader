@@ -3,9 +3,7 @@ name: Build release image
 on:
   push:
     branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
 
 jobs:
   build-release:
-    uses: obervinov/_templates/.github/workflows/docker.yml@fixed-docker-login
+    uses: obervinov/_templates/.github/workflows/docker.yml@v1.0.2

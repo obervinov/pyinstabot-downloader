@@ -111,6 +111,7 @@ def get_posts_account(message):
         )
         editable_message = False
         stats_message_id = None
+
         for shortcode in account_info['shortcodes_for_download']:
             # download the contents of an instagram post to a temporary folder
             downloader_client.get_post_content(shortcode)
@@ -149,6 +150,7 @@ def get_posts_account(message):
                 datetime.datetime.now().strftime('%H:%M:%S')
             )
             time.sleep(random.randrange(1, 3000, 10))
+
         # when all messages are uploaded send a response with statistics
         telegram_bot.edit_message_text(
             messages.render_template(
@@ -185,11 +187,12 @@ def get_post_account(message):
     :type message: telegram_client.telegram_types.Message
     :default message: None
     """
-    access_status = access_status = users_auth.check_permission(message.chat.id)
+    access_status = users_auth.check_permission(message.chat.id)
     if access_status == "success":
         shortcode = message.text.split("/")[4]
         log.info(
-            'Decorator.get_post_account() for url %s\n',
+            '[%s] for url %s\n',
+            __name__,
             message.text
         )
         download_response = downloader_client.get_post_content(shortcode)
