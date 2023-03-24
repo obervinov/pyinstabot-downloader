@@ -17,7 +17,7 @@ class Uploader:
         self,
         storage: dict = {
             'type': 'local'|'dropbox'|'meganz',
-            'temporary': 'tmp/'
+            'temporary': None
         } | None,
         **kwargs
     ) -> None:
@@ -30,13 +30,13 @@ class Uploader:
         :default auth: {'token': None} | {'username': None, 'password': None} | None
         :param storage: Dictionary with storage parameters.
         :type storage: dict
-        :default storage: {'type': 'local'|'dropbox'|'meganz', 'temporary': 'tmp/'} | None
+        :default storage: {'type': 'local'|'dropbox'|'meganz', 'temporary': None} | None
         :param storage.type: Type of storage for uploading content.
         :type storage.type: str
         :default storage.type: 'local'|'dropbox'|'meganz'
         :param storage.temporary: Type of storage for uploading content.
         :type storage.temporary: str
-        :default storage.temporary: 'tmp/'
+        :default storage.temporary: None
         :param **kwargs: Passing additional parameters for uploader.
         :type **kwargs: dict
         :param kwargs.vault_client: Instance of vault_client for reading authorization data.

@@ -5,7 +5,7 @@ and contains the main logic linking the extends modules.
 import time
 import random
 import datetime
-from logger import log, logging
+from logger import log
 from vault import VaultClient
 from users import UsersAuth
 from messages import Messages
@@ -32,29 +32,24 @@ users_auth = UsersAuth(vault_client, settings.bot_name)
 # messages module
 messages = Messages()
 
+# downloader client
 downloader_client = Downloader(
     auth={
-        'username': settings.instagram_user,
-        'password': settings.instagram_pass,
-        'sessionfile': settings.instagram_session,
+        'sessionfile': settings.instagram_session
     },
     settings={
-        'savepath': 'tmp/',
+        'savepath': settings.temporary_dir,
         'useragent': settings.instagram_useragent
     }
 )
 
+# uploader client
 uploader_client = Uploader(
-    settings.storage_type,
-    auth={
-        'username': None,
-        'password': None,
+    storage={
+        'type': settings.storage_type,
+        'temporary': settings.temporary_dir
     }
 )
-
-## Logger handler
-logging.getLogger('bot.bot').setLevel(logging.INFO)
-log.debug(globals())
 
 
 # Decorators

@@ -23,10 +23,10 @@ class Downloader:
         auth: dict = {
             'username': None,
             'password': None,
-            'sessionfile': '.session'
+            'sessionfile': None
         } | None,
         settings: dict = {
-            'savepath': 'tmp/',
+            'savepath': None,
             'useragent': None
         } | None,
         **kwargs
@@ -36,7 +36,7 @@ class Downloader:
         
         :param auth: Dictionary with authorization parameters.
         :type auth: dict
-        :default auth: {'username': None, 'password': None, 'sessionfile': '.session'} | None                
+        :default auth: {'username': None, 'password': None, 'sessionfile': None} | None                
         :param auth.username: Username for authentication in the instagram api.
         :type auth.username: str
         :default auth.username: None
@@ -48,10 +48,10 @@ class Downloader:
         :default auth.sessionfile: None
         :param settings: Dictionary with settings instaloader parameters.
         :type settings: dict
-        :default settings: {'savepath': 'tmp/', 'useragent': None} | None
+        :default settings: {'savepath': None', 'useragent': None} | None
         :param settings.savepath: Local directory for saving downloaded content.
         :type settings.savepath: str
-        :default settings.savepath: tmp/
+        :default settings.savepath: None
         :param settings.useragent: User-Agent header.
         :type settings.useragent: str
         :default settings.useragent: None
