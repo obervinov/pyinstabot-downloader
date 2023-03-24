@@ -96,7 +96,8 @@ def get_posts_account(message):
     if access_status == "success":
         account_name = message.text.split("/")[3].split("?")[0]
         log.info(
-            'Decorator.get_posts_account() for url %s\n',
+            '[%s] for url %s\n',
+            __name__,
             message.text
         )
         account_info = downloader_client.get_download_info(account_name)
@@ -105,26 +106,27 @@ def get_posts_account(message):
             messages.render_template(
                 'account_info',
                 account_name=account_name,
-                shortcodes_count=account_info['shortcodes_count']
+                shortcodes_count=account_info['shortcodes_total_count']
             )
         )
         editable_message = False
         stats_message_id = None
         for shortcode in account_info['shortcodes_for_download']:
+            # download the contents of an instagram post to a temporary folder
             downloader_client.get_post_content(shortcode)
+            # upload the received content to the destination storage
             uploader_client.prepare_content(shortcode)
+            # render progressbar
             progressbar = messages.render_progressbar(
-                account_info['shortcodes_count'],
-                account_info['shortcodes_exist']
+                account_info['shortcodes_total_count'],
+                account_info['shortcodes_exist_count']
             )
-            posts_downloaded = len(
-                vault_client.vault_read_secrets(f"history/{account_name}").keys()
-            )
+            account_info['shortcodes_exist_count'] = account_info['shortcodes_exist_count'] + 1
             stats_response = messages.render_template(
                 'account_stats_progress',
                 account_name=account_name,
-                posts_downloaded=posts_downloaded,
-                posts_count=account_info['shortcodes_count'],
+                posts_downloaded=account_info['shortcodes_exist_count'],
+                posts_count=account_info['shortcodes_total_count'],
                 progressbar=progressbar
             )
             # check whether a message with stats has already been sent and whether we can edit it
@@ -147,15 +149,16 @@ def get_posts_account(message):
                 datetime.datetime.now().strftime('%H:%M:%S')
             )
             time.sleep(random.randrange(1, 3000, 10))
+        # when all messages are uploaded send a response with statistics
         telegram_bot.edit_message_text(
             messages.render_template(
                 'account_stats_done',
-                posts_downloaded=posts_downloaded,
-                posts_count=account_info['shortcodes_count'],
+                posts_downloaded=account_info['shortcodes_exist_count'],
+                posts_count=account_info['shortcodes_total_count'],
                 account_name=account_name,
                 progressbar=messages.render_progressbar(
-                    account_info['shortcodes_count'],
-                    posts_downloaded
+                    account_info['shortcodes_total_count'],
+                    account_info['shortcodes_exist_count']
                 )
             ),
             message.chat.id,

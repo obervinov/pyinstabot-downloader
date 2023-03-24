@@ -256,11 +256,11 @@ class Downloader:
                 '[class.%s] excluding shortcodes that are already dowloaded...',
                 __class__.__name__
             )
-            # List of shortcodes received from instagram
+            # account_shortcodes - list of shortcodes received from instagram
             account_shortcodes = self.get_posts()
-            # A list of shortcodes that have not been downloaded yet and will need to be downloaded again
+            # fresh_shortcodes - list of shortcodes that have not been downloaded yet
             fresh_shortcodes = []
-            # A list of shortcodes that have already been previously uploaded and their history is saved
+            # history_shortcodes - list of shortcodes that have already been previously uploaded
             history_shortcodes = self.vault_client.vault_read_secrets(
                 f'history/{account_name}'
             )
@@ -278,8 +278,9 @@ class Downloader:
             )
             return {
                 "shortcodes_for_download": fresh_shortcodes,
-                "shortcodes_count": len(account_shortcodes),
-                "shortcodes_exist": len(history_shortcodes)
+                "shortcodes_total_count": len(account_shortcodes),
+                "shortcodes_exist": len(history_shortcodes),
+                "shortcodes_exist_count": len(history_shortcodes.keys())
             }
         except instaloader.exceptions.BadResponseException as badresponseexception:
             log.error(
