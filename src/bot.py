@@ -92,7 +92,7 @@ def get_posts_account(message):
     :type message: telegram_client.telegram_types.Message
     :default message: None
     """
-    access_status = access_status = users_auth.check_permission(message.chat.id)
+    access_status = users_auth.check_permission(message.chat.id)
     if access_status == "success":
         account_name = message.text.split("/")[3].split("?")[0]
         log.info(
