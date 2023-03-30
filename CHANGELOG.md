@@ -4,9 +4,9 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 
 
 
-## v1.1.0 - 2023-03-??
+## v2.0.0 - 2023-03-??
 ### What's Changed
-**Full Changelog**: https://github.com/obervinov/pyinstabot-downloader/compare/v1.0.1...v1.1.0 by @obervinov in https://github.com/obervinov/pyinstabot-downloader/pull/5
+**Full Changelog**: https://github.com/obervinov/pyinstabot-downloader/compare/v1.0.1...v2.0.0 by @obervinov in https://github.com/obervinov/pyinstabot-downloader/pull/5
 #### 🐛 Bug Fixes
 * updated the code in accordance with the recommendations of **flake8** and **pylint**
 * 

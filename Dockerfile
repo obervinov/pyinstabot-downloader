@@ -5,24 +5,20 @@ ARG PROJECT_NAME
 
 ### Labels ###
 LABEL org.opencontainers.image.source https://github.com/obervinov/${PROJECT_NAME}
+LABEL org.opencontainers.image.description 'This project is a telegram bot that allows you to backup content from your Instagram profile to the Dropbox, Mega.io clouds or to the local filesystem.'
 
 ### Environment variables ###
-ENV PATH=/home/python_user/.local/bin:$PATH
-
-### Install packages ###
-RUN apk add git --no-cache
+ENV PATH=/home/${PROJECT_NAME}/.local/bin:$PATH
 
 ### Preparing user and dirs ###
-RUN adduser -D -h /home/python_user -s /bin/sh python_user && \
-    mkdir -p /home/python_user && \
-    mkdir -p /var/log/${PROJECT_NAME} && \
-    mkdir -p /home/python_user/${PROJECT_NAME} && \
-    chown python_user. /home/python_user -R && \
-    chown python_user. /var/log/${PROJECT_NAME}
+RUN adduser -D -h /home/${PROJECT_NAME} -s /bin/sh ${PROJECT_NAME} && \
+    mkdir -p /home/${PROJECT_NAME} && \
+    mkdir -p /home/${PROJECT_NAME}/app && \
+    chown ${PROJECT_NAME}. /home/${PROJECT_NAME}
 
 ### Switching context ###
-USER python_user
-WORKDIR /home/python_user/${PROJECT_NAME}
+USER ${PROJECT_NAME}
+WORKDIR /home/${PROJECT_NAME}/app
 
 ### Copy source code ###
 COPY requirements.txt ./

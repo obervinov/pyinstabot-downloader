@@ -10,9 +10,9 @@ from vault import VaultClient
 from users import UsersAuth
 from messages import Messages
 from telegram import TelegramBot
-from configs import settings
 from extensions.downloader import Downloader
 from extensions.uploader import Uploader
+from configs import settings
 
 # vault client
 vault_client = VaultClient(
@@ -23,11 +23,11 @@ vault_client = VaultClient(
 )
 
 # telegram client
-telegram_client = TelegramBot(settings.bot_name, vault_client)
+telegram_client = TelegramBot(vault_client)
 telegram_bot = telegram_client.telegram_bot
 
 # user auth module
-users_auth = UsersAuth(vault_client, settings.bot_name)
+users_auth = UsersAuth(vault_client)
 
 # messages module
 messages = Messages()
@@ -63,7 +63,7 @@ def start_message(message: telegram_client.telegram_types.Message = None) -> Non
     :type message: telegram_client.telegram_types.Message
     :default message: None
     """
-    if users_auth.check_permission(message.chat.id) == "allow":
+    if users_auth.check_permissions(message.chat.id) == "allow":
         log.info(
             '[%s] sending startup message in chat %s',
             __name__,
@@ -87,7 +87,7 @@ def get_posts_account(message):
     :type message: telegram_client.telegram_types.Message
     :default message: None
     """
-    if users_auth.check_permission(message.chat.id) == "allow":
+    if users_auth.check_permissions(message.chat.id) == "allow":
         account_name = message.text.split("/")[3].split("?")[0]
         log.info(
             '[%s] for url %s\n',
@@ -176,7 +176,7 @@ def get_post_account(message):
     :type message: telegram_client.telegram_types.Message
     :default message: None
     """
-    if users_auth.check_permission(message.chat.id) == "allow":
+    if users_auth.check_permissions(message.chat.id) == "allow":
         shortcode = message.text.split("/")[4]
         log.info(
             '[%s] for url %s\n',
