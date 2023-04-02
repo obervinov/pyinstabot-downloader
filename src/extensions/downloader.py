@@ -203,8 +203,8 @@ class Downloader:
         :param shortcode: The shortcode is the ID of the record for downloading content.
         :type shortcode: str
         :default shortcode: None
-        
-        return {
+        return
+        {
                 'post': shortcode,
                 'owner': post.owner_username,
                 'type': post.typename,
@@ -264,8 +264,8 @@ class Downloader:
         :param account_name: Instagram account name to check the uploaded history.
         :type account_name: str
         :default account_name: None
-
-        return {
+        return
+        {
                 "shortcodes_for_download": fresh_shortcodes,
                 "shortcodes_total_count": len(account_shortcodes),
                 "shortcodes_exist": len(history_shortcodes),

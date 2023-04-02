@@ -16,7 +16,7 @@ class Uploader:
     def __init__(
         self,
         storage: dict = {
-            'type': 'local'|'dropbox'|'meganz',
+            'type': 'local'|'dropbox',
             'temporary': None
         } | None,
         **kwargs
@@ -30,10 +30,10 @@ class Uploader:
         :default auth: {'token': None} | {'username': None, 'password': None} | None
         :param storage: Dictionary with storage parameters.
         :type storage: dict
-        :default storage: {'type': 'local'|'dropbox'|'meganz', 'temporary': None} | None
+        :default storage: {'type': 'local'|'dropbox', 'temporary': None} | None
         :param storage.type: Type of storage for uploading content.
         :type storage.type: str
-        :default storage.type: 'local'|'dropbox'|'meganz'
+        :default storage.type: 'local'|'dropbox'
         :param storage.temporary: Type of storage for uploading content.
         :type storage.temporary: str
         :default storage.temporary: None
@@ -52,20 +52,14 @@ class Uploader:
             storage['type']
         )
         if self.storage['type'] == 'dropbox':
-            # more: https://developers.dropbox.com/ru-ru/oauth-guide
             token = self.vault_client.vault_read_secrets('configuration/dropbox', 'token')
             try:
                 dropbox_session = dropbox.create_session(
-                    max_connections=3,
-                    proxies=None
+                    max_connections=3
                 )
                 self.dropbox_client = dropbox.Dropbox(
                     oauth2_access_token=token,
-                    max_retries_on_error=3,
-                    max_retries_on_rate_limit=None,
-                    user_agent=None,
                     session=dropbox_session,
-                    headers=None,
                     timeout=60
                 )
             except dropbox.exceptions.DropboxException as dropboxexception:
@@ -86,6 +80,20 @@ class Uploader:
         :param dirname: Name of the directory for receiving media files.
         :type dirname: str
         :default dirname: None
+        return
+        'uploaded'   - this means that the file has been successfully uploaded to the cloud
+        'None'       - this means that an error has occurred the file is not uploaded to the cloud
+        'save_local' - this means that the file must remain in the local (temporary directory)
+                       and it is not required to perform any actions with it
+        {
+            '/root/path/shortcode/file1.jpeg': 'uploaded',
+            '/root/path/shortcode/file2.jpeg': None
+        }
+        or
+        {
+            '/root/path/shortcode/file1.jpeg': 'save_local',
+            '/root/path/shortcode/file2.jpeg': 'save_local'
+        }
         """
         log.info(
             '[class.%s] preparing media files for transfer to the target storage -> %s ',
@@ -131,11 +139,14 @@ class Uploader:
             '[class.%s] starting upload file %s to %s//:%s',
             __class__.__name__,
             source,
-            self.storage,
+            self.storage['type'],
             destination
         )
-        if self.storage == 'dropbox':
-            # more https://www.dropbox.com/developers/documentation/python
+
+        if self.storage['type'] == "local":
+            return "save_local"
+
+        if self.storage['type'] == 'dropbox':
             with open(source, 'rb') as file_transfer:
                 try:
                     response = self.dropbox_client.files_upload(
@@ -143,18 +154,16 @@ class Uploader:
                         f'/{destination}/{source.split("/")[-1]}'
                     )
                     log.info(
-                        '[class.%s] %s successful transfering %s: %s bytes',
+                        '[class.%s] %s successful transfering',
                         __class__.__name__,
-                        response.name,
-                        response.id,
-                        response.size
+                        response.name
                     )
+                    return "uploaded"
                 except dropbox.exceptions.DropboxException as dropboxexception:
                     log.error(
                         '[class.%s] error when uploading a file via the dropbox api: %s',
                         __class__.__name__,
                         dropboxexception
                     )
-                    return None
             file_transfer.close()
-        return "uploaded"
+        return None
