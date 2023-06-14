@@ -10,8 +10,6 @@ on:
 jobs:
   pylint:
     uses: obervinov/_templates/.github/workflows/test.pylint.yml@v1.0.4
-  verify-package:
-    uses: obervinov/_templates/.github/workflows/verify.package.yml@v1.0.4
   verify-changelog:
     uses: obervinov/_templates/.github/workflows/verify.changelog.yml@v1.0.4
   pytest:
