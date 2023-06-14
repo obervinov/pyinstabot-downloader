@@ -31,17 +31,17 @@ class Uploader:
         :param storage: Dictionary with storage parameters.
         :type storage: dict
         :default storage: {'type': 'local'|'dropbox', 'temporary': None} | None
-        :param storage.type: Type of storage for uploading content.
-        :type storage.type: str
-        :default storage.type: 'local'|'dropbox'
-        :param storage.temporary: Type of storage for uploading content.
-        :type storage.temporary: str
-        :default storage.temporary: None
+            :param storage.type: Type of storage for uploading content.
+            :type storage.type: str
+            :default storage.type: 'local'|'dropbox'
+            :param storage.temporary: Type of storage for uploading content.
+            :type storage.temporary: str
+            :default storage.temporary: None
         :param **kwargs: Passing additional parameters for uploader.
         :type **kwargs: dict
-        :param kwargs.vault_client: Instance of vault_client for reading authorization data.
-        :type kwargs.vault_client: object
-        :default kwargs.vault_client: None
+            :param kwargs.vault_client: Instance of vault_client for reading authorization data.
+            :type kwargs.vault_client: object
+            :default kwargs.vault_client: None
         """
         self.storage = storage
         self.temporary_dir = f"{os.getcwd()}/{self.storage['temporary']}"

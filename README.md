@@ -48,15 +48,17 @@ The vault is used for:
 │   └── instagram-profile.png
 ├── docker-compose.yml
 ├── requirements.txt
-└── src
-    ├── bot.py
-    ├── configs
-    │   ├── messages.json
-    │   └── settings.py
-    └── extensions
-        ├── __init__.py
-        ├── downloader.py
-        └── uploader.py
+├── src
+│   ├── bot.py
+│   ├── configs
+│   │   ├── messages.json
+│   │   └── settings.py
+│   └── extensions
+│       ├── __init__.py
+│       ├── downloader.py
+│       └── uploader.py
+└── vault
+    └── vault-policy.htl
 ```
 
 
@@ -101,71 +103,17 @@ If the target storage is a **local file system**, then any further steps for pro
 ### Vault as a persistent storage of the configuration and history of the bot
  - Starting and basic configuration of **vault**
 When using **docker-compose** a file
- ```bash
-
- ```
+```bash
+# start container with vault
+docker-compose up -d vault-server
+# initialization vault instance
+docker exec -t vault-server vault operator init
+```
 
 
 
 
 ## <img src="https://github.com/obervinov/_templates/blob/main/icons/docker.png" width="25" title="docker"> How to run with docker-compose
-1. Build and launch docker container with vault-server
-```sh
-docker-compose up -d vault-server
-```
-
-2. Configure the vault-server
-```sh
-# Go to the interactive shell of the vault container
-docker exec -ti vault-server sh
-
-# Init vault server
-vault operator init
-
-# Login in vault-server with root token
-# ${VAULT_ROOT_TOKEN} - Root token for vault login. Substitute your own value instead of a variable. The root token was received in the output at the previous step
-vault login ${VAULT_ROOT_TOKEN} -address=http://0.0.0.0:8200
-
-# Enable secret engine - kv version 2
-vault secrets enable -version=2 -path=secretv2 kv
-
-# Enable auth with approle method
-vault auth enable approle
-
-### ${BOT_NAME} - your bot's name. Substitute your own value instead of a variable. For example: "pyinstabot-downloader"
-
-# Write policy rules to file in container
-tee ${BOT_NAME}-policy.htl <<EOF
-path "secretv2/config" {
-  capabilities = ["create", "read", "update", "list"]
-}
-path "secretv2/data/${BOT_NAME}-config/config" {
-  capabilities = ["read", "list"]
-}
-path "secretv2/data/${BOT_NAME}-data/*" {
-  capabilities = ["create", "read", "update", "list"]
-}
-path "secretv2/metadata/${BOT_NAME}-data/*" {
-  capabilities = ["read", "list"]
-}
-path "secretv2/data/${BOT_NAME}-login-events/*" {
-  capabilities = ["create", "read", "update"]
-}
-EOF
-
-# Create policy for approle
-vault policy write ${BOT_NAME}-policy ${BOT_NAME}-policy.htl
-
-# Create approle for bot
-vault write auth/approle/role/${BOT_NAME}-approle role_name="${BOT_NAME}-approle" policies="${BOT_NAME}-policy" secret_id_num_uses=0 token_num_uses=0 token_type=default token_ttl=720h token_policies="${BOT_NAME}-policy" bind_secret_id=true token_no_default_policy=true
-
-# Create secret-id by approle (the secret-id received after executing the command will be required for the bot to work)
-vault write auth/approle/role/${BOT_NAME}-approle/secret-id role_name="${BOT_NAME}-approle" metadata="bot=${BOT_NAME}"
-
-# Read role-id (the role-id received after executing the command will be required for the bot to work)
-vault read auth/approle/role/${BOT_NAME}-approle/role-id
-```
-
 3. Load the config for the bot (in the interactive shell of the vault container)
 ```sh
 # Upload the bot configuration containing sensitive data to the vault

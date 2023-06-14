@@ -37,29 +37,29 @@ class Downloader:
         :param auth: Dictionary with authorization parameters.
         :type auth: dict
         :default auth: {'username': None, 'password': None, 'sessionfile': None} | None                
-        :param auth.username: Username for authentication in the instagram api.
-        :type auth.username: str
-        :default auth.username: None
-        :param auth.password: Password for authentication in the instagram api.
-        :type auth.password: str
-        :default auth.password: None
-        :param auth.sessionfile: The path to the session file from the instagram session.
-        :type auth.sessionfile: str
-        :default auth.sessionfile: None
+            :param auth.username: Username for authentication in the instagram api.
+            :type auth.username: str
+            :default auth.username: None
+            :param auth.password: Password for authentication in the instagram api.
+            :type auth.password: str
+            :default auth.password: None
+            :param auth.sessionfile: The path to the session file from the instagram session.
+            :type auth.sessionfile: str
+            :default auth.sessionfile: None
         :param settings: Dictionary with settings instaloader parameters.
         :type settings: dict
         :default settings: {'savepath': None', 'useragent': None} | None
-        :param settings.savepath: Local directory for saving downloaded content.
-        :type settings.savepath: str
-        :default settings.savepath: None
-        :param settings.useragent: User-Agent header.
-        :type settings.useragent: str
-        :default settings.useragent: None
+            :param settings.savepath: Local directory for saving downloaded content.
+            :type settings.savepath: str
+            :default settings.savepath: None
+            :param settings.useragent: User-Agent header.
+            :type settings.useragent: str
+            :default settings.useragent: None
         :param **kwargs: Passing additional parameters for downloader.
         :type **kwargs: dict
-        :param kwargs.vault_client: Instance of vault for recording or reading download history.
-        :type kwargs.vault_client: object
-        :default kwargs.vault_client: None
+            :param kwargs.vault_client: Instance of vault for recording or reading download history.
+            :type kwargs.vault_client: object
+            :default kwargs.vault_client: None
         """
         self.auth = auth
         self.settings = settings

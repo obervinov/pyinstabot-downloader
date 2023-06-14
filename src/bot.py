@@ -6,10 +6,10 @@ import time
 import random
 import datetime
 from logger import log
-from vault import VaultClient
 from users import UsersAuth
 from messages import Messages
 from telegram import TelegramBot
+from vault import VaultClient
 from extensions.downloader import Downloader
 from extensions.uploader import Uploader
 from configs import settings

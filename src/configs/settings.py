@@ -19,18 +19,6 @@ temporary_dir = os.environ.get(
     'TEMPORARY_DIR',
     'tmp/'
 )
-vault_addr = os.environ.get(
-    'VAULT_ADDR',
-    'http://vault-server:8200'
-)
-vault_approle_id = os.environ.get(
-    'VAULT_APPROLE_ID',
-    None
-)
-vault_approle_secret_id = os.environ.get(
-    'VAULT_APPROLE_SECRET_ID',
-    None
-)
 instagram_session = os.environ.get(
     'INSTAGRAM_SESSION',
     '.session'
