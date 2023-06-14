@@ -4,7 +4,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 
 
 
-## v2.0.0 - 2023-03-??
+## v2.0.0 - 2023-06-14
 ### What's Changed
 **Full Changelog**: https://github.com/obervinov/pyinstabot-downloader/compare/v1.0.1...v2.0.0 by @obervinov in https://github.com/obervinov/pyinstabot-downloader/pull/6
 #### 🐛 Bug Fixes
