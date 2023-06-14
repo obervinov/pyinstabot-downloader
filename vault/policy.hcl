@@ -4,15 +4,12 @@ path "auth/token/lookup" {
 path "auth/token/renew" {
   capabilities = ["update"]
 }
-path "auth/token/revoke" {
-  capabilities = ["update"]
-}
-path "pyinstabot-downloaderconfiguration/data/*" {
+path "pyinstabot-downloader/configuration/data/*" {
   capabilities = ["read", "list"]
 }
-path "pyinstabot-downloaderhistory/data/*" {
+path "pyinstabot-downloader/history/data/*" {
   capabilities = ["create", "read", "list", "update"]
 }
-path "pyinstabot-downloaderevents/login/*" {
+path "pyinstabot-downloader/events/login/*" {
   capabilities = ["read", "list", "create", "update"]
 }
