@@ -6,4 +6,4 @@ on:
 
 jobs:
   build-release:
-    uses: obervinov/_templates/.github/workflows/docker.yml@v1.0.2
+    uses: obervinov/_templates/.github/workflows/build.docker.yml@v1.0.4
