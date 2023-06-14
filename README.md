@@ -12,7 +12,10 @@
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/instaloader?style=for-the-badge)
 
 
-
+## <img src="https://github.com/obervinov/_templates/blob/main/icons/github-actions.png" width="25" title="github-actions"> GitHub Actions
+| Name  | Version |
+| ------------------------ | ----------- |
+| GitHub Actions Templates | [v1.0.4](https://github.com/obervinov/_templates/tree/v1.0.4) |
 
 
 ## <img src="https://github.com/obervinov/_templates/blob/main/icons/book.png" width="25" title="about"> About this project
@@ -37,7 +40,6 @@ The vault is used for:
 
 ## <img src="https://github.com/obervinov/_templates/blob/main/icons/stack.png" width="25" title="stack"> Repository map
 ```sh
-.
 ├── CHANGELOG.md
 ├── Dockerfile
 ├── LICENSE
@@ -58,7 +60,7 @@ The vault is used for:
 │       ├── downloader.py
 │       └── uploader.py
 └── vault
-    └── vault-policy.htl
+    └── policy.hcl
 ```
 
 
