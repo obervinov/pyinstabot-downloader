@@ -15,25 +15,26 @@ from tools.uploader import Uploader
 from configs import settings
 
 # vault client
-vault_client = VaultClient(
-    addr=settings.vault_addr,
-    approle_id=settings.vault_approle_id,
-    secret_id=settings.vault_approle_secret_id,
-    mount_point=settings.bot_name
+vault = VaultClient(
+    name=settings.bot_name
 )
 
 # telegram client
-telegram_client = TelegramBot(vault_client)
+telegram_client = TelegramBot(
+    vault
+)
 telegram_bot = telegram_client.telegram_bot
 
 # user auth module
-users_auth = UsersAuth(vault_client)
+users_auth = UsersAuth(
+    vault
+)
 
 # messages module
 messages = Messages()
 
 # downloader client
-downloader_client = Downloader(
+downloader = Downloader(
     auth={
         'sessionfile': settings.instagram_session
     },
@@ -44,7 +45,7 @@ downloader_client = Downloader(
 )
 
 # uploader client
-uploader_client = Uploader(
+uploader = Uploader(
     storage={
         'type': settings.storage_type,
         'temporary': settings.temporary_dir
@@ -52,16 +53,19 @@ uploader_client = Uploader(
 )
 
 
-
 # Decorators
 @telegram_bot.message_handler(commands=['start'])
-def start_message(message: telegram_client.telegram_types.Message = None) -> None:
+def start_message(
+    message: telegram_client.telegram_types.Message = None
+) -> None:
     """
-    Function for intercepting the satrt command sent to the bot.
+    Function for intercepting the start command sent to the bot.
 
-    :param message: The message received by the bot.
-    :type message: telegram_client.telegram_types.Message
-    :default message: None
+    Args:
+        :param message (telegram_client.telegram_types.Message): the message received by the bot.
+
+    Returns:
+        None
     """
     if users_auth.check_permissions(message.chat.id) == "allow":
         log.info(
@@ -79,13 +83,17 @@ def start_message(message: telegram_client.telegram_types.Message = None) -> Non
 
 
 @telegram_bot.message_handler(regexp=r"^https://(www\.)?instagram.com/(?!p/)(?!reel/).*$")
-def get_posts_account(message):
+def get_posts_account(
+     message: telegram_client.telegram_types.Message = None
+) -> None:
     """
     A function for intercepting links sent to the bot to the Instagram profile.
 
-    :param message: The message received by the bot.
-    :type message: telegram_client.telegram_types.Message
-    :default message: None
+    Args:
+        :param message (telegram_client.telegram_types.Message): the message received by the bot.
+
+    Returns:
+        None
     """
     if users_auth.check_permissions(message.chat.id) == "allow":
         account_name = message.text.split("/")[3].split("?")[0]
@@ -94,7 +102,7 @@ def get_posts_account(message):
             __name__,
             message.text
         )
-        account_info = downloader_client.get_download_info(account_name)
+        account_info = downloader.get_download_info(account_name)
         telegram_bot.send_message(
             message.chat.id,
             messages.render_template(
@@ -108,9 +116,9 @@ def get_posts_account(message):
 
         for shortcode in account_info['shortcodes_for_download']:
             # download the contents of an instagram post to a temporary folder
-            downloader_client.get_post_content(shortcode)
+            downloader.get_post_content(shortcode)
             # upload the received content to the destination storage
-            uploader_client.prepare_content(shortcode)
+            uploader.prepare_content(shortcode)
             # render progressbar
             progressbar = messages.render_progressbar(
                 account_info['shortcodes_total_count'],
@@ -168,13 +176,17 @@ def get_posts_account(message):
 
 
 @telegram_bot.message_handler(regexp="^https://www.instagram.com/(p|reel)/.*")
-def get_post_account(message):
+def get_post_account(
+     message: telegram_client.telegram_types.Message = None
+) -> None:
     """
     A function for intercepting links sent by a bot to an Instagram post.
 
-    :param message: The message received by the bot.
-    :type message: telegram_client.telegram_types.Message
-    :default message: None
+    Args:
+        :param message (telegram_client.telegram_types.Message): the message received by the bot.
+
+    Returns:
+        None
     """
     if users_auth.check_permissions(message.chat.id) == "allow":
         shortcode = message.text.split("/")[4]
@@ -184,9 +196,9 @@ def get_post_account(message):
             message.text
         )
         # download the contents of an instagram post to a temporary folder
-        dresponse = downloader_client.get_post_content(shortcode)
+        dresponse = downloader.get_post_content(shortcode)
         # upload the received content to the destination storage
-        ureposponse = uploader_client.prepare_content(shortcode)
+        ureposponse = uploader.prepare_content(shortcode)
         telegram_bot.send_message(
             message.chat.id,
             messages.render_template(

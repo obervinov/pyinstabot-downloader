@@ -27,3 +27,8 @@ instagram_useragent = os.environ.get(
     'INSTAGRAM_USERAGENT',
     None
 )
+# For logging vault addr
+vault_addr = os.environ.get(
+    'VAULT_ADDR',
+    None
+)

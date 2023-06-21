@@ -15,44 +15,41 @@ class Uploader:
 
     def __init__(
         self,
-        storage: dict = {
-            'type': 'local'|'dropbox',
-            'temporary': None
-        } | None,
-        **kwargs
+        storage: dict = None,
+        vault: object = None
     ) -> None:
         """
         A Method creates an instance with a connection
         to the target storage for uploading local media content.
 
-        :param auth: Dictionary with authorization parameters.
-        :type auth: dict
-        :default auth: {'token': None} | {'username': None, 'password': None} | None
-        :param storage: Dictionary with storage parameters.
-        :type storage: dict
-        :default storage: {'type': 'local'|'dropbox', 'temporary': None} | None
-            :param storage.type: Type of storage for uploading content.
-            :type storage.type: str
-            :default storage.type: 'local'|'dropbox'
-            :param storage.temporary: Type of storage for uploading content.
-            :type storage.temporary: str
-            :default storage.temporary: None
-        :param **kwargs: Passing additional parameters for uploader.
-        :type **kwargs: dict
-            :param kwargs.vault_client: Instance of vault_client for reading authorization data.
-            :type kwargs.vault_client: object
-            :default kwargs.vault_client: None
+        Args:
+            :param storage (dict): dictionary with storage parameters.
+                :param type (str): type of storage for uploading content 'local' or 'dropbox'
+                :param temporary (str): type of storage for uploading content.
+            :param vault (object): instance of vault for reading authorization data.
+
+        Returns:
+            None
+
+        Examples:
+            >>> uploader = Uploader(
+                    storage={
+                        'type': settings.storage_type,
+                        'temporary': settings.temporary_dir
+                    },
+                    vault=vault
+                )
         """
         self.storage = storage
         self.temporary_dir = f"{os.getcwd()}/{self.storage['temporary']}"
-        self.vault_client = kwargs.get('vault_client')
+        self.vault = vault
         log.info(
             '[class.%s] uploader instance init with %s storage type',
             __class__.__name__,
             storage['type']
         )
         if self.storage['type'] == 'dropbox':
-            token = self.vault_client.vault_read_secrets('configuration/dropbox', 'token')
+            token = self.vault.vault_read_secrets('configuration/dropbox', 'token')
             try:
                 dropbox_session = dropbox.create_session(
                     max_connections=3
@@ -69,7 +66,6 @@ class Uploader:
                     dropboxexception
                 )
 
-
     def prepare_content(
         self,
         dirname: str = None
@@ -77,23 +73,23 @@ class Uploader:
         """
         Method of preparing media files for transfer to the target storage (cloud or local).
 
-        :param dirname: Name of the directory for receiving media files.
-        :type dirname: str
-        :default dirname: None
-        return
-        'uploaded'   - this means that the file has been successfully uploaded to the cloud
-        'None'       - this means that an error has occurred the file is not uploaded to the cloud
-        'save_local' - this means that the file must remain in the local (temporary directory)
-                       and it is not required to perform any actions with it
-        {
-            '/root/path/shortcode/file1.jpeg': 'uploaded',
-            '/root/path/shortcode/file2.jpeg': None
-        }
-        or
-        {
-            '/root/path/shortcode/file1.jpeg': 'save_local',
-            '/root/path/shortcode/file2.jpeg': 'save_local'
-        }
+        Args:
+            :param dirname (str): name of the directory for receiving media files.
+
+        Returns:
+            (dict) {
+                    '/root/path/shortcode/file1.jpeg': 'uploaded',
+                    '/root/path/shortcode/file2.jpeg': None
+                }
+
+            (values descriptions)
+                (str) 'uploaded'
+                    (this means that the file has been successfully uploaded to the cloud)
+                (str) 'None'
+                    (this means that an error has occurred the file is not uploaded to the cloud)
+                (str) 'saved_local'
+                    (this means that the file must remain in the local (temporary directory))
+                    (and it is not required to perform any actions with it)
         """
         log.info(
             '[class.%s] preparing media files for transfer to the target storage -> %s ',
@@ -118,22 +114,23 @@ class Uploader:
             os.rmdir(f'{self.temporary_dir}{dirname}')
         return transfers
 
-
     def upload_file(
         self,
         source: str = None,
         destination: str = None
-    ) -> str:
+    ) -> str | None:
         """
         The method of uploading the contents of the target directory
         to the cloud or local directory.
+
+        Args:
+            :param source (str): the path to the local file to transfer to the target storage.
+            :param destination (str): the name of the target directory in the destination storage.
         
-        :param source: The path to the local file to transfer to the target storage.
-        :type source: str
-        :default source: None
-        :param destination: The name of the target directory in the destination storage.
-        :type destination: str
-        :default destination: None
+        Returns:
+            (str) 'uploaded'
+                or
+            None
         """
         log.info(
             '[class.%s] starting upload file %s to %s//:%s',
@@ -144,7 +141,7 @@ class Uploader:
         )
 
         if self.storage['type'] == "local":
-            return "save_local"
+            return "saved_local"
 
         if self.storage['type'] == 'dropbox':
             with open(source, 'rb') as file_transfer:
