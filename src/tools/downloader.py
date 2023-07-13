@@ -57,7 +57,7 @@ class Downloader:
         self.vault = vault
 
         # If the authorization data is not defined, read their values from the vault
-        if (not self.auth['username']) or (self.auth['password']):
+        if not self.auth.get('username') or not self.auth.get('password'):
             self.auth['username'] = self.vault.read_secret(
                 'configuration/instagram',
                 'username'
@@ -82,7 +82,7 @@ class Downloader:
             check_resume_bbd=True
         )
         try:
-            if os.path.exists(self.settings['sessionfile']):
+            if os.path.exists(self.auth.get('sessionfile')):
                 self.instaloader.load_session_from_file(
                     self.auth['username'],
                     self.auth['sessionfile']

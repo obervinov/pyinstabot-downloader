@@ -11,6 +11,10 @@ bot_name = os.environ.get(
     'BOT_NAME',
     'pyinstabot-downloader'
 )
+messages_config = os.environ.get(
+    'MESSAGES_CONFIG',
+    'src/configs/messages.json'
+)
 storage_type = os.environ.get(
     'STORAGE_TYPE',
     'local'

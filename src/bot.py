@@ -31,7 +31,9 @@ users_auth = UsersAuth(
 )
 
 # messages module
-messages = Messages()
+messages = Messages(
+    config_path=settings.messages_config
+)
 
 # downloader client
 downloader = Downloader(
@@ -41,7 +43,8 @@ downloader = Downloader(
     settings={
         'savepath': settings.temporary_dir,
         'useragent': settings.instagram_useragent
-    }
+    },
+    vault=vault
 )
 
 # uploader client

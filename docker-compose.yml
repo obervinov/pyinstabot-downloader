@@ -10,6 +10,8 @@ services:
           - VAULT_PORT=8200
         volumes:
           - ./vault/data:/vault/data
+        ports:
+          - "0.0.0.0:8200:8200"
         cap_add:
           - IPC_LOCK
 

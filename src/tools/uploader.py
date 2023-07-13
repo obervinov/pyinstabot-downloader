@@ -82,12 +82,12 @@ class Uploader:
                     '/root/path/shortcode/file2.jpeg': None
                 }
 
-            (values descriptions)
+            (explanation of values)
                 (str) 'uploaded'
                     (this means that the file has been successfully uploaded to the cloud)
                 (str) 'None'
                     (this means that an error has occurred the file is not uploaded to the cloud)
-                (str) 'saved_local'
+                (str) 'saved'
                     (this means that the file must remain in the local (temporary directory))
                     (and it is not required to perform any actions with it)
         """
@@ -126,7 +126,7 @@ class Uploader:
         Args:
             :param source (str): the path to the local file to transfer to the target storage.
             :param destination (str): the name of the target directory in the destination storage.
-        
+
         Returns:
             (str) 'uploaded'
                 or
@@ -141,7 +141,7 @@ class Uploader:
         )
 
         if self.storage['type'] == "local":
-            return "saved_local"
+            return "saved"
 
         if self.storage['type'] == 'dropbox':
             with open(source, 'rb') as file_transfer:
