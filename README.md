@@ -171,12 +171,12 @@ python3 bot.py
 
 
 python3 ../tools/vault/setup_instance.py --url=http://localhost:8200 --name=pyinstabot-downloader --policy=vault/policy.hcl
-python3 ../tools/vault/setup_instance.py --url=http://localhost:8200 --name=pyinstabot-downloader --policy=vault/policy.hcl --token=hvs.wY29KXDrOUPpnUDNtohhKTOd
+python3 ../tools/vault/setup_instance.py --url=http://localhost:8200 --name=pyinstabot-downloader --policy=vault/policy.hcl --token=hvs.123456qwerty
 
 export VAULT_APPROLE_ID=b73c6efb-d6a8-94a7-e0dd-7034578b5b9e
 export VAULT_APPROLE_SECRETID=3eaf0de6-4853-2534-04ff-f64fdc9ee167
 
 vault kv put pyinstabot-downloader/configuration/dropbox token=None
-vault kv put pyinstabot-downloader/configuration/telegram token=1620890148:AAGIqCGwi3zri2PaGEWF-KJiJqEYqtivWFI
+vault kv put pyinstabot-downloader/configuration/telegram token=123456:qwerty
 vault kv put pyinstabot-downloader/configuration/permissions 123456=allow
 vault kv put pyinstabot-downloader/configuration/instagram username=username1 password=password1
