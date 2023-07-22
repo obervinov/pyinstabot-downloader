@@ -4,6 +4,7 @@ and uploads the found media files (image, video) to the destination storage.
 """
 import os
 import dropbox
+from mega import Mega
 from logger import log
 
 
@@ -24,7 +25,7 @@ class Uploader:
 
         Args:
             :param storage (dict): dictionary with storage parameters.
-                :param type (str): type of storage for uploading content 'local' or 'dropbox'
+                :param type (str): type of storage for uploading content 'local'/'dropbox'/'mega'
                 :param temporary (str): type of storage for uploading content.
             :param vault (object): instance of vault for reading authorization data.
 
@@ -46,10 +47,13 @@ class Uploader:
         log.info(
             '[class.%s] uploader instance init with %s storage type',
             __class__.__name__,
-            storage['type']
+            storage
         )
         if self.storage['type'] == 'dropbox':
-            token = self.vault.vault_read_secrets('configuration/dropbox', 'token')
+            token = self.vault.read_secret(
+                'configuration/dropbox',
+                'token'
+            )
             try:
                 dropbox_session = dropbox.create_session(
                     max_connections=3
@@ -65,6 +69,26 @@ class Uploader:
                     __class__.__name__,
                     dropboxexception
                 )
+        if self.storage['type'] == 'mega':
+            username = self.vault.read_secret(
+                'configuration/mega',
+                'username'
+            )
+            password = self.vault.read_secret(
+                'configuration/mega',
+                'password'
+            )
+            try:
+                self.mega_client = Mega().login(
+                    username,
+                    password
+                )
+            except Exception as megaexception:
+                log.error(
+                    '[class.%s] creating mega instance faild: %s',
+                    __class__.__name__,
+                    megaexception
+                )       
 
     def prepare_content(
         self,
@@ -94,7 +118,7 @@ class Uploader:
         log.info(
             '[class.%s] preparing media files for transfer to the target storage -> %s ',
             __class__.__name__,
-            self.storage
+            self.storage['type']
         )
         transfers = {}
         for root, _, files in os.walk(f'{self.temporary_dir}{dirname}'):
@@ -142,6 +166,29 @@ class Uploader:
 
         if self.storage['type'] == "local":
             return "saved"
+
+        if self.storage['type'] == 'mega':
+            with open(source, 'rb') as file_transfer:
+                try:
+                    directory = self.mega_client.find(
+                        f'pyinst-bot/{destination}'
+                    )
+                    response = self.mega_client.upload(
+                        f'{source.split("/")[-1]}',
+                        directory[0]
+                    )
+                    log.info(
+                        '[class.%s] %s successful transfering',
+                        __class__.__name__,
+                        response
+                    )
+                    return "uploaded"
+                except Exception as megaexeption:
+                    log.error(
+                        '[class.%s] error when uploading a file via the meganz api: %s',
+                        __class__.__name__,
+                        megaexeption
+                    )
 
         if self.storage['type'] == 'dropbox':
             with open(source, 'rb') as file_transfer:
