@@ -120,9 +120,11 @@ def get_posts_account(
 
         for shortcode in account_info['shortcodes_for_download']:
             # download the contents of an instagram post to a temporary folder
-            downloader.get_post_content(shortcode)
+            dresponse = downloader.get_post_content(shortcode)
             # upload the received content to the destination storage
-            uploader.prepare_content(shortcode)
+            _ = uploader.prepare_content(
+                        dresponse['owner']
+            )
             # render progressbar
             progressbar = messages.render_progressbar(
                 account_info['shortcodes_total_count'],
@@ -203,7 +205,7 @@ def get_post_account(
         dresponse = downloader.get_post_content(shortcode)
         # upload the received content to the destination storage
         ureposponse = uploader.prepare_content(
-            f"{dresponse['owner']}/{dresponse['post']}"
+            dresponse['owner']
         )
         telegram_bot.send_message(
             message.chat.id,

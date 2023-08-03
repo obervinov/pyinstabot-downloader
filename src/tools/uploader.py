@@ -88,23 +88,32 @@ class Uploader:
                     '[class.%s] creating mega instance faild: %s',
                     __class__.__name__,
                     megaexception
-                )       
+                )
+        for root, artifacts, _ in os.walk(self.temporary_dir):
+            for artifact in artifacts:
+                log.info(
+                    '[class.%s] an unloaded artifact was found %s',
+                    __class__.__name__,
+                    artifact
+                )
+                self.prepare_content(os.path.join(root, artifact))
 
     def prepare_content(
         self,
-        path_prefix: str = None
+        sub_dir_name: str = None
     ) -> dict:
         """
         Method of preparing media files for transfer to the target storage (cloud or local).
 
         Args:
-            :param path_prefix (str): name of the directory for receiving media files.
+            :param sub_dir_name (str): the name of the subdirectory where the content
+                                        itself is located is equivalent to the ID of the post.
 
         Returns:
             (dict) {
-                    '/root/path/shortcode/file1.jpeg': 'uploaded',
-                    '/root/path/shortcode/file2.jpeg': None
-                }
+                     '/root/path/shortcode/file1.jpeg': 'uploaded',
+                     '/root/path/shortcode/file2.jpeg': None
+                   }
 
             (explanation of values)
                 (str) 'uploaded'
@@ -121,21 +130,23 @@ class Uploader:
             self.storage['type']
         )
         transfers = {}
-        for root, _, files in os.walk(f'{self.temporary_dir}{path_prefix}'):
+        for root, _, files in os.walk(
+            f'{self.temporary_dir}{sub_dir_name}'
+        ):
             for file in files:
                 if ".txt" in file:
                     os.remove(os.path.join(root, file))
                 else:
                     transfers[file] = self.upload_file(
                         os.path.join(root, file),
-                        path_prefix
+                        sub_dir_name
                     )
                     if transfers[file] == 'uploaded':
                         os.remove(
                             os.path.join(root, file)
                         )
-        if len(os.listdir(f'{self.temporary_dir}{path_prefix}')) == 0:
-            os.rmdir(f'{self.temporary_dir}{path_prefix}')
+        if len(os.listdir(f'{self.temporary_dir}{sub_dir_name}')) == 0:
+            os.rmdir(f'{self.temporary_dir}{sub_dir_name}')
         return transfers
 
     def upload_file(
