@@ -51,7 +51,8 @@ downloader = Downloader(
 uploader = Uploader(
     storage={
         'type': settings.storage_type,
-        'temporary': settings.temporary_dir
+        'temporary': settings.temporary_dir,
+        'cloud_root_path': settings.bot_name
     },
     vault=vault
 )

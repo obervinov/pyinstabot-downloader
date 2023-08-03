@@ -27,6 +27,7 @@ class Uploader:
             :param storage (dict): dictionary with storage parameters.
                 :param type (str): type of storage for uploading content 'local'/'dropbox'/'mega'
                 :param temporary (str): type of storage for uploading content.
+                :param cloud_root_path (str): a subdirectory in the cloud storage for saving content
             :param vault (object): instance of vault for reading authorization data.
 
         Returns:
@@ -37,6 +38,7 @@ class Uploader:
                     storage={
                         'type': settings.storage_type,
                         'temporary': settings.temporary_dir
+                        'cloud_root_path': settings.bot_name
                     },
                     vault=vault
                 )
@@ -181,9 +183,10 @@ class Uploader:
         if self.storage['type'] == 'mega':
             with open(source, 'rb') as file_transfer:
                 try:
-                    directory = self.mega_client.find(
-                        f'pyinst-bot/{destination}'
-                    )
+                    if self.storage['cloud_root_path']:
+                        directory = self.mega_client.find(
+                            f"{self.storage['cloud_root_path']}/{destination}"
+                        )
                     response = self.mega_client.upload(
                         f'{source.split("/")[-1]}',
                         directory[0]
