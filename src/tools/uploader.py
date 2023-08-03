@@ -89,14 +89,14 @@ class Uploader:
                     __class__.__name__,
                     megaexception
                 )
-        for root, artifacts, _ in os.walk(self.temporary_dir):
+        for _, artifacts, _ in os.walk(self.temporary_dir):
             for artifact in artifacts:
                 log.info(
                     '[class.%s] an unloaded artifact was found %s',
                     __class__.__name__,
                     artifact
                 )
-                self.prepare_content(os.path.join(root, artifact))
+                self.prepare_content(os.path.join(artifact))
 
     def prepare_content(
         self,
