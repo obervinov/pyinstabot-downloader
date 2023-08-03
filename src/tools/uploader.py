@@ -158,7 +158,7 @@ class Uploader:
         if len(os.listdir(f'{self.temporary_dir}{sub_dir_name}')) == 0:
             os.rmdir(f'{self.temporary_dir}{sub_dir_name}')
         log.info(
-            '[class.%s] prepared transfers %s',
+            '[class.%s] TRANSFERS: %s',
             __class__.__name__,
             transfers
         )
