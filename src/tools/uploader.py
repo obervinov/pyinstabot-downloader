@@ -80,8 +80,9 @@ class Uploader:
                 'configuration/mega',
                 'password'
             )
+            mega = Mega()
             try:
-                self.mega_client = Mega().login(
+                self.mega_client = mega.login(
                     username,
                     password
                 )
@@ -181,21 +182,17 @@ class Uploader:
             return "saved"
 
         if self.storage['type'] == 'mega':
+            directory = f"{self.storage['cloud_root_path']}/{destination}"
             try:
-                if self.storage['cloud_root_path']:
-                    directory = f"{self.storage['cloud_root_path']}/{destination}"
-                else:
-                    directory = destination
+                mega_folder = self.mega_client.find(
+                    f"{self.storage['cloud_root_path']}/{destination}"
+                )
+                if not mega_folder:
+                    self.mega_client.create_folder(directory)
                 response = self.mega_client.upload(
                     source,
-                    directory
+                    mega_folder[0]
                 )
-                log.info(
-                    '[class.%s] %s successful transfering',
-                    __class__.__name__,
-                    response
-                )
-                return "uploaded"
             except Exception as megaexeption:
                 log.error(
                     '[class.%s] error when uploading a file via the mega api: %s',
@@ -210,17 +207,18 @@ class Uploader:
                         file_transfer.read(),
                         f'/{destination}/{source.split("/")[-1]}'
                     )
-                    log.info(
-                        '[class.%s] %s successful transfering',
-                        __class__.__name__,
-                        response.name
-                    )
-                    return "uploaded"
                 except dropbox.exceptions.DropboxException as dropboxexception:
                     log.error(
                         '[class.%s] error when uploading a file via the dropbox api: %s',
                         __class__.__name__,
                         dropboxexception
                     )
+            log.info(
+                '[class.%s] %s successful transfering',
+                __class__.__name__,
+                response
+            )
             file_transfer.close()
+            return "uploaded"
+
         return None
