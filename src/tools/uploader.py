@@ -138,7 +138,9 @@ class Uploader:
         ):
             for file in files:
                 if self.storage['exclude_type'] in file:
-                    os.remove(os.path.join(root, file))
+                    os.remove(
+                        os.path.join(root, file)
+                    )
                 else:
                     transfers[file] = self.upload_file(
                         os.path.join(root, file),
@@ -199,6 +201,12 @@ class Uploader:
                     __class__.__name__,
                     megaexeption
                 )
+            log.info(
+                '[class.%s] %s successful transfering',
+                __class__.__name__,
+                response
+            )
+            return "uploaded"
 
         if self.storage['type'] == 'dropbox':
             with open(source, 'rb') as file_transfer:
