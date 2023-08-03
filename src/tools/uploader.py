@@ -92,13 +92,13 @@ class Uploader:
 
     def prepare_content(
         self,
-        dirname: str = None
+        path_prefix: str = None
     ) -> dict:
         """
         Method of preparing media files for transfer to the target storage (cloud or local).
 
         Args:
-            :param dirname (str): name of the directory for receiving media files.
+            :param path_prefix (str): name of the directory for receiving media files.
 
         Returns:
             (dict) {
@@ -121,21 +121,21 @@ class Uploader:
             self.storage['type']
         )
         transfers = {}
-        for root, _, files in os.walk(f'{self.temporary_dir}{dirname}'):
+        for root, _, files in os.walk(f'{self.temporary_dir}{path_prefix}'):
             for file in files:
                 if ".txt" in file:
                     os.remove(os.path.join(root, file))
                 else:
                     transfers[file] = self.upload_file(
                         os.path.join(root, file),
-                        dirname
+                        path_prefix
                     )
                     if transfers[file] == 'uploaded':
                         os.remove(
                             os.path.join(root, file)
                         )
-        if len(os.listdir(f'{self.temporary_dir}{dirname}')) == 0:
-            os.rmdir(f'{self.temporary_dir}{dirname}')
+        if len(os.listdir(f'{self.temporary_dir}{path_prefix}')) == 0:
+            os.rmdir(f'{self.temporary_dir}{path_prefix}')
         return transfers
 
     def upload_file(

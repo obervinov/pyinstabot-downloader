@@ -102,7 +102,7 @@ def get_posts_account(
     if users_auth.check_permissions(message.chat.id) == "allow":
         account_name = message.text.split("/")[3].split("?")[0]
         log.info(
-            '[%s] for url %s\n',
+            '[%s] starting handler for url %s...',
             __name__,
             message.text
         )
@@ -202,7 +202,9 @@ def get_post_account(
         # download the contents of an instagram post to a temporary folder
         dresponse = downloader.get_post_content(shortcode)
         # upload the received content to the destination storage
-        ureposponse = uploader.prepare_content(shortcode)
+        ureposponse = uploader.prepare_content(
+            f"{dresponse['owner']}/{dresponse['post']}"
+        )
         telegram_bot.send_message(
             message.chat.id,
             messages.render_template(
