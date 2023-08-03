@@ -137,7 +137,7 @@ class Uploader:
             f'{self.temporary_dir}{sub_dir_name}'
         ):
             for file in files:
-                if ".txt" in file:
+                if self.storage['exclude_type'] in file:
                     os.remove(os.path.join(root, file))
                 else:
                     transfers[file] = self.upload_file(

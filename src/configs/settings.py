@@ -31,6 +31,10 @@ instagram_useragent = os.environ.get(
     'INSTAGRAM_USERAGENT',
     None
 )
+storage_exclude_type = os.environ.get(
+    'STORAGE_EXCLUDE_TYPE',
+    '.txt'
+)
 # For logging vault addr
 vault_addr = os.environ.get(
     'VAULT_ADDR',

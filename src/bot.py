@@ -52,7 +52,8 @@ uploader = Uploader(
     storage={
         'type': settings.storage_type,
         'temporary': settings.temporary_dir,
-        'cloud_root_path': settings.bot_name
+        'cloud_root_path': settings.bot_name,
+        'exclude_type': settings.storage_exclude_type
     },
     vault=vault
 )
@@ -212,6 +213,7 @@ def get_post_account(
             message.chat.id,
             messages.render_template(
                 'post_stats_info',
+                post_id=shortcode,
                 download_response=dresponse,
                 upload_response=ureposponse
             )
