@@ -146,6 +146,7 @@ class Uploader:
                         os.path.join(root, file),
                         sub_dir_name
                     )
+                    log.warning(transfers)
                     if transfers[file] == 'uploaded':
                         os.remove(
                             os.path.join(root, file)
