@@ -146,18 +146,22 @@ class Uploader:
                         os.path.join(root, file),
                         sub_dir_name
                     )
-                    ####
-                    log.warning(transfers)
                     if transfers[file] == 'uploaded':
-                        ####
-                        log.warning(f"removing {os.path.join(root, file)}")
+                        log.info(
+                            '[class.%s] removing temp file %s',
+                            __class__.__name__,
+                            os.path.join(root, file)
+                        )
                         os.remove(
                             os.path.join(root, file)
                         )
         if len(os.listdir(f'{self.temporary_dir}{sub_dir_name}')) == 0:
             os.rmdir(f'{self.temporary_dir}{sub_dir_name}')
-        ####
-        log.warning(f"returns {transfers}")
+        log.info(
+            '[class.%s] prepared transfers %s',
+            __class__.__name__,
+            transfers
+        )
         return transfers
 
     def upload_file(
