@@ -209,6 +209,8 @@ def get_post_account(
         ureposponse = uploader.prepare_content(
             dresponse['owner']
         )
+        log.warning(ureposponse)
+        log.warning(dresponse)
         telegram_bot.send_message(
             message.chat.id,
             messages.render_template(
