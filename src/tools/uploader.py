@@ -47,7 +47,7 @@ class Uploader:
         log.info(
             '[class.%s] uploader instance init with %s storage type',
             __class__.__name__,
-            storage
+            storage['type']
         )
         if self.storage['type'] == 'dropbox':
             token = self.vault.read_secret(

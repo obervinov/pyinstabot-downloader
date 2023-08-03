@@ -106,6 +106,11 @@ class Downloader:
                     __class__.__name__,
                     self.auth['sessionfile']
                 )
+            log.info(
+                '[class.%s] downloader instance init with account %s',
+                __class__.__name__,
+                self.auth['username']
+            )
         except instaloader.exceptions.LoginRequiredException as loginrequiredexception:
             log.warning(
                 '[class.%s] login required: %s -> '

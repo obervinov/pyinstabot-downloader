@@ -23,10 +23,10 @@ path "pyinstabot-downloader/data/configuration/*" {
   capabilities = ["read", "list"]
 }
 # for manage bot configuration
-path "pyinstabot-downloader/history/*" {
+path "pyinstabot-downloader/data/history/*" {
   capabilities = ["create", "read", "list", "update"]
 }
 # for manage bot configuration
-path "pyinstabot-downloader/events/login/*" {
+path "pyinstabot-downloader/data/events/*" {
   capabilities = ["read", "list", "create", "update"]
 }

@@ -177,3 +177,4 @@ vault kv put pyinstabot-downloader/configuration/dropbox token=None
 vault kv put pyinstabot-downloader/configuration/telegram token=None
 vault kv put pyinstabot-downloader/configuration/permissions 123456=allow
 vault kv put pyinstabot-downloader/configuration/instagram username=username1 password=password1
+vault kv put pyinstabot-downloader/configuration/mega username=username1 password=password1

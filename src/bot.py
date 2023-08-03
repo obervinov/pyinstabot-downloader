@@ -52,7 +52,8 @@ uploader = Uploader(
     storage={
         'type': settings.storage_type,
         'temporary': settings.temporary_dir
-    }
+    },
+    vault=vault
 )
 
 
@@ -218,7 +219,7 @@ def main():
     """
     while True:
         log.info(
-            'Starting telegram bot: %s\nVault: %s',
+            'Starting telegram bot %s with vault-server %s',
             settings.bot_name,
             settings.vault_addr
         )
