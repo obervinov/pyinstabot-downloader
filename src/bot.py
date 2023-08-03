@@ -83,7 +83,8 @@ def start_message(
             message.chat.id,
             messages.render_template(
                 'hello_message',
-                username=message.from_user.username
+                username=message.from_user.username,
+                userid=message.chat.id
             )
         )
 
