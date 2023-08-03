@@ -181,28 +181,27 @@ class Uploader:
             return "saved"
 
         if self.storage['type'] == 'mega':
-            with open(source, 'rb') as file_transfer:
-                try:
-                    if self.storage['cloud_root_path']:
-                        directory = self.mega_client.find(
-                            f"{self.storage['cloud_root_path']}/{destination}"
-                        )
-                    response = self.mega_client.upload(
-                        f'{source.split("/")[-1]}',
-                        directory[0]
-                    )
-                    log.info(
-                        '[class.%s] %s successful transfering',
-                        __class__.__name__,
-                        response
-                    )
-                    return "uploaded"
-                except Exception as megaexeption:
-                    log.error(
-                        '[class.%s] error when uploading a file via the meganz api: %s',
-                        __class__.__name__,
-                        megaexeption
-                    )
+            try:
+                if self.storage['cloud_root_path']:
+                    directory = f"{self.storage['cloud_root_path']}/{destination}"
+                else:
+                    directory = destination
+                response = self.mega_client.upload(
+                    source,
+                    directory
+                )
+                log.info(
+                    '[class.%s] %s successful transfering',
+                    __class__.__name__,
+                    response
+                )
+                return "uploaded"
+            except Exception as megaexeption:
+                log.error(
+                    '[class.%s] error when uploading a file via the mega api: %s',
+                    __class__.__name__,
+                    megaexeption
+                )
 
         if self.storage['type'] == 'dropbox':
             with open(source, 'rb') as file_transfer:
