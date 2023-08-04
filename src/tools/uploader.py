@@ -197,7 +197,8 @@ class Uploader:
             directory = f"{self.storage['cloud_root_path']}/{destination}"
             try:
                 mega_folder = self.mega_client.find(
-                    f"{self.storage['cloud_root_path']}/{destination}"
+                    directory,
+                    exclude_deleted=True
                 )
                 if not mega_folder:
                     self.mega_client.create_folder(directory)
@@ -210,6 +211,14 @@ class Uploader:
                     '[class.%s] error when uploading a file via the mega api: %s',
                     __class__.__name__,
                     megaexeption
+                )
+                log.warning(
+                    '[class.%s] trying again upload_file()',
+                    __class__.__name__,
+                )
+                self.upload_file(
+                    source,
+                    destination
                 )
             log.info(
                 '[class.%s] %s successful transfering',

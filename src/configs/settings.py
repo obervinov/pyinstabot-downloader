@@ -17,7 +17,7 @@ messages_config = os.environ.get(
 )
 storage_type = os.environ.get(
     'STORAGE_TYPE',
-    'local'
+    'mega'
 )
 temporary_dir = os.environ.get(
     'TEMPORARY_DIR',
