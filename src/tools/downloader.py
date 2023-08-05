@@ -41,22 +41,32 @@ class Downloader:
             None
 
         Examples:
-            >>> downloader = Downloader(
+            >>> DOWNLOADER_INSTANCE = Downloader(
                     auth={
-                        'sessionfile': settings.instagram_session
+                        'sessionfile': INSTAGRAM_SESSION
                     },
                     settings={
-                        'savepath': settings.temporary_dir,
-                        'useragent': settings.instagram_useragent
+                        'savepath': TEMPORARY_DIR,
+                        'useragent': INSTAGRAM_USERAGENT
                     },
-                    vault=vault_client
+                    vault=VAULT_CLIENT
+                )
+            >>> DOWNLOADER_INSTANCE = Downloader(
+                    auth={
+                        'username': INSTAGRAM_USERNAME,
+                        'password': INSTAGRAM_PASSWORD
+                    },
+                    settings={
+                        'savepath': TEMPORARY_DIR,
+                        'useragent': INSTAGRAM_USERAGENT
+                    },
+                    vault=VAULT_CLIENT
                 )
         """
         self.auth = auth
         self.settings = settings
         self.vault = vault
 
-        # If the authorization data is not defined, read their values from the vault
         if not self.auth.get('username') or not self.auth.get('password'):
             self.auth['username'] = self.vault.read_secret(
                 'configuration/instagram',
@@ -81,72 +91,62 @@ class Downloader:
             storyitem_metadata_txt_pattern=None,
             check_resume_bbd=True
         )
-        try:
-            if os.path.exists(self.auth.get('sessionfile')):
-                self.instaloader.load_session_from_file(
-                    self.auth['username'],
-                    self.auth['sessionfile']
-                )
-                log.info(
-                    '[class.%s] session file was load success',
-                    __class__.__name__
-                )
-            else:
-                self.instaloader.login(
-                    self.auth['username'],
-                    self.auth['password']
-                )
-                log.info(
-                    '[class.%s] login with credentials was successful',
-                    __class__.__name__
-                )
-                self.instaloader.save_session_to_file(self.auth['sessionfile'])
-                log.info(
-                    '[class.%s] new session file %s was save success',
-                    __class__.__name__,
-                    self.auth['sessionfile']
-                )
+
+        if os.path.exists(
+            self.auth.get('sessionfile')
+        ):
+            auth_status = self._login(
+                method='session'
+            )
+        else:
+            auth_status = self._login(
+                method='password'
+            )
+        log.info(
+            '[class.%s] downloader instance init with account %s: %s',
+            __class__.__name__,
+            self.auth['username'],
+            auth_status
+        )
+
+    def _login(
+        self,
+        method: str = None
+    ) -> str:
+        """
+        Method for authentication by password or session file.
+
+        Args:
+            :param method (str): authentication method 'password' and 'session'.
+
+        Returns:
+            (str) success
+                or
+            None
+        """
+        if method == 'session':
+            self.instaloader.load_session_from_file(
+                self.auth['username'],
+                self.auth['sessionfile']
+            )
             log.info(
-                '[class.%s] downloader instance init with account %s',
-                __class__.__name__,
-                self.auth['username']
+                '[class.%s] session file was load success',
+                __class__.__name__
             )
-        except instaloader.exceptions.LoginRequiredException as loginrequiredexception:
-            log.warning(
-                '[class.%s] login required: %s -> '
-                'trying login with username/password',
-                __class__.__name__,
-                loginrequiredexception
+
+        if method == 'password':
+            self.instaloader.login(
+                self.auth['username'],
+                self.auth['password']
             )
-            try:
-                self.instaloader.login(
-                    self.auth['username'],
-                    self.auth['password']
-                )
-                self.instaloader.save_session_to_file(self.auth['sessionfile'])
-                log.info(
-                    '[class.%s] new session file %s was save success',
-                    __class__.__name__,
-                    self.auth['sessionfile']
-                )
-            except instaloader.exceptions.BadCredentialsException as badcredentialsexception:
-                log.error(
-                    '[class.%s] bad credentials: %s',
-                    __class__.__name__,
-                    badcredentialsexception
-                )
-        except instaloader.exceptions.BadResponseException as badresponseexception:
-            log.error(
-                '[class.%s] bad response: %s',
+            self.instaloader.save_session_to_file(self.auth['sessionfile'])
+            log.info(
+                '[class.%s] login with password was successful. New session file %s',
                 __class__.__name__,
-                badresponseexception
+                self.auth['sessionfile']
             )
-        except instaloader.exceptions.TooManyRequestsException as toomanyrequestsexception:
-            log.error(
-                '[class.%s] too many requests: %s',
-                __class__.__name__,
-                toomanyrequestsexception
-            )
+
+        return 'success'
 
     def get_posts(
         self,
@@ -163,35 +163,20 @@ class Downloader:
                 or
             None
         """
-        try:
-            profile = instaloader.Profile.from_username(
-                self.instaloader.context,
-                username
-            )
-            log.info(
-                '[class.%s] the %s profile was read success',
-                __class__.__name__,
-                username
-            )
-            shortcodes_list = []
-            for post in profile.get_posts():
-                shortcodes_list.append(post.shortcode)
-            return shortcodes_list
-        except instaloader.exceptions.BadResponseException as badresponseexception:
-            log.error(
-                '[class.%s] bad response for username %s: %s',
-                __class__.__name__,
-                username,
-                badresponseexception
-            )
-        except instaloader.exceptions.TooManyRequestsException as toomanyrequestsexception:
-            log.error(
-                '[class.%s] too many requests for username %s: %s',
-                __class__.__name__,
-                username,
-                toomanyrequestsexception
-            )
-        return None
+        posts_list = []
+        profile = instaloader.Profile.from_username(
+            self.instaloader.context,
+            username
+        )
+        log.info(
+            '[class.%s] the %s profile was read success',
+            __class__.__name__,
+            username
+        )
+        for post in profile.get_posts():
+            posts_list.append(post.shortcode)
+
+        return posts_list
 
     def get_post_content(
         self,
@@ -211,48 +196,32 @@ class Downloader:
                     'status': 'downloaded'
                 }
         """
-        try:
-            post = instaloader.Post.from_shortcode(
-                self.instaloader.context,
-                shortcode
-            )
-            self.instaloader.download_post(post, '')
-            log.info(
-                '[class.%s] the contents of the %s have been successfully downloaded '
-                'to the temporary storage',
-                __class__.__name__,
-                shortcode
-            )
-            self.vault.write_secret(
-                f'history/{post.owner_username}',
-                shortcode,
-                "downloaded"
-            )
-            return {
-                'post': shortcode,
-                'owner': post.owner_username,
-                'type': post.typename,
-                'status': 'downloaded'
-            }
-        except instaloader.exceptions.BadResponseException as badresponseexception:
-            log.error(
-                '[class.%s] bad response for post %s: %s',
-                __class__.__name__,
-                shortcode,
-                badresponseexception
-            )
-        except instaloader.exceptions.TooManyRequestsException as toomanyrequestsexception:
-            log.error(
-                '[class.%s] too many requests for post %s: %s',
-                __class__.__name__,
-                shortcode,
-                toomanyrequestsexception
-            )
-        return None
+        post = instaloader.Post.from_shortcode(
+            self.instaloader.context,
+            shortcode
+        )
+        self.instaloader.download_post(post, '')
+        log.info(
+            '[class.%s] the contents of the %s have been successfully downloaded '
+            'to the temporary storage',
+            __class__.__name__,
+            shortcode
+        )
+        self.vault.write_secret(
+            f'history/{post.owner_username}',
+            shortcode,
+            "downloaded"
+        )
+        return {
+            'post': shortcode,
+            'owner': post.owner_username,
+            'type': post.typename,
+            'status': 'downloaded'
+        }
 
     def get_download_info(
         self,
-        account_name: str = None
+        account: str = None
     ) -> dict | None:
         """
         Method for collecting all the necessary information
@@ -261,7 +230,7 @@ class Downloader:
         and provides information for cyclic downloading.
 
         Args:
-            :param account_name (str): instagram account name to check the uploaded history.
+            :param account (str): instagram account name to check the uploaded history.
 
         Returns:
             (dict) {
@@ -271,49 +240,33 @@ class Downloader:
                     "shortcodes_exist_count": len(history_shortcodes.keys())
                 }
         """
-        try:
-            log.info(
-                '[class.%s] excluding shortcodes that are already downloaded...',
-                __class__.__name__
-            )
-            # account_shortcodes - list of shortcodes received from instagram
-            account_shortcodes = self.get_posts()
-            # fresh_shortcodes - list of shortcodes that have not been downloaded yet
-            fresh_shortcodes = []
-            # history_shortcodes - list of shortcodes that have already been previously uploaded
-            history_shortcodes = self.vault.read_secret(
-                f'history/{account_name}'
-            )
-            for shortcode in account_shortcodes:
-                if shortcode not in history_shortcodes.keys():
-                    fresh_shortcodes.append(shortcode)
-            log.info(
-                '[class.%s] already downloaded shortcodes: %s\n'
-                'fresh shortcodes: %s\n'
-                'shortcodes for download: %s',
-                __class__.__name__,
-                history_shortcodes,
-                account_shortcodes,
-                fresh_shortcodes
-            )
-            return {
-                "shortcodes_for_download": fresh_shortcodes,
-                "shortcodes_total_count": len(account_shortcodes),
-                "shortcodes_exist": len(history_shortcodes),
-                "shortcodes_exist_count": len(history_shortcodes.keys())
-            }
-        except instaloader.exceptions.BadResponseException as badresponseexception:
-            log.error(
-                '[class.%s] bad response for post %s: %s',
-                __class__.__name__,
-                shortcode,
-                badresponseexception
-            )
-        except instaloader.exceptions.TooManyRequestsException as toomanyrequestsexception:
-            log.error(
-                '[class.%s] too many requests for post %s: %s',
-                __class__.__name__,
-                shortcode,
-                toomanyrequestsexception
-            )
-        return None
+        log.info(
+            '[class.%s] excluding shortcodes that are already downloaded...',
+            __class__.__name__
+        )
+        # account_shortcodes - list of shortcodes received from instagram
+        account_shortcodes = self.get_posts()
+        # fresh_shortcodes - list of shortcodes that have not been downloaded yet
+        fresh_shortcodes = []
+        # history_shortcodes - list of shortcodes that have already been previously uploaded
+        history_shortcodes = self.vault.read_secret(
+            f'history/{account}'
+        )
+        for shortcode in account_shortcodes:
+            if shortcode not in history_shortcodes.keys():
+                fresh_shortcodes.append(shortcode)
+        log.info(
+            '[class.%s] already downloaded shortcodes: %s\n'
+            'fresh shortcodes: %s\n'
+            'shortcodes for download: %s',
+            __class__.__name__,
+            history_shortcodes,
+            account_shortcodes,
+            fresh_shortcodes
+        )
+        return {
+            "shortcodes_for_download": fresh_shortcodes,
+            "shortcodes_total_count": len(account_shortcodes),
+            "shortcodes_exist": len(history_shortcodes),
+            "shortcodes_exist_count": len(history_shortcodes.keys())
+        }

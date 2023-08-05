@@ -34,74 +34,77 @@ class Uploader:
             None
 
         Examples:
-            >>> uploader = Uploader(
+            >>> UPLOADER_INSTANCE = Uploader(
                     storage={
-                        'type': settings.storage_type,
-                        'temporary': settings.temporary_dir
-                        'cloud_root_path': settings.bot_name
+                        'type': STORAGE_TYPE,
+                        'temporary': TEMPORARY_DIR,
+                        'cloud_root_path': BOT_NAME,
+                        'exclude_type': STORAGE_EXCLUDE_TYPE
                     },
-                    vault=vault
+                    vault=VAULT_CLIENT
                 )
         """
         self.storage = storage
         self.temporary_dir = f"{os.getcwd()}/{self.storage['temporary']}"
         self.vault = vault
+
         log.info(
-            '[class.%s] uploader instance init with %s storage type',
+            '[class.%s] uploader instance init with "%s" target storage',
             __class__.__name__,
             storage['type']
         )
+
         if self.storage['type'] == 'dropbox':
-            token = self.vault.read_secret(
-                'configuration/dropbox',
-                'token'
+            self.dropbox_client = dropbox.Dropbox(
+                oauth2_access_token=self.vault.read_secret(
+                    'configuration/dropbox',
+                    'token'
+                ),
+                timeout=60
             )
-            try:
-                dropbox_session = dropbox.create_session(
-                    max_connections=3
-                )
-                self.dropbox_client = dropbox.Dropbox(
-                    oauth2_access_token=token,
-                    session=dropbox_session,
-                    timeout=60
-                )
-            except dropbox.exceptions.DropboxException as dropboxexception:
-                log.error(
-                    '[class.%s] creating dropbox instance faild: %s',
-                    __class__.__name__,
-                    dropboxexception
-                )
+
         if self.storage['type'] == 'mega':
-            username = self.vault.read_secret(
-                'configuration/mega',
-                'username'
-            )
-            password = self.vault.read_secret(
-                'configuration/mega',
-                'password'
-            )
-            mega = Mega()
-            try:
-                self.mega_client = mega.login(
-                    username,
-                    password
+            self.mega_client = Mega().login(
+                self.vault.read_secret(
+                  'configuration/mega',
+                  'username'
+                ),
+                self.vault.read_secret(
+                  'configuration/mega',
+                  'password'
                 )
-            except Exception as megaexception:
-                log.error(
-                    '[class.%s] creating mega instance faild: %s',
-                    __class__.__name__,
-                    megaexception
-                )
+            )
+
+        self._check_incomplete_transfers()
+
+    def _check_incomplete_transfers(
+        self,
+    ) -> None:
+        """
+        Method for checking uploads in temp directory
+        that for some reason could not be uploaded to the cloud.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
+        log.info(
+            '[class.%s] checking the pending uploads in the temporary directory ...',
+            __class__.__name__
+        )
+
         for _, artifacts, _ in os.walk(self.temporary_dir):
             for artifact in artifacts:
-                log.info(
+                log.warning(
                     '[class.%s] an unloaded artifact was found %s',
                     __class__.__name__,
                     artifact
                 )
-                self.prepare_content(os.path.join(artifact))
+                self.start_upload(os.path.join(artifact))
 
-    def prepare_content(
+    def start_upload(
         self,
         sub_dir_name: str = None
     ) -> dict:
@@ -127,47 +130,47 @@ class Uploader:
                     (this means that the file must remain in the local (temporary directory))
                     (and it is not required to perform any actions with it)
         """
+        transfers = {}
+
         log.info(
-            '[class.%s] preparing media files for transfer to the target storage -> %s ',
+            '[class.%s] preparing media files for transfer to the "%s"',
             __class__.__name__,
             self.storage['type']
         )
-        transfers = {}
+
         for root, _, files in os.walk(
             f'{self.temporary_dir}{sub_dir_name}'
         ):
             for file in files:
-                if self.storage['exclude_type'] in file:
+                if self.storage['exclude_type'] and self.storage['exclude_type'] in file:
                     os.remove(
                         os.path.join(root, file)
                     )
                 else:
-                    transfers[file] = self.upload_file(
+                    transfers[file] = self.file_upload(
                         os.path.join(root, file),
                         sub_dir_name
                     )
                     if transfers[file] == 'uploaded':
-                        log.info(
-                            '[class.%s] removing temp file %s',
-                            __class__.__name__,
-                            os.path.join(root, file)
-                        )
                         os.remove(
                             os.path.join(root, file)
                         )
+
         if len(os.listdir(f'{self.temporary_dir}{sub_dir_name}')) == 0:
             os.rmdir(f'{self.temporary_dir}{sub_dir_name}')
+
         log.info(
-            '[class.%s] TRANSFERS: %s',
+            '[class.%s] All TRANSFERS: %s',
             __class__.__name__,
             transfers
         )
         return transfers
 
-    def upload_file(
+    def file_upload(
         self,
         source: str = None,
-        destination: str = None
+        destination: str = None,
+        retry_on_failure: bool = False
     ) -> str | None:
         """
         The method of uploading the contents of the target directory
@@ -176,6 +179,7 @@ class Uploader:
         Args:
             :param source (str): the path to the local file to transfer to the target storage.
             :param destination (str): the name of the target directory in the destination storage.
+            :param retry_on_failure (bool): flag to indicate whether to retry on failure.
 
         Returns:
             (str) 'uploaded'
@@ -206,45 +210,43 @@ class Uploader:
                     source,
                     mega_folder[0]
                 )
-            except Exception as megaexeption:
+                log.info(
+                    '[class.%s] %s successful transferred',
+                    __class__.__name__,
+                    response
+                )
+                return "uploaded"
+
+            # pylint: disable=W0718
+            # because the mega library does not contain exceptions
+            except Exception as mega_exception:
                 log.error(
-                    '[class.%s] error when uploading a file via the mega api: %s',
+                    '[class.%s] error when uploading via the mega api: %s',
                     __class__.__name__,
-                    megaexeption
+                    mega_exception
                 )
-                log.warning(
-                    '[class.%s] trying again upload_file()',
-                    __class__.__name__,
-                )
-                self.upload_file(
-                    source,
-                    destination
-                )
-            log.info(
-                '[class.%s] %s successful transfering',
-                __class__.__name__,
-                response
-            )
-            return "uploaded"
+                if not retry_on_failure:
+                    log.warning(
+                        '[class.%s] trying again file_upload()',
+                        __class__.__name__,
+                    )
+                    self.file_upload(
+                        source,
+                        destination,
+                        retry_on_failure=True
+                    )
 
         if self.storage['type'] == 'dropbox':
             with open(source, 'rb') as file_transfer:
-                try:
-                    response = self.dropbox_client.files_upload(
-                        file_transfer.read(),
-                        f'/{destination}/{source.split("/")[-1]}'
-                    )
-                except dropbox.exceptions.DropboxException as dropboxexception:
-                    log.error(
-                        '[class.%s] error when uploading a file via the dropbox api: %s',
-                        __class__.__name__,
-                        dropboxexception
-                    )
-            log.info(
-                '[class.%s] %s successful transfering',
-                __class__.__name__,
-                response
-            )
+                response = self.dropbox_client.files_upload(
+                    file_transfer.read(),
+                    f'/{destination}/{source.split("/")[-1]}'
+                )
+                log.info(
+                    '[class.%s] %s successful transferred',
+                    __class__.__name__,
+                    response
+                )
             file_transfer.close()
             return "uploaded"
 
