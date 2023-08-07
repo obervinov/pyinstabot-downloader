@@ -1,9 +1,12 @@
-<mxfile host="app.diagrams.net" modified="2023-08-07T11:19:25.344Z" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5.2 Safari/605.1.15" etag="Pn0py0r21ZFTjwhKfoID" version="21.6.6" type="github">
+<mxfile host="app.diagrams.net" modified="2023-08-07T11:43:03.905Z" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5.2 Safari/605.1.15" etag="zwtak448Bsf1eUuuQDmj" version="21.6.6" type="github">
   <diagram name="Страница 1" id="C4cH1xLUQUfybdzY-Pvg">
     <mxGraphModel dx="1536" dy="2060" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
+        <mxCell id="oiA-mQmHKhEabUs_qZRi-52" value="" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="130" y="-190" width="1180" height="870" as="geometry" />
+        </mxCell>
         <mxCell id="oiA-mQmHKhEabUs_qZRi-24" value="" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
           <mxGeometry x="190" y="-130" width="750" height="310" as="geometry" />
         </mxCell>
@@ -48,14 +51,16 @@
         <mxCell id="oiA-mQmHKhEabUs_qZRi-16" value="Creating instances of classes" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
           <mxGeometry x="470" y="130" width="180" height="30" as="geometry" />
         </mxCell>
-        <mxCell id="oiA-mQmHKhEabUs_qZRi-18" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=1.008;entryY=0.517;entryDx=0;entryDy=0;entryPerimeter=0;" edge="1" parent="1" source="oiA-mQmHKhEabUs_qZRi-17" target="oiA-mQmHKhEabUs_qZRi-10">
-          <mxGeometry relative="1" as="geometry" />
+        <mxCell id="oiA-mQmHKhEabUs_qZRi-18" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=1.007;entryY=0.673;entryDx=0;entryDy=0;entryPerimeter=0;" edge="1" parent="1" source="oiA-mQmHKhEabUs_qZRi-17" target="oiA-mQmHKhEabUs_qZRi-10">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="882" y="313" as="targetPoint" />
+          </mxGeometry>
         </mxCell>
         <mxCell id="oiA-mQmHKhEabUs_qZRi-17" value="&lt;h1&gt;Code environment&lt;/h1&gt;&lt;p&gt;docker container with ubuntu&lt;/p&gt;" style="text;html=1;strokeColor=none;fillColor=none;spacing=5;spacingTop=-20;whiteSpace=wrap;overflow=hidden;rounded=0;" vertex="1" parent="1">
-          <mxGeometry x="1330" y="253" width="190" height="120" as="geometry" />
+          <mxGeometry x="1120" y="280" width="190" height="120" as="geometry" />
         </mxCell>
         <mxCell id="oiA-mQmHKhEabUs_qZRi-19" value="Reading environment variables" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
-          <mxGeometry x="915" y="280" width="190" height="30" as="geometry" />
+          <mxGeometry x="910" y="310" width="190" height="30" as="geometry" />
         </mxCell>
         <mxCell id="oiA-mQmHKhEabUs_qZRi-25" value="&lt;b&gt;Tools&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
           <mxGeometry x="520" y="-130" width="60" height="30" as="geometry" />
@@ -72,11 +77,19 @@
         <mxCell id="oiA-mQmHKhEabUs_qZRi-21" value="messages.json" style="html=1;shadow=0;dashed=0;shape=mxgraph.bootstrap.topButton;rSize=5;perimeter=none;whiteSpace=wrap;fillColor=#F7F7F7;strokeColor=#6C767D;fontColor=#6C767D;resizeWidth=1;fontSize=18;align=left;spacing=20;" vertex="1" parent="oiA-mQmHKhEabUs_qZRi-20">
           <mxGeometry width="250" height="50" relative="1" as="geometry" />
         </mxCell>
+        <mxCell id="oiA-mQmHKhEabUs_qZRi-45" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.997;entryY=0.34;entryDx=0;entryDy=0;entryPerimeter=0;" edge="1" parent="1" source="oiA-mQmHKhEabUs_qZRi-30" target="oiA-mQmHKhEabUs_qZRi-10">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="890" y="320" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="1985" y="281" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
         <mxCell id="oiA-mQmHKhEabUs_qZRi-30" value="" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
-          <mxGeometry x="1320" y="-135" width="1330" height="315" as="geometry" />
+          <mxGeometry x="1320" y="-135" width="1710" height="315" as="geometry" />
         </mxCell>
         <mxCell id="oiA-mQmHKhEabUs_qZRi-31" value="&lt;b&gt;External modules&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
-          <mxGeometry x="1600" y="-131" width="60" height="30" as="geometry" />
+          <mxGeometry x="1950" y="-130" width="60" height="30" as="geometry" />
         </mxCell>
         <mxCell id="oiA-mQmHKhEabUs_qZRi-32" value="&lt;b&gt;&lt;font style=&quot;font-size: 20px&quot;&gt;Interactions with vault-server&lt;/font&gt;&lt;/b&gt;&lt;br style=&quot;font-size: 14px&quot;&gt;&lt;br style=&quot;font-size: 14px&quot;&gt;A class that implements convenient methods for reading, writing, and retrieving a list of secrets from vault" style="html=1;shadow=0;dashed=0;shape=mxgraph.bootstrap.rrect;rSize=5;strokeColor=#188C9C;html=1;whiteSpace=wrap;fillColor=#1CA5B8;fontColor=#ffffff;verticalAlign=bottom;align=left;spacing=20;spacingBottom=0;fontSize=14;" vertex="1" parent="1">
           <mxGeometry x="1340" y="-70" width="250" height="210" as="geometry" />
@@ -90,26 +103,54 @@
         <mxCell id="oiA-mQmHKhEabUs_qZRi-35" value="users-package" style="html=1;shadow=0;dashed=0;shape=mxgraph.bootstrap.topButton;rSize=5;perimeter=none;whiteSpace=wrap;fillColor=#1BA0B2;strokeColor=#188C9C;fontColor=#ffffff;resizeWidth=1;fontSize=18;align=left;spacing=20;" vertex="1" parent="oiA-mQmHKhEabUs_qZRi-34">
           <mxGeometry width="250" height="50" relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="oiA-mQmHKhEabUs_qZRi-36" value="&lt;b&gt;&lt;font style=&quot;font-size: 20px&quot;&gt;Info card title&lt;/font&gt;&lt;/b&gt;&lt;br style=&quot;font-size: 14px&quot;&gt;&lt;br style=&quot;font-size: 14px&quot;&gt;Some quick example text to build on the card title and make up the bulk of the card&#39;s content." style="html=1;shadow=0;dashed=0;shape=mxgraph.bootstrap.rrect;rSize=5;strokeColor=#188C9C;html=1;whiteSpace=wrap;fillColor=#1CA5B8;fontColor=#ffffff;verticalAlign=bottom;align=left;spacing=20;spacingBottom=0;fontSize=14;" vertex="1" parent="1">
+        <mxCell id="oiA-mQmHKhEabUs_qZRi-36" value="&lt;span style=&quot;font-size: 20px;&quot;&gt;&lt;b&gt;Fast configuration and&amp;nbsp;initialization bot&lt;/b&gt;&lt;/span&gt;&lt;br style=&quot;font-size: 14px&quot;&gt;A class that implements convenient methods for bot handlers" style="html=1;shadow=0;dashed=0;shape=mxgraph.bootstrap.rrect;rSize=5;strokeColor=#188C9C;html=1;whiteSpace=wrap;fillColor=#1CA5B8;fontColor=#ffffff;verticalAlign=bottom;align=left;spacing=20;spacingBottom=0;fontSize=14;" vertex="1" parent="1">
           <mxGeometry x="1860" y="-70" width="250" height="210" as="geometry" />
         </mxCell>
         <mxCell id="oiA-mQmHKhEabUs_qZRi-37" value="telegram-package" style="html=1;shadow=0;dashed=0;shape=mxgraph.bootstrap.topButton;rSize=5;perimeter=none;whiteSpace=wrap;fillColor=#1BA0B2;strokeColor=#188C9C;fontColor=#ffffff;resizeWidth=1;fontSize=18;align=left;spacing=20;" vertex="1" parent="oiA-mQmHKhEabUs_qZRi-36">
           <mxGeometry width="250" height="50" relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="oiA-mQmHKhEabUs_qZRi-38" value="&lt;b&gt;&lt;font style=&quot;font-size: 20px&quot;&gt;Info card title&lt;/font&gt;&lt;/b&gt;&lt;br style=&quot;font-size: 14px&quot;&gt;&lt;br style=&quot;font-size: 14px&quot;&gt;Some quick example text to build on the card title and make up the bulk of the card&#39;s content." style="html=1;shadow=0;dashed=0;shape=mxgraph.bootstrap.rrect;rSize=5;strokeColor=#188C9C;html=1;whiteSpace=wrap;fillColor=#1CA5B8;fontColor=#ffffff;verticalAlign=bottom;align=left;spacing=20;spacingBottom=0;fontSize=14;" vertex="1" parent="1">
+        <mxCell id="oiA-mQmHKhEabUs_qZRi-38" value="&lt;span style=&quot;font-size: 20px;&quot;&gt;&lt;b&gt;Easy and unified generation messages&lt;/b&gt;&lt;/span&gt;&lt;br style=&quot;font-size: 14px&quot;&gt;A class that implements convenient methods for generating messages or a progress bar according to a given template" style="html=1;shadow=0;dashed=0;shape=mxgraph.bootstrap.rrect;rSize=5;strokeColor=#188C9C;html=1;whiteSpace=wrap;fillColor=#1CA5B8;fontColor=#ffffff;verticalAlign=bottom;align=left;spacing=20;spacingBottom=0;fontSize=14;" vertex="1" parent="1">
           <mxGeometry x="2120" y="-70" width="250" height="210" as="geometry" />
         </mxCell>
         <mxCell id="oiA-mQmHKhEabUs_qZRi-39" value="messages-package" style="html=1;shadow=0;dashed=0;shape=mxgraph.bootstrap.topButton;rSize=5;perimeter=none;whiteSpace=wrap;fillColor=#1BA0B2;strokeColor=#188C9C;fontColor=#ffffff;resizeWidth=1;fontSize=18;align=left;spacing=20;" vertex="1" parent="oiA-mQmHKhEabUs_qZRi-38">
           <mxGeometry width="250" height="50" relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="oiA-mQmHKhEabUs_qZRi-40" value="&lt;b&gt;&lt;font style=&quot;font-size: 20px&quot;&gt;Info card title&lt;/font&gt;&lt;/b&gt;&lt;br style=&quot;font-size: 14px&quot;&gt;&lt;br style=&quot;font-size: 14px&quot;&gt;Some quick example text to build on the card title and make up the bulk of the card&#39;s content." style="html=1;shadow=0;dashed=0;shape=mxgraph.bootstrap.rrect;rSize=5;strokeColor=#188C9C;html=1;whiteSpace=wrap;fillColor=#1CA5B8;fontColor=#ffffff;verticalAlign=bottom;align=left;spacing=20;spacingBottom=0;fontSize=14;" vertex="1" parent="1">
-          <mxGeometry x="2380" y="-70" width="250" height="210" as="geometry" />
+        <mxCell id="oiA-mQmHKhEabUs_qZRi-40" value="&lt;span style=&quot;font-size: 20px;&quot;&gt;&lt;b&gt;Easy and unified logging&lt;/b&gt;&lt;/span&gt;&lt;br style=&quot;font-size: 14px&quot;&gt;Contains ready-made logger settings" style="html=1;shadow=0;dashed=0;shape=mxgraph.bootstrap.rrect;rSize=5;strokeColor=#188C9C;html=1;whiteSpace=wrap;fillColor=#1CA5B8;fontColor=#ffffff;verticalAlign=bottom;align=left;spacing=20;spacingBottom=0;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="2770" y="-70" width="250" height="210" as="geometry" />
         </mxCell>
         <mxCell id="oiA-mQmHKhEabUs_qZRi-41" value="logger-package" style="html=1;shadow=0;dashed=0;shape=mxgraph.bootstrap.topButton;rSize=5;perimeter=none;whiteSpace=wrap;fillColor=#1BA0B2;strokeColor=#188C9C;fontColor=#ffffff;resizeWidth=1;fontSize=18;align=left;spacing=20;" vertex="1" parent="oiA-mQmHKhEabUs_qZRi-40">
           <mxGeometry width="250" height="50" relative="1" as="geometry" />
         </mxCell>
         <mxCell id="oiA-mQmHKhEabUs_qZRi-42" value="Running the general code" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
           <mxGeometry x="755" y="418" width="160" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="oiA-mQmHKhEabUs_qZRi-46" value="Creating and configuring instances" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="900" y="240" width="210" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="oiA-mQmHKhEabUs_qZRi-47" value="Vault-Server" style="html=1;shadow=0;dashed=0;shape=mxgraph.bootstrap.rrect;rSize=5;strokeColor=none;strokeWidth=1;fillColor=#DB2843;fontColor=#FFFFFF;whiteSpace=wrap;align=center;verticalAlign=middle;spacingLeft=0;fontStyle=0;fontSize=16;spacing=5;" vertex="1" parent="1">
+          <mxGeometry x="1320" y="-320" width="290" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="oiA-mQmHKhEabUs_qZRi-48" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.501;entryY=1.092;entryDx=0;entryDy=0;entryPerimeter=0;strokeWidth=3;fillColor=#f8cecc;strokeColor=#FF0000;" edge="1" parent="1" target="oiA-mQmHKhEabUs_qZRi-47">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1465" y="-70" as="sourcePoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="oiA-mQmHKhEabUs_qZRi-49" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#00CC00;strokeWidth=3;" edge="1" parent="1" source="oiA-mQmHKhEabUs_qZRi-20" target="oiA-mQmHKhEabUs_qZRi-38">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1110" y="200" />
+              <mxPoint x="2245" y="200" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="oiA-mQmHKhEabUs_qZRi-50" value="telegram" style="html=1;shadow=0;dashed=0;shape=mxgraph.bootstrap.rrect;rSize=5;strokeColor=none;strokeWidth=1;fillColor=#0085FC;fontColor=#FFFFFF;whiteSpace=wrap;align=center;verticalAlign=middle;spacingLeft=0;fontStyle=0;fontSize=16;spacing=5;" vertex="1" parent="1">
+          <mxGeometry x="630" y="880" width="250" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="oiA-mQmHKhEabUs_qZRi-51" value="Instagram" style="html=1;shadow=0;dashed=0;shape=mxgraph.bootstrap.rrect;rSize=5;strokeColor=none;strokeWidth=1;fillColor=#990099;fontColor=#FFFFFF;whiteSpace=wrap;align=center;verticalAlign=middle;spacingLeft=0;fontStyle=0;fontSize=16;spacing=5;" vertex="1" parent="1">
+          <mxGeometry x="250" y="-320" width="230" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="oiA-mQmHKhEabUs_qZRi-53" value="&lt;b&gt;&lt;font style=&quot;font-size: 15px;&quot;&gt;Pyinstabot-Downloader&lt;/font&gt;&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="625" y="-190" width="260" height="30" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>
