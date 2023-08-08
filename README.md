@@ -33,7 +33,7 @@ For example:
 </p>
 
 ## <img src="https://github.com/obervinov/_templates/blob/v1.0.4/icons/requirements.png" width="25" title="diagram"> Project architecture
-Logic:
+Code logic
 ![Diagram](doc/diagram-logic.png)
 
 Code dependecies
@@ -53,7 +53,7 @@ Code dependecies
 │   ├── diagram-logic.png
 │   ├── instagram-profile.png
 │   └── pyinstabot-downlaoder.drawio
-├── docker-compose.dev..yml
+├── docker-compose.dev.yml
 ├── docker-compose.prod.yml
 ├── requirements.txt
 ├── src
@@ -71,7 +71,7 @@ Code dependecies
 
 ## <img src="https://github.com/obervinov/_templates/blob/v1.0.4/icons/requirements.png" width="25" title="requirements"> Requirements
 - <img src="https://github.com/obervinov/_templates/blob/v1.0.4/icons/vault.png" width="15" title="vault"> Vault server - [a storage of secrets for bot with kv v2 engine](https://developer.hashicorp.com/vault/docs/secrets/kv/kv-v2)
-- <img src="https://github.com/obervinov/_templates/blob/v1.0.4/icons/dropbox.ico" width="15" title="dropbox"> Dropbox [api token](https://dropbox.tech/developers/generate-an-access-token-for-your-own-account) or Mega.nz [account](https://mega.nz)
+- <img src="https://github.com/obervinov/_templates/blob/v1.0.4/icons/dropbox.ico" width="15" title="dropbox"> Dropbox [api token](https://dropbox.tech/developers/generate-an-access-token-for-your-own-account)</img> or <img src="https://github.com/obervinov/_templates/blob/v1.0.4/icons/mega.ico" width="15" title="mega">Mega.nz [account](https://mega.nz)</img>
 - <img src="https://github.com/obervinov/_templates/blob/v1.0.4/icons/telegram.png" width="15" title="telegram"> Telegram bot api token - [instructions for creating bot and getting a token of api](https://learn.microsoft.com/en-us/azure/bot-service/bot-service-channel-connect-telegram?view=azure-bot-service-4.0)
 - <img src="https://github.com/obervinov/_templates/blob/v1.0.4/icons/instagram.png" width="15" title="instagram"> Instagram username/password - [login and password from the instagram account, it is advisable to create a new account](https://www.instagram.com/accounts/emailsignup/)
 
@@ -102,19 +102,19 @@ Code dependecies
 
 #### <img src="https://github.com/obervinov/_templates/blob/v1.0.4/icons/mega.png" width="18" title="mega"> If mega is going to be used as the target storage, you need to:
 - [Create a mega account](https://mega.nz/register)
-- Don't turn on 2fa (Because the module mega.py can't work with 2fa)[https://github.com/odwyersoftware/mega.py/issues/19]
+- Don't turn on 2fa (because the module mega.py can't work with 2fa https://github.com/odwyersoftware/mega.py/issues/19)
 
 #### <img src="https://github.com/obervinov/_templates/blob/v1.0.4/icons/file.png" width="18" title="file"> If the local file system will be used as the target storage:
-- Set to environment variable `TEMPORARY_DIR` the desired local path for saving content (for example: `/opt/backup/instagram`)
+- Set to environment variable `TEMPORARY_DIR` the desired local path for saving content (ex. `/opt/backup/instagram`)
 
-Such a strange variable name comes from the logic of the bot. The TEMPORARY_DIR variable is used as an intermediate buffer between the stage of downloading content from Instagram and then uploading it to the target storage.
+Such a strange variable name comes from the logic of the bot. The `TEMPORARY_DIR` variable is used as an intermediate buffer between the stage of downloading content from Instagram and then uploading it to the target storage.
 
 If the target storage is dropbox or mega, then files from the temporary directory are simply deleted after successful upload to the cloud.
 
 If the target storage is a local file system, then any further steps to process the files will be unnecessary. The process just immediately uploads the content from Instagram to the target directory (temporary directory), after which nothing happens to the files.
 
 ### Storing project configuration and project history
-All persistent project data is stored in **Vault**:
+<img src="https://github.com/obervinov/_templates/blob/v1.0.4/icons/vault.png" width="15" title="vault"> All persistent project data is stored in **Vault**:
 - stores project configuration parameters
 - keeps the history of already uploaded posts from instagram
 - stores information about user authorization events
@@ -123,7 +123,7 @@ All persistent project data is stored in **Vault**:
 #### You can use an existing vault-server or launch a new one using docker-compose:
 - instructions for starting and configuring a new vault-server
 ```bash
-docker-compose up -d vault-server
+docker-compose -f docker-compose.dev.yml up vault-server -d
 python3 ../tools/vault/setup_instance.py --url=http://localhost:8200 --name=pyinstabot-downloader --policy=vault/policy.hcl
 ```
 
@@ -142,55 +142,30 @@ vault kv put pyinstabot-downloader/configuration/mega username={username} passwo
 ```
 
 ## <img src="https://github.com/obervinov/_templates/blob/v1.0.4/icons/docker.png" width="25" title="docker"> How to run with docker-compose
-3. Load the config for the bot (in the interactive shell of the vault container)
 ```sh
-# Upload the bot configuration containing sensitive data to the vault
-# ${TELEGRAM_API_TOKEN} - your bot's api token
-# ${INSTAGRAM_USER} - username for authorization in the instagram
-# ${INSTAGRAM_PASSWORD} - password for authorization in the instagram
-# ${YOUR_TELEGRAM_ID} - telegram id of your account for authorization of messages sent by the bot (whitelist)
-# ${DROPBOX_API_TOKEN} - token for access to the dropbox api
-vault kv put secretv2/${BOT_NAME}-config/config b_token="${TELEGRAM_API_TOKEN}" i_user="${INSTAGRAM_USER}" i_pass="${INSTAGRAM_PASSWORD}" whitelist="${YOUR_TELEGRAM_ID}" d_token="${DROPBOX_API_TOKEN}"
-### Exit the container shell ###
-```
-4. Set environment variables in the host OS (the required values must be obtained at the vault configuration step)
-```sh
-expot BOT_VAULT_APPROLE_ID="change_me"
-expot BOT_VAULT_APPROLE_SECRET_ID="change_me"
+export VAULT_APPROLE_ID={change_me}
+export VAULT_APPROLE_SECRETID={change_me}
+export VAULT_ADDR={change_me}
+
+docker-compose -f docker-compose.dev.yml up vault-server -d
+# or
+docker-compose -f docker-compose.prod.yml up
 ```
 
-5. Run bot
-```sh
-docker-compose up -d ${BOT_NAME}
-```
-
-6. View logs
-```sh
-docker logs -f ${BOT_NAME}
-```
 
 ## <img src="https://github.com/obervinov/_templates/blob/v1.0.4/icons/stack2.png" width="25" title="stack2"> How to run a bot locally without a docker
 **You need an already running and configured vault to use the approle and kv v2 engine**
-1. Install python requirements
 ```sh
-python3 -m pip install --upgrade pip
 pip3 install -r requirements.txt
-```
-2. Upload the bot configuration containing sensitive data to the vault
-```sh
-# ${TELEGRAM_API_TOKEN} - your bot's api token
-# ${INSTAGRAM_USER} - username for authorization in the instagram
-# ${INSTAGRAM_PASSWORD} - password for authorization in the instagram
-# ${YOUR_TELEGRAM_ID} - telegram id of your account for authorization of messages sent by the bot (whitelist)
-# ${DROPBOX_API_TOKEN} - token for access to the dropbox api
-vault kv put secretv2/${BOT_NAME}-config/config b_token="${TELEGRAM_API_TOKEN}" i_user="${INSTAGRAM_USER}" i_pass="${INSTAGRAM_PASSWORD}" whitelist="${YOUR_TELEGRAM_ID}" d_token="${DROPBOX_API_TOKEN}
-```
-3. Set environment variables in the host OS (the required values must be obtained at the vault configuration step)
-```sh
-expot BOT_VAULT_APPROLE_ID="change_me"
-expot BOT_VAULT_APPROLE_SECRET_ID="change_me"
-```
-4. Run bot
-```sh
-python3 bot.py
+
+export VAULT_APPROLE_ID={change_me}
+export VAULT_APPROLE_SECRETID={change_me}
+export VAULT_ADDR={change_me}
+export BOT_NAME=pyinstabot-downloader
+export LOGGER_LEVEL=INFO
+export STORAGE_TYPE=mega
+export INSTAGRAM_SESSION=/home/python/.config/instaloader/.session
+export STORAGE_EXCLUDE_TYPE=".txt"
+
+python3 src/bot.py
 ```
