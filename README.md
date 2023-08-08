@@ -19,57 +19,59 @@
 
 
 ## <img src="https://github.com/obervinov/_templates/blob/v1.0.4/icons/book.png" width="25" title="about"> About this project
-This project is a telegram bot that allows you to backup content from your Instagram profile to the Dropbox cloud or to the local filesystem.
+This project is a telegram bot that allows you to create backups of content from your Instagram profile to Dropbox or Mega clouds, as well as in the local file system.
 
 Main functions:
-- download the content of all posts from the profile
-- download the content of one post by target link
-- save the download content to the dropbox or to the local of filesystem
+- a backup copy of all posts from the profile
+- a backup copy of a specific post by link
+- the ability to backup to the mega or dropbox cloud
 
-
-The vault is used for:
-- storing confidential project configuration parameters
-- storing the history of already uploaded shortcodes of posts
-- storing information about user authorization events
-
+For example:
 <p align="center">
   <img src="doc/bot-preview.gif" width="1000" title="bot-preview">
   <img src="doc/instagram-profile.png" width="500" alt="instagram-profile">
 </p>
 
 ## <img src="https://github.com/obervinov/_templates/blob/v1.0.4/icons/requirements.png" width="25" title="diagram"> Project architecture
+Logic:
 ![Diagram](doc/diagram-logic.png)
+
+Code dependecies
 ![Diagram](doc/diagram-code.png)
 
 ## <img src="https://github.com/obervinov/_templates/blob/v1.0.4/icons/requirements.png" width="25" title="stack"> Repository map
 ```sh
+.
 ├── CHANGELOG.md
 ├── Dockerfile
 ├── LICENSE
 ├── README.md
 ├── SECURITY.md
 ├── doc
-│   ├── bot-preview.gif
-│   └── instagram-profile.png
-├── docker-compose.yml
+│   ├── bot-preview.gif
+│   ├── diagram-code.png
+│   ├── diagram-logic.png
+│   ├── instagram-profile.png
+│   └── pyinstabot-downlaoder.drawio
+├── docker-compose.dev..yml
+├── docker-compose.prod.yml
 ├── requirements.txt
 ├── src
-│   ├── bot.py
-│   ├── configs
-│   │   ├── messages.json
-│   │   └── settings.py
-│   └── extensions
-│       ├── __init__.py
-│       ├── downloader.py
-│       └── uploader.py
+│   ├── bot.py
+│   ├── configs
+│   │   └── messages.json
+│   ├── constants.py
+│   └── tools
+│       ├── __init__.py
+│       ├── downloader.py
+│       └── uploader.py
 └── vault
     └── policy.hcl
 ```
 
-
 ## <img src="https://github.com/obervinov/_templates/blob/v1.0.4/icons/requirements.png" width="25" title="requirements"> Requirements
 - <img src="https://github.com/obervinov/_templates/blob/v1.0.4/icons/vault.png" width="15" title="vault"> Vault server - [a storage of secrets for bot with kv v2 engine](https://developer.hashicorp.com/vault/docs/secrets/kv/kv-v2)
-- <img src="https://github.com/obervinov/_templates/blob/v1.0.4/icons/dropbox.ico" width="15" title="dropbox"> Dropbox api token - [instructions for generating a token of api](https://dropbox.tech/developers/generate-an-access-token-for-your-own-account)
+- <img src="https://github.com/obervinov/_templates/blob/v1.0.4/icons/dropbox.ico" width="15" title="dropbox"> Dropbox [api token](https://dropbox.tech/developers/generate-an-access-token-for-your-own-account) or Mega.nz [account](https://mega.nz)
 - <img src="https://github.com/obervinov/_templates/blob/v1.0.4/icons/telegram.png" width="15" title="telegram"> Telegram bot api token - [instructions for creating bot and getting a token of api](https://learn.microsoft.com/en-us/azure/bot-service/bot-service-channel-connect-telegram?view=azure-bot-service-4.0)
 - <img src="https://github.com/obervinov/_templates/blob/v1.0.4/icons/instagram.png" width="15" title="instagram"> Instagram username/password - [login and password from the instagram account, it is advisable to create a new account](https://www.instagram.com/accounts/emailsignup/)
 
@@ -79,13 +81,15 @@ The vault is used for:
 | ------------- | ------------- | ------------- |
 | `LOGGER_LEVEL` | [The logging level of the logging module](https://docs.python.org/3/library/logging.html#logging-levels) | `INFO` |
 | `BOT_NAME` | The name of the bot, used to determine the unique mount point in the vault | `pyinstabot-downloader` |
-| `STORAGE_TYPE` | Type of target storage for saving uploaded content from instagram (`dropbox` or `local`) | `local` |
+| `MESSAGES_CONFIG` | The path to the message template file | `src/configs/messages.json` |
+| `STORAGE_TYPE` | Type of target storage for saving uploaded content from instagram (`dropbox`, `mega` or `local`) | `mega` |
+| `STORAGE_EXCLUDE_TYPE`| Types of files that you want to exclude from uploading to the cloud | `.txt` |
 | `TEMPORARY_DIR` | Temporary directory for saving uploaded content from instagram | `tmp/` |
-| `VAULT_ADDR`  | The address at which the vault server will be available to the bot | `http://vault-server:8200` |
-| `VAULT_APPROLE_ID` | [Approle id created during vault setup](https://developer.hashicorp.com/vault/docs/auth/approle) | `None` |
-| `VAULT_APPROLE_SECRET_ID`  | [Approle secret id created during vault setup](https://developer.hashicorp.com/vault/docs/auth/approle) | `None` |
 | `INSTAGRAM_SESSION` | The path for storing the file with the instagram session | `.session` |
 | `INSTAGRAM_USERAGENT`  | [User Agent to use for HTTP requests. Per default, Instaloader pretends being Chrome/92 on Linux](https://instaloader.github.io/cli-options.html#cmdoption-user-agent) | `None` |
+| `VAULT_ADDR`  | The address at which the vault server will be available to the bot | `None` |
+| `VAULT_APPROLE_ID` | [Approle id created during vault setup](https://developer.hashicorp.com/vault/docs/auth/approle) | `None` |
+| `VAULT_APPROLE_SECRETID`  | [Approle secret id created during vault setup](https://developer.hashicorp.com/vault/docs/auth/approle) | `None` |
 
 
 ## <img src="https://github.com/obervinov/_templates/blob/v1.0.4/icons/config.png" width="25" title="config"> Prepare
@@ -96,27 +100,46 @@ The vault is used for:
 
 [More documentation](https://www.dropbox.com/developers/documentation/python#overview)
 
+#### <img src="https://github.com/obervinov/_templates/blob/v1.0.4/icons/mega.png" width="18" title="mega"> If mega is going to be used as the target storage, you need to:
+- [Create a mega account](https://mega.nz/register)
+- Don't turn on 2fa (Because the module mega.py can't work with 2fa)[https://github.com/odwyersoftware/mega.py/issues/19]
+
 #### <img src="https://github.com/obervinov/_templates/blob/v1.0.4/icons/file.png" width="18" title="file"> If the local file system will be used as the target storage:
 - Set to environment variable `TEMPORARY_DIR` the desired local path for saving content (for example: `/opt/backup/instagram`)
 
-Such a strange variable name comes from the logic of the bots with different targets. Variable `TEMPORARY_DIR` is used as an intermediate buffer between the stage of downloading content from Instagram and then uploading it to the _target storage_.
+Such a strange variable name comes from the logic of the bot. The TEMPORARY_DIR variable is used as an intermediate buffer between the stage of downloading content from Instagram and then uploading it to the target storage.
 
-If the target storage is **dropbox**, then files from the _temporary directory_ are simply deleted after uploading to the cloud.
+If the target storage is dropbox or mega, then files from the temporary directory are simply deleted after successful upload to the cloud.
 
-If the target storage is a **local file system**, then any further steps for processing files will be redundant. The process simply downloads the content from Instagram immediately to the _destination directory_ (_temproary directory_), after which nothing happens to the files.
+If the target storage is a local file system, then any further steps to process the files will be unnecessary. The process just immediately uploads the content from Instagram to the target directory (temporary directory), after which nothing happens to the files.
 
-### Vault as a persistent storage of the configuration and history of the bot
- - Starting and basic configuration of **vault**
-When using **docker-compose** a file
+### Storing project configuration and project history
+All persistent project data is stored in **Vault**:
+- stores project configuration parameters
+- keeps the history of already uploaded posts from instagram
+- stores information about user authorization events
+- stores attributes and user rights
+
+#### You can use an existing vault-server or launch a new one using docker-compose:
+- instructions for starting and configuring a new vault-server
 ```bash
-# start container with vault
 docker-compose up -d vault-server
-# initialization vault instance
-docker exec -t vault-server vault operator init
+python3 ../tools/vault/setup_instance.py --url=http://localhost:8200 --name=pyinstabot-downloader --policy=vault/policy.hcl
 ```
 
+- instructions for configuring an existing vault server
+```bash
+python3 ../tools/vault/setup_instance.py --url=http://localhost:8200 --name=pyinstabot-downloader --policy=vault/policy.hcl --token=hvs.123456qwerty
+```
 
-
+#### Required bot configuration parameters
+```bash
+vault kv put pyinstabot-downloader/configuration/dropbox token={dropbox_token}
+vault kv put pyinstabot-downloader/configuration/telegram token={telegram_token}
+vault kv put pyinstabot-downloader/configuration/permissions {your_telegram_userid}=allow
+vault kv put pyinstabot-downloader/configuration/instagram username={username} password={password}
+vault kv put pyinstabot-downloader/configuration/mega username={username} password={password}
+```
 
 ## <img src="https://github.com/obervinov/_templates/blob/v1.0.4/icons/docker.png" width="25" title="docker"> How to run with docker-compose
 3. Load the config for the bot (in the interactive shell of the vault container)
@@ -171,13 +194,3 @@ expot BOT_VAULT_APPROLE_SECRET_ID="change_me"
 ```sh
 python3 bot.py
 ```
-
-
-python3 ../tools/vault/setup_instance.py --url=http://localhost:8200 --name=pyinstabot-downloader --policy=vault/policy.hcl
-python3 ../tools/vault/setup_instance.py --url=http://localhost:8200 --name=pyinstabot-downloader --policy=vault/policy.hcl --token=hvs.123456qwerty
-
-vault kv put pyinstabot-downloader/configuration/dropbox token=None
-vault kv put pyinstabot-downloader/configuration/telegram token=None
-vault kv put pyinstabot-downloader/configuration/permissions 123456=allow
-vault kv put pyinstabot-downloader/configuration/instagram username=username1 password=password1
-vault kv put pyinstabot-downloader/configuration/mega username=username1 password=password1
