@@ -12,13 +12,13 @@
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/instaloader?style=for-the-badge)
 
 
-## <img src="https://github.com/obervinov/_templates/blob/main/icons/github-actions.png" width="25" title="github-actions"> GitHub Actions
+## <img src="https://github.com/obervinov/_templates/blob/v1.0.4/icons/github-actions.png" width="25" title="github-actions"> GitHub Actions
 | Name  | Version |
 | ------------------------ | ----------- |
 | GitHub Actions Templates | [v1.0.4](https://github.com/obervinov/_templates/tree/v1.0.4) |
 
 
-## <img src="https://github.com/obervinov/_templates/blob/main/icons/book.png" width="25" title="about"> About this project
+## <img src="https://github.com/obervinov/_templates/blob/v1.0.4/icons/book.png" width="25" title="about"> About this project
 This project is a telegram bot that allows you to backup content from your Instagram profile to the Dropbox cloud or to the local filesystem.
 
 Main functions:
@@ -37,8 +37,11 @@ The vault is used for:
   <img src="doc/instagram-profile.png" width="500" alt="instagram-profile">
 </p>
 
+## <img src="https://github.com/obervinov/_templates/blob/v1.0.4/icons/requirements.png" width="25" title="diagram"> Project architecture
+![Diagram](doc/diagram-logic.png)
+![Diagram](doc/diagram-code.png)
 
-## <img src="https://github.com/obervinov/_templates/blob/main/icons/stack.png" width="25" title="stack"> Repository map
+## <img src="https://github.com/obervinov/_templates/blob/v1.0.4/icons/requirements.png" width="25" title="stack"> Repository map
 ```sh
 ├── CHANGELOG.md
 ├── Dockerfile
@@ -64,14 +67,14 @@ The vault is used for:
 ```
 
 
-## <img src="https://github.com/obervinov/_templates/blob/main/icons/requirements.png" width="25" title="requirements"> Requirements
-- <img src="https://github.com/obervinov/_templates/blob/main/icons/vault.png" width="15" title="vault"> Vault server - [a storage of secrets for bot with kv v2 engine](https://developer.hashicorp.com/vault/docs/secrets/kv/kv-v2)
-- <img src="https://github.com/obervinov/_templates/blob/main/icons/dropbox.ico" width="15" title="dropbox"> Dropbox api token - [instructions for generating a token of api](https://dropbox.tech/developers/generate-an-access-token-for-your-own-account)
-- <img src="https://github.com/obervinov/_templates/blob/main/icons/telegram.png" width="15" title="telegram"> Telegram bot api token - [instructions for creating bot and getting a token of api](https://learn.microsoft.com/en-us/azure/bot-service/bot-service-channel-connect-telegram?view=azure-bot-service-4.0)
-- <img src="https://github.com/obervinov/_templates/blob/main/icons/instagram.png" width="15" title="instagram"> Instagram username/password - [login and password from the instagram account, it is advisable to create a new account](https://www.instagram.com/accounts/emailsignup/)
+## <img src="https://github.com/obervinov/_templates/blob/v1.0.4/icons/requirements.png" width="25" title="requirements"> Requirements
+- <img src="https://github.com/obervinov/_templates/blob/v1.0.4/icons/vault.png" width="15" title="vault"> Vault server - [a storage of secrets for bot with kv v2 engine](https://developer.hashicorp.com/vault/docs/secrets/kv/kv-v2)
+- <img src="https://github.com/obervinov/_templates/blob/v1.0.4/icons/dropbox.ico" width="15" title="dropbox"> Dropbox api token - [instructions for generating a token of api](https://dropbox.tech/developers/generate-an-access-token-for-your-own-account)
+- <img src="https://github.com/obervinov/_templates/blob/v1.0.4/icons/telegram.png" width="15" title="telegram"> Telegram bot api token - [instructions for creating bot and getting a token of api](https://learn.microsoft.com/en-us/azure/bot-service/bot-service-channel-connect-telegram?view=azure-bot-service-4.0)
+- <img src="https://github.com/obervinov/_templates/blob/v1.0.4/icons/instagram.png" width="15" title="instagram"> Instagram username/password - [login and password from the instagram account, it is advisable to create a new account](https://www.instagram.com/accounts/emailsignup/)
 
 
-## <img src="https://github.com/obervinov/_templates/blob/main/icons/build.png" width="25" title="build"> Environment variables
+## <img src="https://github.com/obervinov/_templates/blob/v1.0.4/icons/build.png" width="25" title="build"> Environment variables
 | Variable  | Description | Default value |
 | ------------- | ------------- | ------------- |
 | `LOGGER_LEVEL` | [The logging level of the logging module](https://docs.python.org/3/library/logging.html#logging-levels) | `INFO` |
@@ -85,15 +88,15 @@ The vault is used for:
 | `INSTAGRAM_USERAGENT`  | [User Agent to use for HTTP requests. Per default, Instaloader pretends being Chrome/92 on Linux](https://instaloader.github.io/cli-options.html#cmdoption-user-agent) | `None` |
 
 
-## <img src="https://github.com/obervinov/_templates/blob/main/icons/config.png" width="25" title="config"> Prepare
+## <img src="https://github.com/obervinov/_templates/blob/v1.0.4/icons/config.png" width="25" title="config"> Prepare
 ### Target storage of the content
-#### <img src="https://github.com/obervinov/_templates/blob/main/icons/dropbox.ico" width="18" title="dropbox"> If dropbox is going to be used as the target storage, you need to:
+#### <img src="https://github.com/obervinov/_templates/blob/v1.0.4/icons/dropbox.ico" width="18" title="dropbox"> If dropbox is going to be used as the target storage, you need to:
 - [Create a dropbox account](https://www.dropbox.com/register)
 - Generate an application token according to the instructions [here](https://dropbox.tech/developers/generate-an-access-token-for-your-own-account) and [here](https://developers.dropbox.com/ru-ru/oauth-guide)
 
 [More documentation](https://www.dropbox.com/developers/documentation/python#overview)
 
-#### <img src="https://github.com/obervinov/_templates/blob/main/icons/file.png" width="18" title="file"> If the local file system will be used as the target storage:
+#### <img src="https://github.com/obervinov/_templates/blob/v1.0.4/icons/file.png" width="18" title="file"> If the local file system will be used as the target storage:
 - Set to environment variable `TEMPORARY_DIR` the desired local path for saving content (for example: `/opt/backup/instagram`)
 
 Such a strange variable name comes from the logic of the bots with different targets. Variable `TEMPORARY_DIR` is used as an intermediate buffer between the stage of downloading content from Instagram and then uploading it to the _target storage_.
@@ -115,7 +118,7 @@ docker exec -t vault-server vault operator init
 
 
 
-## <img src="https://github.com/obervinov/_templates/blob/main/icons/docker.png" width="25" title="docker"> How to run with docker-compose
+## <img src="https://github.com/obervinov/_templates/blob/v1.0.4/icons/docker.png" width="25" title="docker"> How to run with docker-compose
 3. Load the config for the bot (in the interactive shell of the vault container)
 ```sh
 # Upload the bot configuration containing sensitive data to the vault
@@ -143,7 +146,7 @@ docker-compose up -d ${BOT_NAME}
 docker logs -f ${BOT_NAME}
 ```
 
-## <img src="https://github.com/obervinov/_templates/blob/main/icons/stack2.png" width="25" title="stack2"> How to run a bot locally without a docker
+## <img src="https://github.com/obervinov/_templates/blob/v1.0.4/icons/stack2.png" width="25" title="stack2"> How to run a bot locally without a docker
 **You need an already running and configured vault to use the approle and kv v2 engine**
 1. Install python requirements
 ```sh

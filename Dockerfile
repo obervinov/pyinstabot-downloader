@@ -2,10 +2,11 @@ FROM python:3.10-alpine3.16
 
 ### External argumetns ###
 ARG PROJECT_NAME
+ARG PROJECT_DESCRIPTION
 
 ### Labels ###
 LABEL org.opencontainers.image.source https://github.com/obervinov/${PROJECT_NAME}
-LABEL org.opencontainers.image.description 'This project is a telegram bot that allows you to backup content from your Instagram profile to the Dropbox cloud or to the local filesystem.'
+LABEL org.opencontainers.image.description $PROJECT_DESCRIPTION
 
 ### Environment variables ###
 ENV PATH=/home/${PROJECT_NAME}/.local/bin:$PATH

@@ -1,0 +1,20 @@
+---
+version: '3'
+services:
+    pyinstabot-downloader:
+        image: ghcr.io/obervinov/pyinstabot-downloader:v2.0.0
+        container_name: pyinstabot-downloader
+        restart: always
+        environment:
+            - BOT_NAME=pyinstabot-downloader
+            - VAULT_APPROLE_ID=${VAULT_APPROLE_ID}
+            - VAULT_APPROLE_SECRETID=${VAULT_APPROLE_SECRETID}
+            - VAULT_ADDR=${VAULT_ADDR}
+            - LOGGER_LEVEL=INFO
+            - STORAGE_TYPE=mega
+            - INSTAGRAM_SESSION=/home/python/.config/instaloader/.session
+            - STORAGE_EXCLUDE_TYPE=".txt"
+        depends_on:
+            - vault-server
+        volumes:
+            - ./.config/instaloader:/home/python/.config/instaloader

@@ -157,7 +157,6 @@ def get_post_account(
         )
 
         shortcode = message.text.split("/")[4]
-
         # download the contents of an instagram post to a temporary folder
         d_response = constants.DOWNLOADER_INSTANCE.get_post_content(
             shortcode
