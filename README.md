@@ -9,7 +9,8 @@
 ![GitHub Release Date](https://img.shields.io/github/release-date/obervinov/pyinstabot-downloader?style=for-the-badge)
 ![GitHub issues](https://img.shields.io/github/issues/obervinov/pyinstabot-downloader?style=for-the-badge)
 ![GitHub repo size](https://img.shields.io/github/repo-size/obervinov/pyinstabot-downloader?style=for-the-badge)
-![PyPI - Python Version](https://img.shields.io/pypi/pyversions/instaloader?style=for-the-badge)
+[![Python version](https://img.shields.io/badge/python-3.10.7-blue.svg?style=for-the-badge)](https://www.python.org/downloads/release/python-3107/)
+[![License](https://img.shields.io/badge/license-MIT-green.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
 
 
 ## <img src="https://github.com/obervinov/_templates/blob/v1.0.5/icons/github-actions.png" width="25" title="github-actions"> GitHub Actions
@@ -45,6 +46,7 @@ Code dependecies
 ├── CHANGELOG.md
 ├── Dockerfile
 ├── LICENSE
+├── Pipfile
 ├── README.md
 ├── SECURITY.md
 ├── doc
@@ -53,7 +55,7 @@ Code dependecies
 │   ├── diagram-logic.png
 │   ├── instagram-profile.png
 │   └── pyinstabot-downlaoder.drawio
-├── docker-compose.dev.yml
+├── docker-compose.dev..yml
 ├── docker-compose.prod.yml
 ├── requirements.txt
 ├── src
@@ -66,7 +68,10 @@ Code dependecies
 │       ├── downloader.py
 │       └── uploader.py
 └── vault
+    ├── data
     └── policy.hcl
+
+7 directories, 21 files
 ```
 
 ## <img src="https://github.com/obervinov/_templates/blob/v1.0.5/icons/requirements.png" width="25" title="requirements"> Requirements
