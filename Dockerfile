@@ -15,7 +15,8 @@ ENV PATH=/home/${PROJECT_NAME}/.local/bin:$PATH
 RUN adduser -D -h /home/${PROJECT_NAME} -s /bin/sh ${PROJECT_NAME} && \
     mkdir -p /home/${PROJECT_NAME} && \
     mkdir -p /home/${PROJECT_NAME}/app && \
-    chown ${PROJECT_NAME}. /home/${PROJECT_NAME}
+     mkdir -p /home/${PROJECT_NAME}/tmp && \
+    chown ${PROJECT_NAME}. /home/${PROJECT_NAME} -R
 
 ### Prepare git
 RUN apk add git

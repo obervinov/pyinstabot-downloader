@@ -33,7 +33,8 @@ services:
             - LOGGER_LEVEL=DEBUG
             - STORAGE_TYPE=local
             - INSTAGRAM_SESSION=/home/python/.config/instaloader/.session
-            - STORAGE_EXCLUDE_TYPE=""
+            - STORAGE_EXCLUDE_TYPE=
+            - MESSAGES_CONFIG=configs/messages.json
         depends_on:
             - vault-server
         volumes:

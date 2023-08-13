@@ -13,6 +13,7 @@ services:
             - LOGGER_LEVEL=INFO
             - STORAGE_TYPE=mega
             - INSTAGRAM_SESSION=/home/python/.config/instaloader/.session
-            - STORAGE_EXCLUDE_TYPE=".txt"
+            - STORAGE_EXCLUDE_TYPE=.txt
+            - MESSAGES_CONFIG=configs/messages.json
         volumes:
             - ./.config/instaloader:/home/python/.config/instaloader
