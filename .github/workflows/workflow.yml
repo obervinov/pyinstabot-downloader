@@ -1,4 +1,4 @@
-name: Build release image
+name: Test, Build and create relese
 
 on:
   push:
@@ -10,7 +10,14 @@ on:
 env:
   PROJECT_DESCRIPTION: "This project is a telegram bot that allows you to create backups of content from your Instagram profile to Dropbox or Mega clouds, as well as in the local file system."
 
+
 jobs:
+  pylint:
+    uses: obervinov/_templates/.github/workflows/test.pylint.yml@v1.0.4
+  verify-changelog:
+    uses: obervinov/_templates/.github/workflows/verify.changelog.yml@v1.0.4
+  #pytest:
+  #  uses: obervinov/_templates/.github/workflows/test.pytest-with-vault.yml@v1.0.4
   build-release:
     uses: obervinov/_templates/.github/workflows/build.docker.yml@release/v1.0.5
     needs: [pylint, verify-changelog]
