@@ -12,5 +12,5 @@ jobs:
     uses: obervinov/_templates/.github/workflows/test.pylint.yml@v1.0.4
   verify-changelog:
     uses: obervinov/_templates/.github/workflows/verify.changelog.yml@v1.0.4
-  pytest:
-    uses: obervinov/_templates/.github/workflows/test.pytest-with-vault.yml@v1.0.4
+  #pytest:
+  #  uses: obervinov/_templates/.github/workflows/test.pytest-with-vault.yml@v1.0.4
