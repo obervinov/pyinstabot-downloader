@@ -89,7 +89,8 @@ class Downloader:
             compress_json=True,
             post_metadata_txt_pattern=None,
             storyitem_metadata_txt_pattern=None,
-            check_resume_bbd=True
+            check_resume_bbd=True,
+            fatal_status_codes=[400, 429, 500]
         )
 
         if os.path.exists(

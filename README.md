@@ -12,13 +12,13 @@
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/instaloader?style=for-the-badge)
 
 
-## <img src="https://github.com/obervinov/_templates/blob/v1.0.4/icons/github-actions.png" width="25" title="github-actions"> GitHub Actions
+## <img src="https://github.com/obervinov/_templates/blob/v1.0.5/icons/github-actions.png" width="25" title="github-actions"> GitHub Actions
 | Name  | Version |
 | ------------------------ | ----------- |
-| GitHub Actions Templates | [v1.0.4](https://github.com/obervinov/_templates/tree/v1.0.4) |
+| GitHub Actions Templates | [v1.0.5](https://github.com/obervinov/_templates/tree/v1.0.5) |
 
 
-## <img src="https://github.com/obervinov/_templates/blob/v1.0.4/icons/book.png" width="25" title="about"> About this project
+## <img src="https://github.com/obervinov/_templates/blob/v1.0.5/icons/book.png" width="25" title="about"> About this project
 This project is a telegram bot that allows you to create backups of content from your Instagram profile to Dropbox or Mega clouds, as well as in the local file system.
 
 Main functions:
@@ -32,14 +32,14 @@ For example:
   <img src="doc/instagram-profile.png" width="500" alt="instagram-profile">
 </p>
 
-## <img src="https://github.com/obervinov/_templates/blob/v1.0.4/icons/requirements.png" width="25" title="diagram"> Project architecture
+## <img src="https://github.com/obervinov/_templates/blob/v1.0.5/icons/requirements.png" width="25" title="diagram"> Project architecture
 Code logic
 ![Diagram](doc/diagram-logic.png)
 
 Code dependecies
 ![Diagram](doc/diagram-code.png)
 
-## <img src="https://github.com/obervinov/_templates/blob/v1.0.4/icons/requirements.png" width="25" title="stack"> Repository map
+## <img src="https://github.com/obervinov/_templates/blob/v1.0.5/icons/requirements.png" width="25" title="stack"> Repository map
 ```sh
 .
 ├── CHANGELOG.md
@@ -69,14 +69,14 @@ Code dependecies
     └── policy.hcl
 ```
 
-## <img src="https://github.com/obervinov/_templates/blob/v1.0.4/icons/requirements.png" width="25" title="requirements"> Requirements
-- <img src="https://github.com/obervinov/_templates/blob/v1.0.4/icons/vault.png" width="15" title="vault"> Vault server - [a storage of secrets for bot with kv v2 engine](https://developer.hashicorp.com/vault/docs/secrets/kv/kv-v2)
-- <img src="https://github.com/obervinov/_templates/blob/v1.0.4/icons/dropbox.ico" width="15" title="dropbox"> Dropbox [api token](https://dropbox.tech/developers/generate-an-access-token-for-your-own-account)</img> or <img src="https://github.com/obervinov/_templates/blob/v1.0.4/icons/mega.ico" width="15" title="mega">Mega.nz [account](https://mega.nz)</img>
-- <img src="https://github.com/obervinov/_templates/blob/v1.0.4/icons/telegram.png" width="15" title="telegram"> Telegram bot api token - [instructions for creating bot and getting a token of api](https://learn.microsoft.com/en-us/azure/bot-service/bot-service-channel-connect-telegram?view=azure-bot-service-4.0)
-- <img src="https://github.com/obervinov/_templates/blob/v1.0.4/icons/instagram.png" width="15" title="instagram"> Instagram username/password - [login and password from the instagram account, it is advisable to create a new account](https://www.instagram.com/accounts/emailsignup/)
+## <img src="https://github.com/obervinov/_templates/blob/v1.0.5/icons/requirements.png" width="25" title="requirements"> Requirements
+- <img src="https://github.com/obervinov/_templates/blob/v1.0.5/icons/vault.png" width="15" title="vault"> Vault server - [a storage of secrets for bot with kv v2 engine](https://developer.hashicorp.com/vault/docs/secrets/kv/kv-v2)
+- <img src="https://github.com/obervinov/_templates/blob/v1.0.5/icons/dropbox.ico" width="15" title="dropbox"> Dropbox [api token](https://dropbox.tech/developers/generate-an-access-token-for-your-own-account)</img> or <img src="https://github.com/obervinov/_templates/blob/v1.0.5/icons/mega.ico" width="15" title="mega"> Mega.nz [account](https://mega.nz)</img>
+- <img src="https://github.com/obervinov/_templates/blob/v1.0.5/icons/telegram.png" width="15" title="telegram"> Telegram bot api token - [instructions for creating bot and getting a token of api](https://learn.microsoft.com/en-us/azure/bot-service/bot-service-channel-connect-telegram?view=azure-bot-service-4.0)
+- <img src="https://github.com/obervinov/_templates/blob/v1.0.5/icons/instagram.png" width="15" title="instagram"> Instagram username/password - [login and password from the instagram account, it is advisable to create a new account](https://www.instagram.com/accounts/emailsignup/)
 
 
-## <img src="https://github.com/obervinov/_templates/blob/v1.0.4/icons/build.png" width="25" title="build"> Environment variables
+## <img src="https://github.com/obervinov/_templates/blob/v1.0.5/icons/build.png" width="25" title="build"> Environment variables
 | Variable  | Description | Default value |
 | ------------- | ------------- | ------------- |
 | `LOGGER_LEVEL` | [The logging level of the logging module](https://docs.python.org/3/library/logging.html#logging-levels) | `INFO` |
@@ -92,19 +92,19 @@ Code dependecies
 | `VAULT_APPROLE_SECRETID`  | [Approle secret id created during vault setup](https://developer.hashicorp.com/vault/docs/auth/approle) | `None` |
 
 
-## <img src="https://github.com/obervinov/_templates/blob/v1.0.4/icons/config.png" width="25" title="config"> Prepare
+## <img src="https://github.com/obervinov/_templates/blob/v1.0.5/icons/config.png" width="25" title="config"> Prepare
 ### Target storage of the content
-#### <img src="https://github.com/obervinov/_templates/blob/v1.0.4/icons/dropbox.ico" width="18" title="dropbox"> If dropbox is going to be used as the target storage, you need to:
+#### <img src="https://github.com/obervinov/_templates/blob/v1.0.5/icons/dropbox.ico" width="18" title="dropbox"> If dropbox is going to be used as the target storage, you need to:
 - [Create a dropbox account](https://www.dropbox.com/register)
 - Generate an application token according to the instructions [here](https://dropbox.tech/developers/generate-an-access-token-for-your-own-account) and [here](https://developers.dropbox.com/ru-ru/oauth-guide)
 
 [More documentation](https://www.dropbox.com/developers/documentation/python#overview)
 
-#### <img src="https://github.com/obervinov/_templates/blob/v1.0.4/icons/mega.png" width="18" title="mega"> If mega is going to be used as the target storage, you need to:
+#### <img src="https://github.com/obervinov/_templates/blob/v1.0.5/icons/mega.png" width="18" title="mega"> If mega is going to be used as the target storage, you need to:
 - [Create a mega account](https://mega.nz/register)
 - Don't turn on 2fa (because the module mega.py can't work with 2fa https://github.com/odwyersoftware/mega.py/issues/19)
 
-#### <img src="https://github.com/obervinov/_templates/blob/v1.0.4/icons/file.png" width="18" title="file"> If the local file system will be used as the target storage:
+#### <img src="https://github.com/obervinov/_templates/blob/v1.0.5/icons/file.png" width="18" title="file"> If the local file system will be used as the target storage:
 - Set to environment variable `TEMPORARY_DIR` the desired local path for saving content (ex. `/opt/backup/instagram`)
 
 Such a strange variable name comes from the logic of the bot. The `TEMPORARY_DIR` variable is used as an intermediate buffer between the stage of downloading content from Instagram and then uploading it to the target storage.
@@ -114,7 +114,7 @@ If the target storage is dropbox or mega, then files from the temporary director
 If the target storage is a local file system, then any further steps to process the files will be unnecessary. The process just immediately uploads the content from Instagram to the target directory (temporary directory), after which nothing happens to the files.
 
 ### Storing project configuration and project history
-<img src="https://github.com/obervinov/_templates/blob/v1.0.4/icons/vault.png" width="15" title="vault"> All persistent project data is stored in **Vault**:
+<img src="https://github.com/obervinov/_templates/blob/v1.0.5/icons/vault.png" width="15" title="vault"> All persistent project data is stored in **Vault**:
 - stores project configuration parameters
 - keeps the history of already uploaded posts from instagram
 - stores information about user authorization events
@@ -141,7 +141,7 @@ vault kv put pyinstabot-downloader/configuration/instagram username={username} p
 vault kv put pyinstabot-downloader/configuration/mega username={username} password={password}
 ```
 
-## <img src="https://github.com/obervinov/_templates/blob/v1.0.4/icons/docker.png" width="25" title="docker"> How to run with docker-compose
+## <img src="https://github.com/obervinov/_templates/blob/v1.0.5/icons/docker.png" width="25" title="docker"> How to run with docker-compose
 ```sh
 export VAULT_APPROLE_ID={change_me}
 export VAULT_APPROLE_SECRETID={change_me}
@@ -153,7 +153,7 @@ docker-compose -f docker-compose.prod.yml up
 ```
 
 
-## <img src="https://github.com/obervinov/_templates/blob/v1.0.4/icons/stack2.png" width="25" title="stack2"> How to run a bot locally without a docker
+## <img src="https://github.com/obervinov/_templates/blob/v1.0.5/icons/stack2.png" width="25" title="stack2"> How to run a bot locally without a docker
 **You need an already running and configured vault to use the approle and kv v2 engine**
 ```sh
 pip3 install -r requirements.txt

@@ -189,9 +189,8 @@ def main():
     """
     while True:
         log.info(
-            'Starting telegram bot %s with vault-server %s',
-            constants.BOT_NAME,
-            constants.VAULT_CLIENT.url
+            'Starting telegram bot %s',
+            constants.BOT_NAME
         )
         constants.BOT.polling()
 
