@@ -124,13 +124,37 @@ If the target storage is a local file system, then any further steps to process 
 - instructions for starting and configuring a new vault-server
 ```bash
 docker-compose -f docker-compose.dev.yml up vault-server -d
-python3 ../tools/vault/setup_instance.py --url=http://localhost:8200 --name=pyinstabot-downloader --policy=vault/policy.hcl
+pip3 install -r requirements.txt
+curl -L https://gist.githubusercontent.com/obervinov/9bd452fee681f0493da7fd0b2bfe1495/raw/bbc4aad0ed7be064e9876dde64ad8b26b185091b/setup_vault_server.py | python3 --url=http://localhost:8200 --name=pyinstabot-downloader --policy=vault/policy.hcl
 ```
 
 - instructions for configuring an existing vault server
 ```bash
-python3 ../tools/vault/setup_instance.py --url=http://localhost:8200 --name=pyinstabot-downloader --policy=vault/policy.hcl --token=hvs.123456qwerty
+pip3 install -r requirements.txt
+curl -L https://gist.githubusercontent.com/obervinov/9bd452fee681f0493da7fd0b2bfe1495/raw/bbc4aad0ed7be064e9876dde64ad8b26b185091b/setup_vault_server.py | 
+python3 --url=http://localhost:8200 --name=pyinstabot-downloader --policy=vault/policy.hcl --token=hvs.123456qwerty
 ```
+
+`setup_vault_server.py` - This script performs a quick and convenient configuration of the vault-server for this bot project: `initial` initialization of vault-server,  `unseal` vault-server, creating an isolated `mount point`, loading `policy.hcl`, creating an `approle`.
+
+All these actions can also be performed using the vault cli:
+```bash
+vault operator init
+vault operator unseal
+vault secrets enable -path=pyinstabot-downloader kv-v2 
+vault policy write pyinstabot-downloader vault/policy.hcl
+vault auth enable -path=pyinstabot-downloader approle
+vault write auth/pyinstabot-downloader/role/pyinstabot-downloader \
+    token_policies=["pyinstabot-downloader"] \
+    token_type=service \
+    secret_id_num_uses=0 \
+    token_num_uses=0 \
+    token_ttl=1h \
+    bind_secret_id=true \
+    mount_point="pyinstabot-downloader" \
+    secret_id_ttl=0
+```
+
 
 #### Required bot configuration parameters
 ```bash
