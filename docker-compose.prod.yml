@@ -14,7 +14,5 @@ services:
             - STORAGE_TYPE=mega
             - INSTAGRAM_SESSION=/home/python/.config/instaloader/.session
             - STORAGE_EXCLUDE_TYPE=".txt"
-        depends_on:
-            - vault-server
         volumes:
             - ./.config/instaloader:/home/python/.config/instaloader
