@@ -1,4 +1,4 @@
-FROM python:3.10-alpine3.16
+FROM python:3.11-alpine3.16
 
 ### External argumetns ###
 ARG PROJECT_NAME
@@ -16,6 +16,9 @@ RUN adduser -D -h /home/${PROJECT_NAME} -s /bin/sh ${PROJECT_NAME} && \
     mkdir -p /home/${PROJECT_NAME} && \
     mkdir -p /home/${PROJECT_NAME}/app && \
     chown ${PROJECT_NAME}. /home/${PROJECT_NAME}
+
+### Prepare git
+RUN apk add git
 
 ### Switching context ###
 USER ${PROJECT_NAME}

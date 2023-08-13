@@ -12,4 +12,5 @@ env:
 
 jobs:
   build-release:
+    needs: "Tests and Checks"
     uses: obervinov/_templates/.github/workflows/build.docker.yml@release/v1.0.5
