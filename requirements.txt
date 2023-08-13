@@ -1,7 +1,7 @@
 instaloader==4.10.0
 dropbox==11.21.0
 mega.py==1.0.8
-tenacity==8.2.2
+tenacity==5.1.5
 messages @ git+https://github.com/obervinov/messages-package.git@v1.0.0
 users @ git+https://github.com/obervinov/users-package.git@v1.0.5
 logger @ git+https://github.com/obervinov/logger-package.git@v1.0.1
