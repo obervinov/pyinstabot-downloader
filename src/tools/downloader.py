@@ -66,17 +66,6 @@ class Downloader:
         self.auth = auth
         self.settings = settings
         self.vault = vault
-
-        if not self.auth.get('username') or not self.auth.get('password'):
-            self.auth['username'] = self.vault.read_secret(
-                'configuration/instagram',
-                'username'
-            )
-            self.auth['password'] = self.vault.read_secret(
-                'configuration/instagram',
-                'password'
-            )
-
         self.instaloader = instaloader.Instaloader(
             quiet=True,
             user_agent=self.settings['useragent'],
@@ -125,6 +114,12 @@ class Downloader:
                 or
             None
         """
+        if not self.auth.get('username'):
+            self.auth['username'] = self.vault.read_secret(
+                'configuration/instagram',
+                'username'
+            )
+
         if method == 'session':
             self.instaloader.load_session_from_file(
                 self.auth['username'],
@@ -136,6 +131,11 @@ class Downloader:
             )
 
         if method == 'password':
+            if not self.auth.get('password'):
+                self.auth['password'] = self.vault.read_secret(
+                    'configuration/instagram',
+                    'password'
+                )
             self.instaloader.login(
                 self.auth['username'],
                 self.auth['password']
