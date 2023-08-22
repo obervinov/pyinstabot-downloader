@@ -4,7 +4,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 
 
 
-## v2.0.0 - 2023-08-13
+## v2.0.0 - 2023-08-22
 ### What's Changed
 **Full Changelog**: https://github.com/obervinov/pyinstabot-downloader/compare/v1.0.1...v2.0.0 by @obervinov in https://github.com/obervinov/pyinstabot-downloader/pull/7
 
@@ -14,6 +14,8 @@ In this release, the approach with issue and github project was implemented alre
 #### 🐛 Bug Fixes
 * (Update dependencies: 2023.06.13)[https://github.com/obervinov/pyinstabot-downloader/issues/6]
 * (Update the project code and fix bugs)[https://github.com/obervinov/pyinstabot-downloader/issues/13]
+* (Redundant login and password reading from vault)[https://github.com/obervinov/pyinstabot-downloader/issues/16]
+* (The status is "None" when an exception occurred when uploading to mega, and the retry method)[https://github.com/obervinov/pyinstabot-downloader/issues/15]
 #### 📚 Documentation
 * (Update project repository: 2023.06.13)[https://github.com/obervinov/pyinstabot-downloader/issues/8]
 #### 💥 Breaking Changes

@@ -225,16 +225,14 @@ class Uploader:
                     __class__.__name__,
                     mega_exception
                 )
-                if not retry_on_failure:
-                    log.warning(
-                        '[class.%s] trying again file_upload()',
-                        __class__.__name__,
-                    )
-                    self.file_upload(
-                        source,
-                        destination,
-                        retry_on_failure=True
-                    )
+                log.warning(
+                    '[class.%s] trying again file_upload()',
+                    __class__.__name__,
+                )
+                self.file_upload(
+                    source,
+                    destination,
+                )
 
         if self.storage['type'] == 'dropbox':
             with open(source, 'rb') as file_transfer:

@@ -2,7 +2,7 @@ name: Test, Build and create relese
 
 on:
   push:
-    branches:    
+    branches:
       - '*'
       - '*/*'
       - '**'
