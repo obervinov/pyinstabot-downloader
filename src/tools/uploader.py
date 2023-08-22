@@ -169,8 +169,7 @@ class Uploader:
     def file_upload(
         self,
         source: str = None,
-        destination: str = None,
-        retry_on_failure: bool = False
+        destination: str = None
     ) -> str | None:
         """
         The method of uploading the contents of the target directory
@@ -179,7 +178,6 @@ class Uploader:
         Args:
             :param source (str): the path to the local file to transfer to the target storage.
             :param destination (str): the name of the target directory in the destination storage.
-            :param retry_on_failure (bool): flag to indicate whether to retry on failure.
 
         Returns:
             (str) 'uploaded'
