@@ -27,6 +27,7 @@ In this release, the approach with issue and github project was implemented alre
 * (Update project repository: 2023.06.13)[https://github.com/obervinov/pyinstabot-downloader/issues/8]
 * (Write pytests for project)[https://github.com/obervinov/pyinstabot-downloader/issues/12]
 * (Update the project code and fix bugs)[https://github.com/obervinov/pyinstabot-downloader/issues/13]
+* (Check the download history for the specified post)[https://github.com/obervinov/pyinstabot-downloader/issues/17]
 
 
 ## v1.0.1 - 2022-11-06
