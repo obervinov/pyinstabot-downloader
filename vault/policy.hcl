@@ -23,6 +23,10 @@ path "pyinstabot-downloader/data/configuration/*" {
   capabilities = ["read", "list"]
 }
 # for manage bot configuration
+path "pyinstabot-downloader/metadata/history/*" {
+  capabilities = ["read", "list"]
+}
+# for manage bot configuration
 path "pyinstabot-downloader/data/history/*" {
   capabilities = ["create", "read", "list", "update"]
 }

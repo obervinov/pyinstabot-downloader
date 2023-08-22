@@ -157,6 +157,22 @@ def get_post_account(
         )
 
         shortcode = message.text.split("/")[4]
+        # check history downloaded
+        for owner in constants.VAULT_CLIENT.list_secrets(path='history/'):
+            for post in constants.VAULT_CLIENT.read_secret(path=f"history/{owner}"):
+                if post == shortcode and constants.VAULT_CLIENT.read_secret(
+                    path=f"history/{owner}",
+                    key=post
+                ) == 'downloaded':
+                    constants.BOT.send_message(
+                        message.chat.id,
+                        constants.MESSAGES_GENERATOR.render_template(
+                            'post_already_downloaded',
+                            post_id=shortcode,
+                            owner=owner
+                        )
+                    )
+                    return
         # download the contents of an instagram post to a temporary folder
         d_response = constants.DOWNLOADER_INSTANCE.get_post_content(
             shortcode
@@ -165,7 +181,6 @@ def get_post_account(
         u_response = constants.UPLOADER_INSTANCE.start_upload(
             d_response['owner']
         )
-
         constants.BOT.send_message(
             message.chat.id,
             constants.MESSAGES_GENERATOR.render_template(
