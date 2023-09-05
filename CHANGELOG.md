@@ -4,7 +4,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 
 
 
-## v2.0.0 - 2023-08-22
+## v2.0.0 - 2023-09-06
 ### What's Changed
 **Full Changelog**: https://github.com/obervinov/pyinstabot-downloader/compare/v1.0.1...v2.0.0 by @obervinov in https://github.com/obervinov/pyinstabot-downloader/pull/7
 
@@ -25,7 +25,6 @@ In this release, the approach with issue and github project was implemented alre
 * (Update dependencies: 2023.06.13)[https://github.com/obervinov/pyinstabot-downloader/issues/6]
 * (Added the support GitHub Actions)[https://github.com/obervinov/pyinstabot-downloader/issues/10]
 * (Update project repository: 2023.06.13)[https://github.com/obervinov/pyinstabot-downloader/issues/8]
-* (Write pytests for project)[https://github.com/obervinov/pyinstabot-downloader/issues/12]
 * (Update the project code and fix bugs)[https://github.com/obervinov/pyinstabot-downloader/issues/13]
 * (Check the download history for the specified post)[https://github.com/obervinov/pyinstabot-downloader/issues/17]
 
