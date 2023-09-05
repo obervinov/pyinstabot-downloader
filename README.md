@@ -55,8 +55,9 @@ Code dependecies
 │   ├── diagram-logic.png
 │   ├── instagram-profile.png
 │   └── pyinstabot-downlaoder.drawio
-├── docker-compose.dev..yml
-├── docker-compose.prod.yml
+├── docker-compose.dev.yml
+├── docker-compose.prerelease.yml
+├── docker-compose.release.yml
 ├── requirements.txt
 ├── src
 │   ├── bot.py
@@ -67,16 +68,19 @@ Code dependecies
 │       ├── __init__.py
 │       ├── downloader.py
 │       └── uploader.py
+├── tests
+│   ├── conftest.py
+│   ├── test_bot.py
+│   └── test_vault.py
 └── vault
-    ├── data
     └── policy.hcl
 
-7 directories, 21 files
+7 directories, 25 files
 ```
 
 ## <img src="https://github.com/obervinov/_templates/blob/v1.0.5/icons/requirements.png" width="25" title="requirements"> Requirements
 - <img src="https://github.com/obervinov/_templates/blob/v1.0.5/icons/vault.png" width="15" title="vault"> Vault server - [a storage of secrets for bot with kv v2 engine](https://developer.hashicorp.com/vault/docs/secrets/kv/kv-v2)
-- <img src="https://github.com/obervinov/_templates/blob/v1.0.5/icons/dropbox.ico" width="15" title="dropbox"> Dropbox [api token](https://dropbox.tech/developers/generate-an-access-token-for-your-own-account)</img> or <img src="https://github.com/obervinov/_templates/blob/v1.0.5/icons/mega.ico" width="15" title="mega"> Mega.nz [account](https://mega.nz)</img>
+- <img src="https://github.com/obervinov/_templates/blob/v1.0.5/icons/dropbox.ico" width="15" title="dropbox"> Dropbox [api token](https://dropbox.tech/developers/generate-an-access-token-for-your-own-account)</img> or <img src="https://github.com/obervinov/_templates/blob/v1.0.5/icons/mega.png" width="15" title="mega"> Mega.nz [account](https://mega.nz)</img>
 - <img src="https://github.com/obervinov/_templates/blob/v1.0.5/icons/telegram.png" width="15" title="telegram"> Telegram bot api token - [instructions for creating bot and getting a token of api](https://learn.microsoft.com/en-us/azure/bot-service/bot-service-channel-connect-telegram?view=azure-bot-service-4.0)
 - <img src="https://github.com/obervinov/_templates/blob/v1.0.5/icons/instagram.png" width="15" title="instagram"> Instagram username/password - [login and password from the instagram account, it is advisable to create a new account](https://www.instagram.com/accounts/emailsignup/)
 
@@ -136,8 +140,7 @@ curl -L https://gist.githubusercontent.com/obervinov/9bd452fee681f0493da7fd0b2bf
 - instructions for configuring an existing vault server
 ```bash
 pip3 install -r requirements.txt
-curl -L https://gist.githubusercontent.com/obervinov/9bd452fee681f0493da7fd0b2bfe1495/raw/bbc4aad0ed7be064e9876dde64ad8b26b185091b/setup_vault_server.py | 
-python3 --url=http://localhost:8200 --name=pyinstabot-downloader --policy=vault/policy.hcl --token=hvs.123456qwerty
+curl -L https://gist.githubusercontent.com/obervinov/9bd452fee681f0493da7fd0b2bfe1495/raw/bbc4aad0ed7be064e9876dde64ad8b26b185091b/setup_vault_server.py | python3 --url=http://localhost:8200 --name=pyinstabot-downloader --policy=vault/policy.hcl --token=hvs.123456qwerty
 ```
 
 `setup_vault_server.py` - This script performs a quick and convenient configuration of the vault-server for this bot project: `initial` initialization of vault-server,  `unseal` vault-server, creating an isolated `mount point`, loading `policy.hcl`, creating an `approle`.
@@ -176,9 +179,9 @@ export VAULT_APPROLE_ID={change_me}
 export VAULT_APPROLE_SECRETID={change_me}
 export VAULT_ADDR={change_me}
 
-docker-compose -f docker-compose.dev.yml up vault-server -d
+docker-compose -f docker-compose.dev.yml up -d
 # or
-docker-compose -f docker-compose.prod.yml up
+docker-compose -f docker-compose.release.yml up -d
 ```
 
 

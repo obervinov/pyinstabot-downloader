@@ -172,6 +172,12 @@ def get_post_account(
                             owner=owner
                         )
                     )
+                    log.warning(
+                        '[%s] the post %s of the owner %s has already been downloaded, skipped.',
+                        __name__,
+                        post,
+                        owner
+                    )
                     return
         # download the contents of an instagram post to a temporary folder
         d_response = constants.DOWNLOADER_INSTANCE.get_post_content(

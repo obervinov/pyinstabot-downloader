@@ -32,6 +32,8 @@ class Downloader:
                 :param username (str): username for authentication in the instagram api.
                 :param password (str): password for authentication in the instagram api.
                 :param sessionfile (str): the path to the session file of the instagram.
+                :param anonymous (bool): access to open profiles without logging in to an account.
+                                         only for tests.
             :param settings (dict): dictionary with settings instaloader parameters.
                 :param savepath (str): local directory for saving downloaded content.
                 :param useragent (str): user-agent header.
@@ -41,6 +43,16 @@ class Downloader:
             None
 
         Examples:
+            >>> DOWNLOADER_INSTANCE = Downloader(
+                    auth={
+                        'anonymous': true
+                    },
+                    settings={
+                        'savepath': TEMPORARY_DIR,
+                        'useragent': INSTAGRAM_USERAGENT
+                    },
+                    vault=VAULT_CLIENT
+                )
             >>> DOWNLOADER_INSTANCE = Downloader(
                     auth={
                         'sessionfile': INSTAGRAM_SESSION
@@ -82,7 +94,11 @@ class Downloader:
             fatal_status_codes=[400, 429, 500]
         )
 
-        if os.path.exists(
+        if self.auth.get('anonymous'):
+            auth_status = self._login(
+                method='anonymous'
+            )
+        elif os.path.exists(
             self.auth.get('sessionfile')
         ):
             auth_status = self._login(
@@ -102,19 +118,19 @@ class Downloader:
     def _login(
         self,
         method: str = None
-    ) -> str:
+    ) -> str | None:
         """
         Method for authentication by password or session file.
 
         Args:
-            :param method (str): authentication method 'password' and 'session'.
+            :param method (str): authentication method 'password', 'session' or 'anonymous'.
 
         Returns:
             (str) success
                 or
             None
         """
-        if not self.auth.get('username'):
+        if not self.auth.get('username') and not self.auth.get('anonymous'):
             self.auth['username'] = self.vault.read_secret(
                 'configuration/instagram',
                 'username'
@@ -129,6 +145,7 @@ class Downloader:
                 '[class.%s] session file was load success',
                 __class__.__name__
             )
+            return 'success'
 
         if method == 'password':
             if not self.auth.get('password'):
@@ -146,8 +163,16 @@ class Downloader:
                 __class__.__name__,
                 self.auth['sessionfile']
             )
+            return 'success'
 
-        return 'success'
+        if method == 'anonymous':
+            log.warning(
+                '[class.%s] initialization without logging into an account (anonymous)',
+                __class__.__name__
+            )
+            return None
+
+        return None
 
     def get_posts(
         self,

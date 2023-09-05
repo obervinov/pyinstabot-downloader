@@ -13,12 +13,12 @@ env:
 
 jobs:
   pylint:
-    uses: obervinov/_templates/.github/workflows/test.pylint.yml@v1.0.4
+    uses: obervinov/_templates/.github/workflows/test.pylint.yml@v1.0.5
   verify-changelog:
-    uses: obervinov/_templates/.github/workflows/verify.changelog.yml@v1.0.4
+    uses: obervinov/_templates/.github/workflows/verify.changelog.yml@v1.0.5
   #pytest:
   #  uses: obervinov/_templates/.github/workflows/test.pytest-with-vault.yml@v1.0.4
   build-release:
-    uses: obervinov/_templates/.github/workflows/build.docker.yml@release/v1.0.5
+    uses: obervinov/_templates/.github/workflows/build.docker.yml@v1.0.5
     needs: [pylint, verify-changelog]
     #needs: [pylint, verify-changelog, pytest]

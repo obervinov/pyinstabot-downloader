@@ -1,3 +1,4 @@
+# manifest for the development process with the local version of the vault server
 ---
 version: '3'
 services:
@@ -23,6 +24,7 @@ services:
             args:
                 PROJECT_NAME: pyinstabot-downloader
                 PROJECT_DESCRIPTION: "This project is a telegram bot that allows you to backup content from your Instagram profile to the Dropbox/Mega cloud or to the local filesystem."
+                PROJECT_VERSION: v2.0.0
         container_name: pyinstabot-downloader
         restart: always
         environment:
