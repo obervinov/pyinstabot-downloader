@@ -29,8 +29,8 @@ Main functions:
 
 For example:
 <p align="center">
-  <img src="doc/bot-preview.gif" width="1000" title="bot-preview">
-  <img src="doc/instagram-profile.png" width="500" alt="instagram-profile">
+  <img src="doc/bot-preview.gif" width="750" title="bot-preview-gif">
+  <img src="doc/bot-preview-post.png" width="750" alt="bot-preview-post">
 </p>
 
 ## <img src="https://github.com/obervinov/_templates/blob/v1.0.5/icons/requirements.png" width="25" title="diagram"> Project architecture

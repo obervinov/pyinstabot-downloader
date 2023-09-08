@@ -62,7 +62,7 @@ def get_posts_account(
 
         account_name = message.text.split("/")[3].split("?")[0]
         account_info = constants.DOWNLOADER_INSTANCE.get_download_info(
-            account_name
+            account=account_name
         )
         editable_message = False
         stats_message_id = None

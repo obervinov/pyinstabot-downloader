@@ -6,8 +6,8 @@ from telegram import TelegramBot
 from users import UsersAuth
 from messages import Messages
 from vault import VaultClient
-from tools.downloader import Downloader
-from tools.uploader import Uploader
+from modules.downloader import Downloader
+from modules.uploader import Uploader
 
 
 # Environment variables

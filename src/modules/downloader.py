@@ -271,7 +271,9 @@ class Downloader:
             __class__.__name__
         )
         # account_shortcodes - list of shortcodes received from instagram
-        account_shortcodes = self.get_posts()
+        account_shortcodes = self.get_posts(
+            username=account
+        )
         # fresh_shortcodes - list of shortcodes that have not been downloaded yet
         fresh_shortcodes = []
         # history_shortcodes - list of shortcodes that have already been previously uploaded
