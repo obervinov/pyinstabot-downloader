@@ -40,4 +40,4 @@ services:
         depends_on:
             - vault-server
         volumes:
-            - ./.config/instaloader:/home/python/.config/instaloader
+            - ../.config/instaloader:/home/python/.config/instaloader

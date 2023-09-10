@@ -17,4 +17,4 @@ services:
             - STORAGE_EXCLUDE_TYPE=.txt
             - MESSAGES_CONFIG=configs/messages.json
         volumes:
-            - ./.config/instaloader:/home/python/.config/instaloader
+            - ../.config/instaloader:/home/python/.config/instaloader
