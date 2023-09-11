@@ -34,7 +34,7 @@ services:
             - VAULT_ADDR=http://vault-server:8200
             - LOGGER_LEVEL=DEBUG
             - STORAGE_TYPE=local
-            - INSTAGRAM_SESSION=/home/python/.config/instaloader/.session
+            - INSTAGRAM_SESSION=${INSTAGRAM_SESSION}
             - STORAGE_EXCLUDE_TYPE=
             - MESSAGES_CONFIG=configs/messages.json
         depends_on:

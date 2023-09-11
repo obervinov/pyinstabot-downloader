@@ -13,7 +13,7 @@ services:
             - VAULT_ADDR=${VAULT_ADDR}
             - LOGGER_LEVEL=INFO
             - STORAGE_TYPE=mega
-            - INSTAGRAM_SESSION=/home/python/.config/instaloader/.session
+            - INSTAGRAM_SESSION=${INSTAGRAM_SESSION}
             - STORAGE_EXCLUDE_TYPE=.txt
             - MESSAGES_CONFIG=configs/messages.json
         volumes:
