@@ -276,10 +276,20 @@ class Downloader:
         )
         # fresh_shortcodes - list of shortcodes that have not been downloaded yet
         fresh_shortcodes = []
-        # history_shortcodes - list of shortcodes that have already been previously uploaded
-        history_shortcodes = self.vault.read_secret(
-            f'history/{account}'
-        )
+        # history_shortcodes - dict of shortcodes that have already been previously uploaded
+        try:
+            history_shortcodes = self.vault.read_secret(
+                f'history/{account}'
+            )
+        # pylint: disable=W0718
+        # will be fixed after https://github.com/obervinov/vault-package/issues/31
+        except Exception as secret_not_found:
+            history_shortcodes = {}
+            log.warning(
+                '[class.%s] secret %s does not exist: ',
+                __class__.__name__,
+                secret_not_found
+            )
         for shortcode in account_shortcodes:
             if shortcode not in history_shortcodes.keys():
                 fresh_shortcodes.append(shortcode)

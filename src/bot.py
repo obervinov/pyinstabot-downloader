@@ -64,7 +64,7 @@ def get_posts_account(
         account_info = constants.DOWNLOADER_INSTANCE.get_download_info(
             account=account_name
         )
-        editable_message = False
+        editable_message = None
         stats_message_id = None
 
         constants.BOT.send_message(
