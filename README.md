@@ -49,10 +49,10 @@ Code dependecies
 ├── README.md
 ├── SECURITY.md
 ├── doc
+│   ├── bot-preview-post.png
 │   ├── bot-preview.gif
 │   ├── diagram-code.png
 │   ├── diagram-logic.png
-│   ├── instagram-profile.png
 │   └── pyinstabot-downlaoder.drawio
 ├── docker-compose.dev.yml
 ├── docker-compose.prerelease.yml
@@ -63,18 +63,14 @@ Code dependecies
 │   ├── configs
 │   │   └── messages.json
 │   ├── constants.py
-│   └── tools
+│   └── modules
 │       ├── __init__.py
 │       ├── downloader.py
 │       └── uploader.py
-├── tests
-│   ├── conftest.py
-│   ├── test_bot.py
-│   └── test_vault.py
 └── vault
     └── policy.hcl
 
-7 directories, 25 files
+6 directories, 22 files
 ```
 
 ## <img src="https://github.com/obervinov/_templates/blob/v1.0.5/icons/requirements.png" width="25" title="requirements"> Requirements

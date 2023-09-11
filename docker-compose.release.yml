@@ -6,6 +6,7 @@ services:
         image: ghcr.io/obervinov/pyinstabot-downloader:v2.0.0
         container_name: pyinstabot-downloader
         restart: always
+        pull_policy: always
         environment:
             - BOT_NAME=pyinstabot-downloader
             - VAULT_APPROLE_ID=${VAULT_APPROLE_ID}
