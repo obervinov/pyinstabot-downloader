@@ -31,8 +31,8 @@ services:
         restart: always
         environment:
             - BOT_NAME=pyinstabot-downloader
-            - VAULT_APPROLE_ID=${VAULT_APPROLE_ID}
-            - VAULT_APPROLE_SECRETID=${VAULT_APPROLE_SECRETID}
+            - VAULT_APPROLE_ID=${PB_VAULT_APPROLE_ID}
+            - VAULT_APPROLE_SECRETID=${PB_VAULT_APPROLE_SECRETID}
             - VAULT_ADDR=http://vault-server:8200
             - LOGGER_LEVEL=DEBUG
             - STORAGE_TYPE=local
