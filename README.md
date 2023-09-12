@@ -31,9 +31,11 @@ For example:
   <img src="doc/bot-preview.gif" width="730" title="bot-preview-gif">
 </p>
 <p align="center">
-  <img src="doc/bot-preview-post.png" width="450" alt="bot-preview-post" style="display:inline-block;">
+  <img src="doc/bot-preview-post.png" width="440" alt="bot-preview-post" style="display:inline-block;">
   <img src="doc/bot-preview-account.png" width="450" alt="bot-preview-account" style="display:inline-block;">
 </p>
+
+
 ## <img src="https://github.com/obervinov/_templates/blob/v1.0.5/icons/requirements.png" width="25" title="diagram"> Project architecture
 Code logic
 ![Diagram](doc/diagram-logic.png)
