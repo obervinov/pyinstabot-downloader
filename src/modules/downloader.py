@@ -120,7 +120,7 @@ class Downloader:
         method: str = None
     ) -> str | None:
         """
-        Method for authentication by password or session file.
+        A method for authentication in instagram api.
 
         Args:
             :param method (str): authentication method 'password', 'session' or 'anonymous'.
@@ -130,7 +130,7 @@ class Downloader:
                 or
             None
         """
-        if not self.auth.get('username') and not self.auth.get('anonymous'):
+        if not self.auth.get('username') or not self.auth.get('anonymous'):
             self.auth['username'] = self.vault.read_secret(
                 'configuration/instagram',
                 'username'
@@ -157,9 +157,11 @@ class Downloader:
                 self.auth['username'],
                 self.auth['password']
             )
-            self.instaloader.save_session_to_file(self.auth['sessionfile'])
+            self.instaloader.save_session_to_file(
+                self.auth['sessionfile']
+            )
             log.info(
-                '[class.%s] login with password was successful. New session file %s',
+                '[class.%s] login with password was successful. Save session in %s',
                 __class__.__name__,
                 self.auth['sessionfile']
             )
@@ -179,10 +181,10 @@ class Downloader:
         username: str = None
     ) -> list | None:
         """
-        Method for getting a list posts of instagram account.
+        A method for getting a list posts of instagram account.
 
         Args:
-            :param username (str): instagram username to get a list of posts.
+            :param username (str): instagram account profile name.
 
         Returns:
             (list) ['post_id_1', 'post_id_2', 'post_id_3']
@@ -209,10 +211,10 @@ class Downloader:
         shortcode: str = None
     ) -> dict | None:
         """
-        Method for getting the content of a post from a specified Instagram account.
+        A method for getting the content of a post from a specified Instagram account.
 
         Args:
-            :param shortcode (str): the shortcode is the ID of the record for downloading content.
+            :param shortcode (str): the ID of the record for downloading content.
 
         Returns:
             (dict) {
@@ -250,7 +252,7 @@ class Downloader:
         account: str = None
     ) -> dict | None:
         """
-        Method for collecting all the necessary information
+        A method for collecting all the necessary information
         to download all posts from the specified account.
         Checks the history of already uploaded posts
         and provides information for cyclic downloading.
@@ -295,7 +297,8 @@ class Downloader:
             if shortcode not in history_shortcodes.keys():
                 fresh_shortcodes.append(shortcode)
         log.info(
-            '[class.%s] already downloaded shortcodes: %s\n'
+            '[class.%s] account metadata:\n'
+            'already downloaded shortcodes: %s\n'
             'fresh shortcodes: %s\n'
             'shortcodes for download: %s',
             __class__.__name__,
