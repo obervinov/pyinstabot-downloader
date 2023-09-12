@@ -286,8 +286,9 @@ class Downloader:
         except Exception as secret_not_found:
             history_shortcodes = {}
             log.warning(
-                '[class.%s] secret %s does not exist: ',
+                '[class.%s] secret history/%s does not exist: %s',
                 __class__.__name__,
+                account,
                 secret_not_found
             )
         for shortcode in account_shortcodes:
