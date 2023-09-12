@@ -26,7 +26,7 @@ Main functions:
 - a backup copy of a specific post by link
 - the ability to backup to the mega or dropbox cloud
 
-For example:
+Review:
 <p align="center">
   <img src="doc/bot-preview.gif" width="730" title="bot-preview-gif">
 </p>
