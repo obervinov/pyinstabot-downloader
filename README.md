@@ -36,7 +36,7 @@ For example:
 Code logic
 ![Diagram](doc/diagram-logic.png)
 
-Code dependecies
+Code dependencies
 ![Diagram](doc/diagram-code.png)
 
 ## <img src="https://github.com/obervinov/_templates/blob/v1.0.5/icons/requirements.png" width="25" title="stack"> Repository map
@@ -53,7 +53,7 @@ Code dependecies
 │   ├── bot-preview.gif
 │   ├── diagram-code.png
 │   ├── diagram-logic.png
-│   └── pyinstabot-downlaoder.drawio
+│   └── pyinstabot-downloader.drawio
 ├── docker-compose.dev.yml
 ├── docker-compose.prerelease.yml
 ├── docker-compose.release.yml

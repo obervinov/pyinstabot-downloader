@@ -1,4 +1,4 @@
-# manifest for the development process with the local version of the vault server
+# manifest for the development process with the local version of the vault
 ---
 version: '3'
 services:
@@ -7,6 +7,7 @@ services:
         container_name: vault
         command: ["server"]
         environment:
+            # yamllint disable-line rule:line-length
             - 'VAULT_LOCAL_CONFIG={"backend": {"file": {"path": "/vault/data"}}, "default_lease_ttl": "1h", "max_lease_ttl": "720h", "listener": {"tcp": {"address": "0.0.0.0:8200", "tls_disable": "1"}}'
             - VAULT_API_ADDR=http://0.0.0.0:8200
             - VAULT_PORT=8200
@@ -23,6 +24,7 @@ services:
             dockerfile: Dockerfile
             args:
                 PROJECT_NAME: pyinstabot-downloader
+                # yamllint disable-line rule:line-length
                 PROJECT_DESCRIPTION: "This project is a telegram bot that allows you to backup content from your Instagram profile to the Dropbox/Mega cloud or to the local filesystem."
                 PROJECT_VERSION: v2.0.0
         container_name: pyinstabot-downloader
