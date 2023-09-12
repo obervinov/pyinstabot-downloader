@@ -1,5 +1,5 @@
 ---
-name: Test, Build and create release
+name: Test and Build release
 
 # yamllint disable-line rule:truthy
 on:
