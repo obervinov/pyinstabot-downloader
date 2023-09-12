@@ -53,6 +53,7 @@ Code dependencies
 ├── README.md
 ├── SECURITY.md
 ├── doc
+│   ├── bot-preview-account.png
 │   ├── bot-preview-post.png
 │   ├── bot-preview.gif
 │   ├── diagram-code.png
@@ -74,7 +75,7 @@ Code dependencies
 └── vault
     └── policy.hcl
 
-6 directories, 22 files
+6 directories, 23 files
 ```
 
 ## <img src="https://github.com/obervinov/_templates/blob/v1.0.5/icons/requirements.png" width="25" title="requirements"> Requirements
