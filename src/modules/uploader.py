@@ -20,13 +20,15 @@ class Uploader:
         vault: object = None
     ) -> None:
         """
-        A Method creates an instance with a connection
+        The method creates an instance with a connection
         to the target storage for uploading local media content.
 
         Args:
             :param storage (dict): dictionary with storage parameters.
-                :param type (str): type of storage for uploading content 'local'/'dropbox'/'mega'
-                :param temporary (str): type of storage for uploading content.
+                :param type (str): type of storage for uploading content
+                                   'local' or 'dropbox' or 'mega'.
+                :param temporary (str): the temporary directory from which you want
+                                        to read the content and delete it after uploading.
                 :param cloud_root_path (str): a subdirectory in the cloud storage for saving content
             :param vault (object): instance of vault for reading authorization data.
 
@@ -81,7 +83,7 @@ class Uploader:
         self,
     ) -> None:
         """
-        Method for checking uploads in temp directory
+        The method for checking uploads in temp storage
         that for some reason could not be uploaded to the cloud.
 
         Args:
@@ -102,18 +104,20 @@ class Uploader:
                     __class__.__name__,
                     artifact
                 )
-                self.start_upload(os.path.join(artifact))
+                self.start_upload(
+                    os.path.join(artifact)
+                )
 
     def start_upload(
         self,
         sub_dir_name: str = None
     ) -> dict:
         """
-        Method of preparing media files for transfer to the target storage (cloud or local).
+        The method of preparing media files for transfer to the target storage (cloud or local).
 
         Args:
-            :param sub_dir_name (str): the name of the subdirectory where the content
-                                        itself is located is equivalent to the ID of the post.
+            :param sub_dir_name (str): the name of the subdirectory where the content is located
+                                       is equivalent to the record ID.
 
         Returns:
             (dict) {
@@ -203,7 +207,9 @@ class Uploader:
                     exclude_deleted=True
                 )
                 if not mega_folder:
-                    self.mega_client.create_folder(directory)
+                    self.mega_client.create_folder(
+                        directory
+                    )
                 response = self.mega_client.upload(
                     source,
                     mega_folder[0]

@@ -25,7 +25,7 @@ class Downloader:
         vault: object = None
     ) -> None:
         """
-        Method for create a new instagram api client instance.
+        The method for create a new instagram api client instance.
 
         Args:
             :param auth (dict): dictionary with authorization parameters.
@@ -120,7 +120,7 @@ class Downloader:
         method: str = None
     ) -> str | None:
         """
-        A method for authentication in instagram api.
+        The method for authentication in instagram api.
 
         Args:
             :param method (str): authentication method 'password', 'session' or 'anonymous'.
@@ -181,7 +181,7 @@ class Downloader:
         username: str = None
     ) -> list | None:
         """
-        A method for getting a list posts of instagram account.
+        The method for getting a list posts of instagram account.
 
         Args:
             :param username (str): instagram account profile name.
@@ -211,7 +211,7 @@ class Downloader:
         shortcode: str = None
     ) -> dict | None:
         """
-        A method for getting the content of a post from a specified Instagram account.
+        The method for getting the content of a post from a specified Instagram account.
 
         Args:
             :param shortcode (str): the ID of the record for downloading content.
@@ -252,7 +252,7 @@ class Downloader:
         account: str = None
     ) -> dict | None:
         """
-        A method for collecting all the necessary information
+        The method for collecting all the necessary information
         to download all posts from the specified account.
         Checks the history of already uploaded posts
         and provides information for cyclic downloading.

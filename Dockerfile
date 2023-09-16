@@ -8,7 +8,7 @@ ARG PROJECT_VERSION
 ### Labels ###
 LABEL org.opencontainers.image.source https://github.com/obervinov/${PROJECT_NAME}
 LABEL org.opencontainers.image.description $PROJECT_DESCRIPTION
-LABEL org.opencontainers.image.title "Pyinstabot Downloader - telegram bot"
+LABEL org.opencontainers.image.title "Telegram bot: pyinstabot-downloader"
 LABEL org.opencontainers.image.version $PROJECT_VERSION
 LABEL org.opencontainers.image.authors github.obervinov@proton.me
 LABEL org.opencontainers.image.licenses https://github.com/obervinov/pyinstabot-downloader/blob/$PROJECT_VERSION/LICENSE

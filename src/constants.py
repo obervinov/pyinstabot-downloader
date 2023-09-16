@@ -10,7 +10,7 @@ from modules.downloader import Downloader
 from modules.uploader import Uploader
 
 
-# Environment variables
+# environment variables
 LOGGER_LEVEL = os.environ.get(
     'LOGGER_LEVEL',
     'INFO'
@@ -52,7 +52,7 @@ STORAGE_EXCLUDE_TYPE = os.environ.get(
 )
 
 
-# Instances
+# instances
 VAULT_CLIENT = VaultClient(
     name=BOT_NAME
 )
