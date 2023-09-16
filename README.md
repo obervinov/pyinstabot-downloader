@@ -32,7 +32,7 @@ Review:
 </p>
 <p align="center">
   <img src="doc/bot-preview-post.png" width="440" alt="bot-preview-post" style="display:inline-block;">
-  <img src="doc/bot-preview-account.png" width="450" alt="bot-preview-account" style="display:inline-block;">
+  <img src="doc/bot-preview-account.png" width="460" alt="bot-preview-account" style="display:inline-block;">
 </p>
 
 
@@ -106,8 +106,7 @@ Code dependencies
 #### <img src="https://github.com/obervinov/_templates/blob/v1.0.5/icons/dropbox.ico" width="18" title="dropbox"> If dropbox is going to be used as the target storage, you need to:
 - [Create a dropbox account](https://www.dropbox.com/register)
 - Generate an application token according to the instructions [here](https://dropbox.tech/developers/generate-an-access-token-for-your-own-account) and [here](https://developers.dropbox.com/ru-ru/oauth-guide)
-
-[More documentation](https://www.dropbox.com/developers/documentation/python#overview)
+- [More documentation](https://www.dropbox.com/developers/documentation/python#overview)
 
 #### <img src="https://github.com/obervinov/_templates/blob/v1.0.5/icons/mega.png" width="18" title="mega"> If mega is going to be used as the target storage, you need to:
 - [Create a mega account](https://mega.nz/register)

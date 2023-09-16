@@ -91,7 +91,7 @@ class Downloader:
             post_metadata_txt_pattern=None,
             storyitem_metadata_txt_pattern=None,
             check_resume_bbd=True,
-            fatal_status_codes=[400, 429, 500]
+            fatal_status_codes=[400, 401, 429, 500]
         )
 
         if self.auth.get('anonymous'):
