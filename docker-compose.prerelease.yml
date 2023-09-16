@@ -1,0 +1,21 @@
+# manifest for launching and testing the pre-release version
+---
+version: '3'
+services:
+    pyinstabot-downloader:
+        image: ghcr.io/obervinov/pyinstabot-downloader:release-v2.0.0
+        container_name: pyinstabot-downloader
+        restart: always
+        pull_policy: always
+        environment:
+            - BOT_NAME=pyinstabot-downloader
+            - VAULT_APPROLE_ID=${PB_VAULT_APPROLE_ID}
+            - VAULT_APPROLE_SECRETID=${PB_VAULT_APPROLE_SECRETID}
+            - VAULT_ADDR=${VAULT_ADDR}
+            - LOGGER_LEVEL=INFO
+            - STORAGE_TYPE=mega
+            - INSTAGRAM_SESSION=${INSTAGRAM_SESSION}
+            - STORAGE_EXCLUDE_TYPE=.txt
+            - MESSAGES_CONFIG=configs/messages.json
+        volumes:
+            - ../.config/instaloader:/home/python/.config/instaloader
