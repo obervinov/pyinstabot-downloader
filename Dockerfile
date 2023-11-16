@@ -22,11 +22,16 @@ ENV PATH=/home/${PROJECT_NAME}/.local/bin:$PATH
 RUN adduser -D -h /home/${PROJECT_NAME} -s /bin/sh ${PROJECT_NAME} && \
     mkdir -p /home/${PROJECT_NAME} && \
     mkdir -p /home/${PROJECT_NAME}/app && \
-     mkdir -p /home/${PROJECT_NAME}/tmp && \
+    mkdir -p /home/${PROJECT_NAME}/tmp && \
     chown ${PROJECT_NAME}. /home/${PROJECT_NAME} -R
 
 ### Prepare git
-RUN apk add git
+RUN apk add --no-cache git
+
+# Fix vulnerabilities and updated packages
+RUN apk upgrade --no-cache
+RUN python -m pip install --upgrade pip
+RUN pip install --upgrade setuptools wheel
 
 ### Switching context ###
 USER ${PROJECT_NAME}

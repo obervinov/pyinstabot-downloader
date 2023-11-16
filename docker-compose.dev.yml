@@ -3,7 +3,7 @@
 version: '3'
 services:
     vault-server:
-        image: vault
+        image: hashicorp/vault:1.14.1
         container_name: vault
         command: ["server"]
         environment:
@@ -11,12 +11,33 @@ services:
             - 'VAULT_LOCAL_CONFIG={"backend": {"file": {"path": "/vault/data"}}, "default_lease_ttl": "1h", "max_lease_ttl": "720h", "listener": {"tcp": {"address": "0.0.0.0:8200", "tls_disable": "1"}}'
             - VAULT_API_ADDR=http://0.0.0.0:8200
             - VAULT_PORT=8200
-        volumes:
-            - ./vault/data:/vault/data
         ports:
             - "0.0.0.0:8200:8200"
         cap_add:
             - IPC_LOCK
+
+    postgres:
+        image: postgres:latest
+        container_name: postgres
+        environment:
+            POSTGRES_DB: pyinstabot-downloader
+            POSTGRES_USER: python
+            POSTGRES_PASSWORD: python
+        ports:
+            - "0.0.0.0:5432:5432"
+        volumes:
+          - postgres_data:/var/lib/postgresql/data
+
+    pgadmin:
+        image: dpage/pgadmin4:latest
+        container_name: pgadmin
+        environment:
+            PGADMIN_DEFAULT_EMAIL: admin@email.com
+            PGADMIN_DEFAULT_PASSWORD: adminpassword
+        ports:
+            - "5050:80"
+        depends_on:
+            - postgres
 
     pyinstabot-downloader:
         build:
@@ -24,22 +45,25 @@ services:
             dockerfile: Dockerfile
             args:
                 PROJECT_NAME: pyinstabot-downloader
-                # yamllint disable-line rule:line-length
-                PROJECT_DESCRIPTION: "This project is a telegram bot that allows you to backup content from your Instagram profile to the Dropbox/Mega cloud or to the local filesystem."
-                PROJECT_VERSION: v2.0.0
+                PROJECT_DESCRIPTION: "Download photos and videos from Instagram"
+                PROJECT_VERSION: 2.0.1
         container_name: pyinstabot-downloader
         restart: always
         environment:
             - BOT_NAME=pyinstabot-downloader
-            - VAULT_APPROLE_ID=${PB_VAULT_APPROLE_ID}
-            - VAULT_APPROLE_SECRETID=${PB_VAULT_APPROLE_SECRETID}
-            - VAULT_ADDR=http://vault-server:8200
-            - LOGGER_LEVEL=DEBUG
-            - STORAGE_TYPE=local
+            - VAULT_APPROLE_ID=${VAULT_APPROLE_ID}
+            - VAULT_APPROLE_SECRETID=${VAULT_APPROLE_SECRETID}
+            - VAULT_ADDR=${VAULT_ADDR}
+            - LOGGER_LEVEL=INFO
+            - STORAGE_TYPE=mega
             - INSTAGRAM_SESSION=${INSTAGRAM_SESSION}
-            - STORAGE_EXCLUDE_TYPE=
+            - STORAGE_EXCLUDE_TYPE=.txt
             - MESSAGES_CONFIG=configs/messages.json
-        depends_on:
-            - vault-server
         volumes:
             - ../.config/instaloader:/home/python/.config/instaloader
+        depends_on:
+            - vault-server
+            - postgres
+
+volumes:
+  postgres_data:

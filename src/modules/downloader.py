@@ -238,13 +238,13 @@ class Downloader:
         self.vault.write_secret(
             f'history/{post.owner_username}',
             shortcode,
-            "downloaded"
+            "completed"
         )
         return {
             'post': shortcode,
             'owner': post.owner_username,
             'type': post.typename,
-            'status': 'downloaded'
+            'status': 'completed'
         }
 
     def get_download_info(

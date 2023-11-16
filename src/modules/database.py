@@ -1,8 +1,10 @@
 """This module contains a class for interacting with a PostgreSQL database using psycopg2."""
 
 import os
+import sys
 import importlib
 import psycopg2
+from logger import log
 
 
 class DatabaseClient:
@@ -46,6 +48,7 @@ class DatabaseClient:
             user (str): The username to use when connecting to the database.
             password (str): The password to use when connecting to the database.
             database (str): The name of the database to connect to.
+            log (object): An object representing a logger for logging messages.
 
         Returns:
             None
@@ -58,7 +61,13 @@ class DatabaseClient:
             >>> db = Database(vault)
         """
         db_configuration = vault.read_secret(
-            path='configurations/database'
+            path='configuration/database'
+        )
+        log.info(
+            '[class.%s] Initializing database connection to %s:%s',
+            __class__.__name__,
+            db_configuration['host'],
+            db_configuration['port']
         )
 
         self.database_connection = psycopg2.connect(
@@ -94,6 +103,10 @@ class DatabaseClient:
         # Create a table for the message queue
         # Messages received by the bot are placed in this table for further processing
         # at the specified time by a separate thread
+        log.info(
+            '[class.%s] Preparing database: table \'queue\'...',
+            __class__.__name__
+        )
         self._create_table(
             table_name='queue',
             columns=(
@@ -104,15 +117,22 @@ class DatabaseClient:
                 'post_owner VARCHAR(255) NOT NULL, '
                 'link_type VARCHAR(255) NOT NULL DEFAULT \'post\', '
                 'message_id VARCHAR(255) NOT NULL, '
+                'response_message_id VARCHAR(255) NOT NULL, '
                 'chat_id VARCHAR(255) NOT NULL, '
-                'scheduled_time datetime NOT NULL, '
-                'timestamp datetime NOT NULL DEFAULT CURRENT_TIMESTAMP, '
+                'scheduled_time TIMESTAMP NOT NULL, '
+                'download_status VARCHAR(255) NOT NULL DEFAULT \'not started\', '
+                'upload_status VARCHAR(255) NOT NULL DEFAULT \'not started\', '
+                'timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, '
                 'state VARCHAR(255) NOT NULL DEFAULT \'waiting\''
             )
         )
         # Create a table for the message processed
         # After processing from the queue, the record should be moved to this table
         # and enriched with additional data
+        log.info(
+            '[class.%s] Preparing database: table \'processed\'...',
+            __class__.__name__
+        )
         self._create_table(
             table_name='processed',
             columns=(
@@ -126,24 +146,32 @@ class DatabaseClient:
                 'chat_id VARCHAR(255) NOT NULL, '
                 'download_status VARCHAR(255) NOT NULL, '
                 'upload_status VARCHAR(255) NOT NULL, '
-                'timestamp datetime NOT NULL DEFAULT CURRENT_TIMESTAMP, '
+                'timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, '
                 'state VARCHAR(255) NOT NULL DEFAULT \'processed\''
             )
         )
         # Create a table for service migrations when updating the service
         # The table stores the name of the migration and its version
+        log.info(
+            '[class.%s] Preparing database: table \'migrations\'...',
+            __class__.__name__
+        )
         self._create_table(
             table_name='migrations',
             columns=(
                 'id SERIAL PRIMARY KEY, '
                 'name VARCHAR(255) NOT NULL,'
                 'version VARCHAR(255) NOT NULL, '
-                'timestamp datetime NOT NULL DEFAULT CURRENT_TIMESTAMP'
+                'timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP'
             )
         )
         # Create a table for blocking exceptions (locks)
         # This table will record the locks caused by various exceptions when the bot is running.
         # These locks will block various bot functionality until manual intervention.
+        log.info(
+            '[class.%s] Preparing database: table \'locks\'...',
+            __class__.__name__
+        )
         self._create_table(
             table_name='locks',
             columns=(
@@ -154,11 +182,15 @@ class DatabaseClient:
                 'description VARCHAR(255) NOT NULL, '
                 'caused_by VARCHAR(255) NOT NULL, '
                 'tip VARCHAR(255) NOT NULL, '
-                'timestamp datetime NOT NULL DEFAULT CURRENT_TIMESTAMP'
+                'timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP'
             )
         )
         # Add kind of locks to the table
         # The table stores the name of the lock and its description
+        log.info(
+            '[class.%s] Preparing database: add locks to table \'locks\'...',
+            __class__.__name__
+        )
         self._insert(
             table_name='locks',
             columns='name, behavior, description, caused_by, tip',
@@ -166,7 +198,7 @@ class DatabaseClient:
                 '\'Unauthorized\', '
                 '\'block:downloader_class\', '
                 '\'Locks the post downloading functionality\', '
-                '\'401:unauthorized\'',
+                '\'401:unauthorized\', '
                 '\'Instagram session expired, invalid credentials or account is blocked\''
             )
         )
@@ -177,7 +209,7 @@ class DatabaseClient:
                 '\'BadRequest\', '
                 '\'block:downloader_class:post_link\', '
                 '\'Locks the specified post downloading functionality\', '
-                '\'400:badrequest\'',
+                '\'400:badrequest\', '
                 '\'When trying to upload content, an error occurs with an invalid request\''
             )
         )
@@ -199,19 +231,43 @@ class DatabaseClient:
             >>> db = Database()
             >>> db._migrations()
         """
-        migrations_dir = os.path.join(os.path.dirname(__file__), 'migrations')
+        log.info(
+            '[class.%s] Reading database migrations...',
+            __class__.__name__
+        )
+        sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../migrations')))
+        migrations_dir = os.path.abspath(
+            os.path.join(
+                os.path.dirname(__file__),
+                '../migrations'
+            )
+        )
 
         for migration_file in os.listdir(migrations_dir):
-
+            log.info(
+                '[class.%s] Executing migration: %s...',
+                __class__.__name__,
+                migration_file
+            )
             if migration_file.endswith('.py'):
                 migration_module_name = migration_file[:-3]
 
                 if not self._is_migration_executed(migration_module_name):
                     migration_module = importlib.import_module(migration_module_name)
                     migration_module.execute(self)
-                    self._mark_migration_as_executed(migration_module_name)
+                    version = getattr(migration_module, 'VERSION', migration_module_name)
+                    self._mark_migration_as_executed(migration_module_name, version)
+                else:
+                    log.info(
+                        '[class.%s] the %s migration has already been executed and was skipped',
+                        __class__.__name__,
+                        migration_module_name
+                    )
 
-    def _is_migration_executed(self, migration_name):
+    def _is_migration_executed(
+        self,
+        migration_name: str = None
+    ) -> bool:
         """
         Check if a migration has already been executed.
 
@@ -226,11 +282,16 @@ class DatabaseClient:
             >>> db._is_migration_executed('create_users_table')
             True
         """
-        query = f"SELECT id FROM migrations WHERE name = '{migration_name}'"
-        self.cursor.execute(query)
+        self.cursor.execute(
+            f"SELECT id FROM migrations WHERE name = '{migration_name}'"
+        )
         return self.cursor.fetchone() is not None
 
-    def _mark_migration_as_executed(self, migration_name):
+    def _mark_migration_as_executed(
+        self,
+        migration_name: str = None,
+        version: str = None
+    ) -> None:
         """
         Inserts a migration into the migrations table to mark it as executed.
 
@@ -243,8 +304,9 @@ class DatabaseClient:
         Examples:
             >>> _mark_migration_as_executed('create_users_table')
         """
-        query = f"INSERT INTO migrations (name, version) VALUES ('{migration_name}', '{migration_name}')"
-        self.cursor.execute(query)
+        self.cursor.execute(
+            f"INSERT INTO migrations (name, version) VALUES ('{migration_name}', '{version}')"
+        )
         self.database_connection.commit()
 
     def _create_table(self, table_name, columns):
@@ -285,7 +347,7 @@ class DatabaseClient:
         self.cursor.execute(f"INSERT INTO {table_name} ({columns}) VALUES ({values})")
         self.database_connection.commit()
 
-    def _select(self, table_name: str, columns: str, condition: str) -> list:
+    def _select(self, table_name: str, columns: str, condition: str, limit: int) -> list:
         """
         Selects data from a table in the database based on the given condition.
 
@@ -293,6 +355,7 @@ class DatabaseClient:
         table_name (str): The name of the table to select data from.
         columns (str): The columns to select data from.
         condition (str): The condition to filter the data by.
+        limit (int): The maximum number of rows to return.
 
         Returns:
         list: A list of tuples containing the selected data.
@@ -302,7 +365,7 @@ class DatabaseClient:
         >>> db._select("users", "username, email", "age > 18")
         [('john_doe', 'john_doe@example.com'), ('jane_doe', 'jane_doe@example.com')]
         """
-        self.cursor.execute(f"SELECT {columns} FROM {table_name} WHERE {condition}")
+        self.cursor.execute(f"SELECT {columns} FROM {table_name} WHERE {condition} LIMIT {limit}")
         return self.cursor.fetchall()
 
     def _update(self, table_name, set, condition):
@@ -362,13 +425,13 @@ class DatabaseClient:
 
     def add_message_to_queue(
         self,
-        message: dict = None
+        data: dict = None
     ) -> str:
         """
         Add a message to the queue table in the database.
 
         Args:
-            message (dict): A dictionary containing the message details.
+            data (dict): A dictionary containing the message details.
 
         Parameters:
             user_id (str): The user ID of the message sender.
@@ -379,12 +442,14 @@ class DatabaseClient:
             message_id (str): The ID of the message.
             chat_id (str): The ID of the chat the message belongs to.
             scheduled_time (str): The time the message is scheduled to be sent.
+            download_status (str): The status of the post downloading process.
+            upload_status (str): The status of the post uploading process.
 
         Returns:
             str: A message indicating that the message was added to the queue.
 
         Examples:
-            >>> message = {
+            >>> data = {
             ...     'user_id': '12345',
             ...     'post_id': '67890',
             ...     'post_url': 'https://www.instagram.com/p/67890/',
@@ -393,26 +458,57 @@ class DatabaseClient:
             ...     'message_id': 'abcde',
             ...     'chat_id': 'xyz',
             ...     'scheduled_time': '2022-01-01 12:00:00'
+            ...     'download_status': 'not started',
+            ...     'upload_status': 'not started'
             ... }
             >>> add_message_to_queue(message)
             'abcde: added to queue'
         """
         self._insert(
             table_name='queue',
-            columns='user_id, post_id, post_url, post_owner, link_type, message_id, chat_id, scheduled_time',
+            columns='user_id, post_id, post_url, post_owner, link_type, message_id, response_message_id, chat_id, scheduled_time, download_status, upload_status',
             values=(
-                f"'{message.get('user_id', None)}', "
-                f"'{message.get('post_id', None)}', "
-                f"'{message.get('post_url', None)}', "
-                f"'{message.get('post_owner', None)}', "
-                f"'{message.get('link_type', None)}', "
-                f"'{message.get('message_id', None)}', "
-                f"'{message.get('chat_id', None)}', "
-                f"'{message.get('scheduled_time', None)}'"
+                f"'{data.get('user_id', None)}', "
+                f"'{data.get('post_id', None)}', "
+                f"'{data.get('post_url', None)}', "
+                f"'{data.get('post_owner', None)}', "
+                f"'{data.get('link_type', None)}', "
+                f"'{data.get('message_id', None)}', "
+                f"'{data.get('response_message_id', None)}', "
+                f"'{data.get('chat_id', None)}', "
+                f"'{data.get('scheduled_time', None)}',"
+                f"'{data.get('download_status', None)}', "
+                f"'{data.get('upload_status', None)}'"
             )
         )
 
-        return f"{message.get('message_id', None)}: added to queue"
+        return f"{data.get('message_id', None)}: added to queue"
+
+    def get_message_from_queue(
+        self,
+        scheduled_time: str = None
+    ) -> tuple:
+        """
+        Get a message from the queue table in the database.
+
+        Args:
+            scheduled_time (str): The time the message is scheduled to be sent.
+
+        Returns:
+            tuple: A tuple containing the message from the queue.
+
+        Examples:
+            >>> get_message_from_queue('2022-01-01 12:00:00')
+            (1, '123456789', 'vahj5AN8aek', 'https://www.instagram.com/p/vahj5AN8aek', 'johndoe', 'post', '12345', '12346', '123456789', datetime.datetime(2023, 11, 14, 21, 21, 22, 603440), 'None', 'None', datetime.datetime(2023, 11, 14, 21, 14, 26, 680024), 'waiting')
+        """
+        message = self._select(
+            table_name='queue',
+            columns='*',
+            condition=f"scheduled_time <= '{scheduled_time}' AND state IN ('waiting', 'processing')",
+            limit=1
+        )
+
+        return message[0] if message else None
 
     def update_message_state_in_queue(
         self,
@@ -437,7 +533,12 @@ class DatabaseClient:
             str: A response message indicating the status of the update.
 
         Examples:
-            >>> update_message_state_in_queue('123', 'processed', download_status='completed', upload_status='pending')
+            >>> update_message_state_in_queue(
+                    post_id='123',
+                    state='processed',
+                    download_status='completed',
+                    upload_status='completed'
+                )
             '456: processed'
         """
         self._update(
@@ -451,6 +552,7 @@ class DatabaseClient:
                 table_name='queue',
                 columns='*',
                 condition=f"post_id = '{post_id}'",
+                limit=1
             )
             self._insert(
                 table_name='processed',
@@ -463,9 +565,9 @@ class DatabaseClient:
                     f"'{processed_message[0][5]}', "
                     f"'{processed_message[0][6]}', "
                     f"'{processed_message[0][7]}', "
-                    f"'{kwargs.get('download_status', None)}', "
-                    f"'{kwargs.get('upload_status', None)}', "
-                    f"'{processed_message[0][10]}'"
+                    f"'{kwargs.get('download_status', 'pending')}', "
+                    f"'{kwargs.get('upload_status', 'pending')}', "
+                    f"'{state}'"
                 )
             )
             self._delete(
@@ -477,6 +579,48 @@ class DatabaseClient:
             response = f"{post_id}: state updated"
 
         return response
+
+    def get_user_queue(
+        self,
+        user_id: str = None
+    ) -> dict | None:
+        """
+        Get all messages from the queue table for the specified user.
+
+        Args:
+            user_id (str): The ID of the user.
+
+        Returns:
+            dict: A dictionary containing all messages from the queue for the specified user.
+
+        Examples:
+            >>> get_user_queue(user_id='12345')
+            {
+                '12345': [
+                    {
+                        'post_id': '123456789',
+                        'scheduled_time': '2022-01-01 12:00:00'
+                    }
+                ]
+            }
+        """
+        result = {}
+        queue = self._select(
+            table_name='queue',
+            columns='post_id, scheduled_time',
+            condition=f"user_id = '{user_id}'",
+            limit=100
+        )
+        for message in queue:
+            if user_id not in result:
+                result[user_id] = []
+
+            result[user_id].append({
+                'post_id': message[0],
+                'scheduled_time': message[2]
+            })
+
+        return result if result else None
 
     def set_lock(
         self,

@@ -3,6 +3,8 @@
 Migrates historical data from the Vault to the processed table in the database.
 https://github.com/obervinov/pyinstabot-downloader/issues/30
 """
+VERSION = '1.0'
+NAME = '0001_vault_data'
 
 
 def execute(obj):
@@ -29,18 +31,18 @@ def execute(obj):
         # information about owner posts
         posts = obj.vault.read_secret(path=f"history/{owner}")
         posts_counter = len(posts)
-        print(f"Found {posts_counter} posts in history/{owner}")
+        print(f"{NAME}: Found {posts_counter} posts in history/{owner}")
 
         for post in posts:
-            user_id = list(obj.vault.read_secret(path='configuration/permissions').keys())[0]
+            user_id = obj.vault.list_secrets(path='configuration/users')[0]
             post_id = post
-            post_url = f"https://www.instagram.com/p/{post}/"
+            post_url = f"https://www.instagram.com/p/{post}"
             post_owner = owner
             link_type = 'post'
             message_id = 'unknown'
-            chat_id = 'unknown'
-            download_status = 'downloaded'
-            upload_status = 'uploaded'
+            chat_id = obj.vault.list_secrets(path='configuration/users')[0]
+            download_status = 'completed'
+            upload_status = 'completed'
             state = 'processed'
 
             values = (
@@ -56,7 +58,7 @@ def execute(obj):
                 f"'{state}'"
             )
 
-            print(f"Migrating {post_id} from history/{owner}")
+            print(f"{NAME}: Migrating {post_id} from history/{owner}")
             obj.cursor.execute(f"INSERT INTO {table_name} ({columns}) VALUES ({values})")
             obj.database_connection.commit()
-            print(f"Post {post_id} from history/{owner} has been added to processed table")
+            print(f"{NAME}: Post {post_id} from history/{owner} has been added to processed table")

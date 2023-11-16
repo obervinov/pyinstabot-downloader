@@ -121,12 +121,11 @@ class Uploader:
 
         Returns:
             (dict) {
-                     '/root/path/shortcode/file1.jpeg': 'uploaded',
-                     '/root/path/shortcode/file2.jpeg': None
-                   }
+                'status': 'completed'
+            }
 
             (explanation of values)
-                (str) 'uploaded'
+                (str) 'completed'
                     (this means that the file has been successfully uploaded to the cloud)
                 (str) 'None'
                     (this means that an error has occurred the file is not uploaded to the cloud)
@@ -135,6 +134,7 @@ class Uploader:
                     (and it is not required to perform any actions with it)
         """
         transfers = {}
+        status = {}
 
         log.info(
             '[class.%s] preparing media files for transfer to the "%s"',
@@ -155,10 +155,13 @@ class Uploader:
                         os.path.join(root, file),
                         sub_dir_name
                     )
-                    if transfers[file] == 'uploaded':
+                    if transfers[file] == 'completed':
                         os.remove(
                             os.path.join(root, file)
                         )
+                        status['status'] = 'completed'
+                    else:
+                        status['status'] = 'None'
 
         if len(os.listdir(f'{self.temporary_dir}{sub_dir_name}')) == 0:
             os.rmdir(f'{self.temporary_dir}{sub_dir_name}')
@@ -168,7 +171,7 @@ class Uploader:
             __class__.__name__,
             transfers
         )
-        return transfers
+        return status
 
     def file_upload(
         self,
