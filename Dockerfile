@@ -30,8 +30,8 @@ RUN apk add --no-cache git
 
 # Fix vulnerabilities and updated packages
 RUN apk upgrade --no-cache
-RUN python -m pip install --upgrade pip
-RUN pip install --upgrade setuptools wheel
+RUN python -m pip install --upgrade pip --no-cache-dir
+RUN pip install --upgrade setuptools wheel --no-cache-dir
 
 ### Switching context ###
 USER ${PROJECT_NAME}
@@ -42,6 +42,6 @@ COPY requirements.txt ./
 COPY src/ ./
 
 ### Installing a python dependeces - requirements.txt ###
-RUN pip3 install -r requirements.txt
+RUN pip3 install -r requirements.txt --no-cache-dir
 
 CMD [ "python3", "bot.py" ]

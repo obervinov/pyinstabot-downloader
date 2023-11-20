@@ -617,7 +617,7 @@ class DatabaseClient:
 
             result[user_id].append({
                 'post_id': message[0],
-                'scheduled_time': message[2]
+                'scheduled_time': message[1]
             })
 
         return result if result else None
@@ -671,3 +671,39 @@ class DatabaseClient:
         )
 
         return f"{lock_name}: unlocked"
+
+    def check_message_uniqueness(
+        self,
+        post_id: str = None,
+        user_id: str = None
+    ) -> bool:
+        """
+        Check if a message with the given post ID and chat ID already exists in the queue.
+
+        Args:
+            post_id (str): The ID of the post.
+            user_id (str): The ID of the chat.
+
+        Returns:
+            bool: True if the message is unique, False otherwise.
+
+        Examples:
+            >>> check_message_uniqueness(post_id='12345', user_id='67890')
+            True
+        """
+        queue = self._select(
+            table_name='queue',
+            columns='id',
+            condition=f"post_id = '{post_id}' AND user_id = '{user_id}'",
+            limit=1
+        )
+        processed = self._select(
+            table_name='processed',
+            columns='id',
+            condition=f"post_id = '{post_id}' AND user_id = '{user_id}'",
+            limit=1
+        )
+
+        if queue or processed:
+            return False
+        return True

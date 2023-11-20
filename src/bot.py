@@ -46,6 +46,8 @@ messages = Messages(config_path=constants.MESSAGES_CONFIG)
 database = DatabaseClient(
     vault=vault
 )
+
+
 #
 #
 # Decorators
@@ -108,7 +110,11 @@ def bot_callback_query_handler(call):
             user_id=call.message.chat.id,
             role_id=constants.POST_ROLE
         )
-        if user['access'] == users.user_status_allow and user['permissions'] == users.user_status_allow:
+        if (
+            user['access'] == users.user_status_allow
+            and
+            user['permissions'] == users.user_status_allow
+        ):
             help_message = send_message(
                 chat_id=call.message.chat.id,
                 template={'alias': 'help_for_post'}
@@ -124,11 +130,15 @@ def bot_callback_query_handler(call):
 
     elif call.data == "Posts List":
         # Check permissions
-        user = users.user_access_check(
+        user = users_without_rl.user_access_check(
             user_id=call.message.chat.id,
             role_id=constants.POSTS_LIST_ROLE
         )
-        if user['access'] == users.user_status_allow and user['permissions'] == users.user_status_allow:
+        if (
+            user['access'] == users_without_rl.user_status_allow
+            and
+            user['permissions'] == users_without_rl.user_status_allow
+        ):
             response = send_message(
                 chat_id=call.message.chat.id,
                 template={'alias': 'help_for_posts_list'}
@@ -147,7 +157,11 @@ def bot_callback_query_handler(call):
             user_id=call.message.chat.id,
             role_id=constants.PROFILE_ROLE
         )
-        if user['access'] == users.user_status_allow and user['permissions'] == users.user_status_allow:
+        if (
+            user['access'] == users.user_status_allow
+            and
+            user['permissions'] == users.user_status_allow
+        ):
             response = send_message(
                 chat_id=call.message.chat.id,
                 template={'alias': 'help_for_profile_posts'}
@@ -166,11 +180,15 @@ def bot_callback_query_handler(call):
             user_id=call.message.chat.id,
             role_id=constants.QUEUE_ROLE
         )
-        if user['access'] == users_without_rl.user_status_allow and user['permissions'] == users_without_rl.user_status_allow:
+        if (
+            user['access'] == users_without_rl.user_status_allow
+            and
+            user['permissions'] == users_without_rl.user_status_allow
+        ):
             queue_dict = database.get_user_queue(
                 user_id=call.message.chat.id
             )
-            queue_string = None
+            queue_string = ''
             if queue_dict is not None:
                 for item in queue_dict[call.message.chat.id]:
                     queue_string = queue_string + f"+ <code>{item['post_id']}: {item['scheduled_time']}</code>\n"
@@ -234,14 +252,23 @@ def reject_message(
     Returns:
         None
     """
-    bot.send_message(
-        chat_id=message.chat.id,
-        text=messages.render_template(
-            template_alias='reject_message',
-            username=message.from_user.username,
-            userid=message.chat.id
+    try:
+        bot.send_message(
+            chat_id=message.chat.id,
+            text=messages.render_template(
+                template_alias='reject_message',
+                username=message.from_user.username,
+                userid=message.chat.id
+            )
         )
-    )
+    # pylint: disable=W0718
+    # will be fixed after https://github.com/obervinov/telegram-package/issues/19
+    except Exception as exception:
+        log.warning(
+            '[Bot]: Error sending message to user %s: %s',
+            message.chat.id,
+            exception
+        )
 
 
 def process_one_post(
@@ -260,41 +287,58 @@ def process_one_post(
         None
     """
     if re.match(r'^https://www.instagram.com/(p|reel)/.*', message.text):
-        data = {}
-        data['user_id'] = message.chat.id
-        data['post_url'] = message.text
-        data['post_id'] = data['post_url'].split('/')[-2]
-        data['post_owner'] = 'undefined'
-        data['link_type'] = 'post'
-        data['message_id'] = message.id
-        data['chat_id'] = message.chat.id
-        if time_to_process is None:
-            data['scheduled_time'] = datetime.now()
-        else:
-            data['scheduled_time'] = time_to_process
+        if database.check_message_uniqueness(
+            post_id=message.text.split('/')[-2],
+            user_id=message.chat.id
+        ):
+            data = {}
+            data['user_id'] = message.chat.id
+            data['post_url'] = message.text
+            data['post_id'] = data['post_url'].split('/')[-2]
+            data['post_owner'] = 'undefined'
+            data['link_type'] = 'post'
+            data['message_id'] = message.id
+            data['chat_id'] = message.chat.id
+            if time_to_process is None:
+                data['scheduled_time'] = datetime.now()
+            else:
+                data['scheduled_time'] = time_to_process
 
-        response_message = send_message(
-            chat_id=message.chat.id,
-            template={'alias': 'added_in_queue'}
-        )
-        bot.delete_message(
-            chat_id=message.chat.id,
-            message_id=message.id
-        )
-        if help_message is not None:
+            response_message = send_message(
+                chat_id=message.chat.id,
+                template={'alias': 'added_in_queue'}
+            )
             bot.delete_message(
                 chat_id=message.chat.id,
-                message_id=help_message.id
+                message_id=message.id
             )
-        data['response_message_id'] = response_message.id
-        _ = database.add_message_to_queue(
-            data=data
-        )
-        log.info(
-            '[Bot]: Post link %s for user %s added in queue',
-            message.text,
-            message.chat.id
-        )
+            if help_message is not None:
+                bot.delete_message(
+                    chat_id=message.chat.id,
+                    message_id=help_message.id
+                )
+            data['response_message_id'] = response_message.id
+            _ = database.add_message_to_queue(
+                data=data
+            )
+            log.info(
+                '[Bot]: Post link %s for user %s added in queue',
+                message.text,
+                message.chat.id
+            )
+        else:
+            send_message(
+                chat_id=message.chat.id,
+                template={
+                    'alias': 'post_already_downloaded',
+                    'kwargs': {'post_id': message.text.split('/')[-2]}
+                }
+            )
+            log.info(
+                '[Bot]: Post link %s for user %s already in queue or processed',
+                message.text,
+                message.chat.id
+            )
     else:
         send_message(
             chat_id=message.chat.id,
@@ -305,6 +349,57 @@ def process_one_post(
             message.text,
             message.chat.id
         )
+
+
+def process_list_posts(
+    message: telegram.telegram_types.Message = None,
+    help_message: telegram.telegram_types.Message = None
+):
+    """
+    Process a list of Instagram post links.
+
+    Args:
+        message (telegram.telegram_types.Message, optional): The message containing the list of post links. Defaults to None.
+        help_message (telegram.telegram_types.Message, optional): The help message to be deleted. Defaults to None.
+
+    Returns:
+        None
+    """
+    if re.match(r'^https://www.instagram.com/(p|reel)/.*', message.text):
+        links = message.text.split('\n')
+        for link in links:
+            # To register each link as a separate request
+            user = users.user_access_check(
+                user_id=message.chat.id,
+                role_id=constants.POSTS_LIST_ROLE
+            )
+            if (
+                user['access'] == users.user_status_allow
+                and
+                user['permissions'] == users.user_status_allow
+            ):
+                message.text = link
+                if user.get('rate_limits', None).get('end_time', None) is None:
+                    time_to_process = datetime.now()
+                else:
+                    time_to_process = user['rate_limits']['end_time']
+                process_one_post(
+                    message=message,
+                    help_message=help_message,
+                    time_to_process=time_to_process
+                )
+            else:
+                reject_message(message=message)
+
+        bot.delete_message(
+            chat_id=message.chat.id,
+            message_id=message.id
+        )
+        if help_message is not None:
+            bot.delete_message(
+                chat_id=message.chat.id,
+                message_id=help_message.id
+            )
 
 
 def queue_handler():
@@ -365,7 +460,8 @@ def queue_handler():
                         message_id=message[7],
                         text=messages.render_template(
                             template_alias='post_downloaded',
-                            post_id=message[2]
+                            post_id=message[2],
+                            timestamp=str(datetime.now())
                         )
                     )
                     log.info(
