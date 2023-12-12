@@ -1,4 +1,4 @@
-instaloader==4.10.0
+instaloader==4.10.2
 dropbox==11.21.0
 mega.py==1.0.8
 tenacity==5.1.5
