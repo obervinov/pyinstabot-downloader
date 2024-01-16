@@ -43,4 +43,5 @@ COPY src/ ./
 ### Installing a python dependeces - requirements.txt ###
 RUN pip3 install -r requirements.txt --no-cache-dir
 
+### Entrypoint ###
 CMD [ "python3", "bot.py" ]
