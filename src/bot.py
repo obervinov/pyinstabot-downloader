@@ -354,7 +354,7 @@ def process_one_post(
 def process_list_posts(
     message: telegram.telegram_types.Message = None,
     help_message: telegram.telegram_types.Message = None
-):
+) -> None:
     """
     Process a list of Instagram post links.
 
@@ -365,41 +365,40 @@ def process_list_posts(
     Returns:
         None
     """
-    if re.match(r'^https://www.instagram.com/(p|reel)/.*', message.text):
-        links = message.text.split('\n')
-        for link in links:
-            # To register each link as a separate request
-            user = users.user_access_check(
-                user_id=message.chat.id,
-                role_id=constants.POSTS_LIST_ROLE
-            )
-            if (
-                user['access'] == users.user_status_allow
-                and
-                user['permissions'] == users.user_status_allow
-            ):
-                message.text = link
-                if user.get('rate_limits', None).get('end_time', None) is None:
-                    time_to_process = datetime.now()
-                else:
-                    time_to_process = user['rate_limits']['end_time']
-                process_one_post(
-                    message=message,
-                    help_message=help_message,
-                    time_to_process=time_to_process
-                )
+    links = message.text.split('\n')
+    for link in links:
+        # To register each link as a separate request
+        user = users.user_access_check(
+            user_id=message.chat.id,
+            role_id=constants.POSTS_LIST_ROLE
+        )
+        if (
+            user['access'] == users.user_status_allow
+            and
+            user['permissions'] == users.user_status_allow
+        ):
+            message.text = link
+            if user.get('rate_limits', None).get('end_time', None) is None:
+                time_to_process = datetime.now()
             else:
-                reject_message(message=message)
+                time_to_process = user['rate_limits']['end_time']
+            process_one_post(
+                message=message,
+                help_message=help_message,
+                time_to_process=time_to_process
+            )
+        else:
+            reject_message(message=message)
 
+    bot.delete_message(
+        chat_id=message.chat.id,
+        message_id=message.id
+    )
+    if help_message is not None:
         bot.delete_message(
             chat_id=message.chat.id,
-            message_id=message.id
+            message_id=help_message.id
         )
-        if help_message is not None:
-            bot.delete_message(
-                chat_id=message.chat.id,
-                message_id=help_message.id
-            )
 
 
 def queue_handler():
