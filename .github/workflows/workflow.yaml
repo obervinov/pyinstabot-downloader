@@ -22,3 +22,5 @@ jobs:
   build-image:
     uses: obervinov/_templates/.github/workflows/docker.yaml@release/v1.0.12
     #needs: [pylint, verify-changelog]
+
+    
