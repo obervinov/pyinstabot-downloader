@@ -1,12 +1,13 @@
 FROM python:3.10.7-alpine3.16
 
 ### External argumetns ###
+ARG PROJECT_DESCRIPTION
 ARG PROJECT_NAME
 ARG PROJECT_VERSION
 
 ### Labels ###
 LABEL org.opencontainers.image.source https://github.com/obervinov/${PROJECT_NAME}
-LABEL org.opencontainers.image.description https://github.com/obervinov/${PROJECT_NAME}/blob/${PROJECT_VERSION}/README.md
+LABEL org.opencontainers.image.description ${PROJECT_DESCRIPTION}
 LABEL org.opencontainers.image.version ${PROJECT_VERSION}
 LABEL org.opencontainers.image.authors github.obervinov@proton.me
 LABEL org.opencontainers.image.licenses https://github.com/obervinov/${PROJECT_NAME}/blob/${PROJECT_VERSION}/LICENSE
