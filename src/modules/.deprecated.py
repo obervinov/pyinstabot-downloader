@@ -137,6 +137,3 @@
 #             __name__,
 #             account_name
 #         )
-
-
-
