@@ -9,11 +9,6 @@ on:
       - '*/*'
       - '**'
 
-env:
-  # yamllint disable-line rule:line-length
-  PROJECT_DESCRIPTION: "This project is a telegram bot that allows you to create backups of content from your Instagram profile to Dropbox or Mega clouds, as well as in the local file system."
-
-
 jobs:
 #  pylint:
 #    uses: obervinov/_templates/.github/workflows/pylint.yaml@v1.0.11
@@ -23,4 +18,3 @@ jobs:
     uses: obervinov/_templates/.github/workflows/docker.yaml@release/v1.0.12
     #needs: [pylint, verify-changelog]
 
-    
