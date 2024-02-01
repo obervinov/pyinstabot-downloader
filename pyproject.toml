@@ -1,0 +1,33 @@
+[tool.poetry]
+name = "pyinstabot-downloader"
+version = "2.1.0"
+description = "This project is a telegram bot that allows you to create backups of content from your Instagram profile to Dropbox or Mega clouds, as well as in the local file system."
+authors = ["Bervinov Oleg <obervinov@pm.me>"]
+maintainers = ["Bervinov Oleg <obervinov@pm.me>"]
+license = "MIT"
+readme = "README.md"
+homepage = "https://github.com/obervinov/pyinstabot-downloader"
+repository = "https://github.com/obervinov/pyinstabot-downloader"
+documentation = "https://github.com/obervinov/pyinstabot-downloader/blob/main/README.md"
+keywords = ["telegram", "bot", "telebot", "telegram-bot", "instagram", "clouds", "meganz", "dropbox", "backup", "pyinstabot", "pyinstabot-downloader"]
+include = ["CHANGELOG.md"]
+packages = [{include = "src"}]
+
+[tool.poetry.urls]
+"Bug Tracker" = "https://github.com/obervinov/pyinstabot-downloader/issues"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+instaloader = "^4"
+dropbox = "^11"
+'mega.py' = "^1.0.8"
+psycopg2-binary = "^2"
+logger = { git = "https://github.com/obervinov/logger-package.git", tag = "v1.0.4" }
+vault  = { git = "https://github.com/obervinov/vault-package.git", tag = "v2.0.2" }
+messages = { git = "https://github.com/obervinov/messages-package.git", tag = "v1.0.3" }
+users = { git = "https://github.com/obervinov/users-package.git", tag = "v2.0.2" }
+telegram = { git = "https://github.com/obervinov/telegram-package.git", branch = "release/v1.2.0" }
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

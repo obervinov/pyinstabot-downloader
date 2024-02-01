@@ -44,22 +44,16 @@ STORAGE_EXCLUDE_TYPE = os.environ.get(
     '.txt'
 )
 
-# permissions roles
-POST_ROLE = 'get_post_role'
-PROFILE_ROLE = 'get_profile_posts_role'
-POSTS_LIST_ROLE = 'get_posts_list_role'
-QUEUE_ROLE = 'get_queue_role'
-HISTORY_ROLE = 'get_history_role'
-
-# telegram buttons
-TELEGRAM_STARTUP_BUTTONS = [
-    "Post",
-    "Posts List",
-    "Profile Posts",
-    "User's Queue",
-    "User's History",
-    "Clear Messages",
-]
+# permissions roles and buttons mapping
+# 'button_title': 'role'
+ROLES_MAP = {
+    'Post': 'post',
+    'Posts List': 'posts_list',
+    'Profile Posts': 'profile_posts',
+    'User Queue': 'user_queue',
+    'User History': 'user_history',
+    'Clear Messages': 'clear_messages',
+}
 
 # Queue handler
 QUEUE_FREQUENCY = 60

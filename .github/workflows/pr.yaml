@@ -1,12 +1,13 @@
 ---
-name: Release
+name: PR
 
 on:
-  pull_request:
+  push:
     branches:
-      - main
-    types:
-      - closed
+      - '*'
+      - '*/*'
+      - '**'
+      - '!main'
 
 jobs:
   changelog:
@@ -16,15 +17,12 @@ jobs:
     uses: obervinov/_templates/.github/workflows/pylint.yaml@v1.0.12
 
   pytest:
-    uses: obervinov/_templates/.github/workflows/pytest-with-vault.yaml@v1.0.12
+    uses: obervinov/_templates/.github/workflows/pytest.yaml@v1.0.12
 
   pyproject:
     uses: obervinov/_templates/.github/workflows/pyproject.yaml@v1.0.12
 
-  build-image:
+  build-pr-image:
     uses: obervinov/_templates/.github/workflows/docker.yaml@v1.0.12
     needs: [changelog, pylint, pytest, pyproject]
-
-  create-release:
-    uses: obervinov/_templates/.github/workflows/release.yaml@v1.0.12
-    needs: [changelog, pylint, pytest, pyproject, build-image]
+  

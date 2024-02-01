@@ -11,20 +11,22 @@ from telegram import TelegramBot
 from users import Users
 from messages import Messages
 from vault import VaultClient
-from modules.downloader import Downloader
-from modules.uploader import Uploader
+# from modules.downloader import Downloader
+# from modules.uploader import Uploader
 from modules.database import DatabaseClient
-import configs.constants as constants
+from configs import constants
 
 
-# instances
+# init instances
 vault = VaultClient(name=constants.BOT_NAME)
 telegram = TelegramBot(vault=vault)
 bot = telegram.telegram_bot
-users = Users(vault=vault)
-users_without_rl = Users(vault=vault, rate_limits=False)
+# Users module with rate limits option
+users_rl = Users(vault=vault)
+# Users module without rate limits option
+users = Users(vault=vault, rate_limits=False)
 messages = Messages(config_path=constants.MESSAGES_CONFIG)
-#downloader = Downloader(
+# downloader = Downloader(
 #    auth={
 #        'sessionfile': constants.INSTAGRAM_SESSION
 #    },
@@ -33,8 +35,8 @@ messages = Messages(config_path=constants.MESSAGES_CONFIG)
 #        'useragent': constants.INSTAGRAM_USERAGENT
 #    },
 #    vault=vault
-#)
-#uploader = Uploader(
+# )
+# uploader = Uploader(
 #    storage={
 #        'type': constants.STORAGE_TYPE,
 #        'temporary': constants.TEMPORARY_DIR,
@@ -42,21 +44,13 @@ messages = Messages(config_path=constants.MESSAGES_CONFIG)
 #        'exclude_type': constants.STORAGE_EXCLUDE_TYPE
 #    },
 #    vault=vault
-#)
-database = DatabaseClient(
-    vault=vault
-)
+# )
+database = DatabaseClient(vault=vault)
 
 
-#
-#
-# Decorators
-#
-#
+# Command handler for start command
 @bot.message_handler(commands=['start'])
-def start_command(
-    message: telegram.telegram_types.Message = None
-) -> None:
+def start_command(message: telegram.telegram_types.Message = None) -> None:
     """
     Sends a startup message to the specified Telegram chat.
 
@@ -66,288 +60,281 @@ def start_command(
     Returns:
         None
     """
-    # Check user access
-    user = users_without_rl.user_access_check(
-        user_id=message.chat.id
-    )
-    if user['access'] == users_without_rl.user_status_allow:
+    if users.user_access_check(message.chat.id).get('access', None) == users.user_status_allow:
         log.info(
             '[Bot]: Processing start command for user %s...',
             message.chat.id
         )
-        reply_markup = telegram.create_inline_markup(
-            names=constants.TELEGRAM_STARTUP_BUTTONS,
-            size=3
-        )
-        start_message = send_message(
+        reply_markup = telegram.create_inline_markup(constants.ROLES_MAP.keys())
+        start_message = telegram.send_styled_message(
             chat_id=message.chat.id,
-            template={
+            message_template={
                 'alias': 'start_message',
-                'kwargs': {'username': message.from_user.username, 'userid': message.chat.id}
+                'kwargs': {
+                    'username': message.from_user.username,
+                    'userid': message.chat.id
+                }
             },
             reply_markup=reply_markup
         )
-
-        bot.pin_chat_message(
-            chat_id=start_message.chat.id,
-            message_id=start_message.id
-        )
+        bot.pin_chat_message(start_message.chat.id, start_message.id)
     else:
-        reject_message(message=message)
+        telegram.send_styled_message(
+            chat_id=message.chat.id,
+            message_template={
+                'alias': 'reject_message',
+                'kwargs': {
+                    'username': message.from_user.username,
+                    'userid': message.chat.id
+                }
+            }
+        )
 
 
 # Callback query handler for InlineKeyboardButton
 @bot.callback_query_handler(func=lambda call: True)
-def bot_callback_query_handler(call):
+def bot_callback_query_handler(call: telegram.callback_query = None) -> None:
+    """
+    The handler for the callback query from the user.
+    Mainly used to handle button presses.
+
+    Args:
+        call (telegram.callback_query): The callback query object.
+
+    Returns:
+        None
+    """
     log.info(
         '[Bot]: Processing button %s for user %s...',
         call.data,
         call.message.chat.id
     )
-    if call.data == "Post":
-        # Check permissions
-        user = users.user_access_check(
-            user_id=call.message.chat.id,
-            role_id=constants.POST_ROLE
-        )
-        if (
-            user['access'] == users.user_status_allow
-            and
-            user['permissions'] == users.user_status_allow
-        ):
-            help_message = send_message(
-                chat_id=call.message.chat.id,
-                template={'alias': 'help_for_post'}
+    user = users.user_access_check(call.message.chat.id, constants.ROLES_MAP[call.data])
+    if user.get('permissions', None) == users.user_status_allow:
+        if call.data == "Post":
+            button_post(
+                call=call,
+                user=user
             )
-            bot.register_next_step_handler(
-                call.message,
-                process_one_post,
-                help_message,
-                user['rate_limits']['end_time']
+        elif call.data == "Posts List":
+            button_posts_list(
+                call=call
+            )
+        elif call.data == "User Queue":
+            button_user_queue(
+                call=call
+            )
+        elif call.data == "Profile Posts":
+            button_profile_posts(
+                call=call
             )
         else:
-            reject_message(message=call.message)
-
-    elif call.data == "Posts List":
-        # Check permissions
-        user = users_without_rl.user_access_check(
-            user_id=call.message.chat.id,
-            role_id=constants.POSTS_LIST_ROLE
-        )
-        if (
-            user['access'] == users_without_rl.user_status_allow
-            and
-            user['permissions'] == users_without_rl.user_status_allow
-        ):
-            response = send_message(
-                chat_id=call.message.chat.id,
-                template={'alias': 'help_for_posts_list'}
+            log.error(
+                '[Bot]: Handler for button %s not found',
+                call.data
             )
-            bot.register_next_step_handler(
-                call.message,
-                process_list_posts,
-                response
-            )
-        else:
-            reject_message(message=call.message)
-
-    elif call.data == "Profile Posts":
-        # Check permissions
-        user = users.user_access_check(
-            user_id=call.message.chat.id,
-            role_id=constants.PROFILE_ROLE
-        )
-        if (
-            user['access'] == users.user_status_allow
-            and
-            user['permissions'] == users.user_status_allow
-        ):
-            response = send_message(
-                chat_id=call.message.chat.id,
-                template={'alias': 'help_for_profile_posts'}
-            )
-            bot.register_next_step_handler(
-                call.message,
-                process_profile_posts,
-                response
-            )
-        else:
-            reject_message(message=call.message)
-
-    elif call.data == "User's Queue":
-        # Check permissions
-        user = users_without_rl.user_access_check(
-            user_id=call.message.chat.id,
-            role_id=constants.QUEUE_ROLE
-        )
-        if (
-            user['access'] == users_without_rl.user_status_allow
-            and
-            user['permissions'] == users_without_rl.user_status_allow
-        ):
-            queue_dict = database.get_user_queue(
-                user_id=call.message.chat.id
-            )
-            queue_string = ''
-            if queue_dict is not None:
-                for item in queue_dict[call.message.chat.id]:
-                    queue_string = queue_string + f"+ <code>{item['post_id']}: {item['scheduled_time']}</code>\n"
-            else:
-                queue_string = '<code>empty</code>'
-            send_message(
-                chat_id=call.message.chat.id,
-                template={
-                    'alias': 'user_queue',
-                    'kwargs': {'userid': call.message.chat.id, 'queue': queue_string}
-                }
-            )
-        else:
-            reject_message(message=call.message)
-
     else:
-        send_message(
+        telegram.send_styled_message(
             chat_id=call.message.chat.id,
-            template={'alias': 'unknown_command'}
+            message_template={
+                'alias': 'reject_message',
+                'kwargs': {
+                    'username': call.message.from_user.username,
+                    'userid': call.message.chat.id
+                }
+            }
         )
 
 
-def send_message(
-    chat_id: str = None,
-    template: dict = None,
-    reply_markup: telegram.telegram_types.InlineKeyboardMarkup = None
-) -> telegram.telegram_types.Message:
-    """
-    Sends a response message to the user.
-
-    Args:
-        chat_id (str): The ID of the chat where the message will be sent.
-        template (dict): A dictionary containing the alias of the template to use and any keyword arguments to be passed to the template.
-            The dictionary should contain the following keys:
-                - alias (str): The alias of the template to use.
-                - kwargs (dict): A dictionary containing any keyword arguments to be passed to the template.
-        reply_markup (telegram.telegram_types.InlineKeyboardMarkup): The inline keyboard markup to be sent with the message.
-
-    Returns:
-        telegram.telegram_types.Message: The message sent to the user.
-    """
-    return bot.send_message(
-        chat_id=chat_id,
-        text=messages.render_template(
-            template_alias=template['alias'],
-            **template.get('kwargs', {})
-        ),
-        reply_markup=reply_markup,
-    )
-
-
-def reject_message(
-    message: telegram.telegram_types.Message = None
+# Inline button handler for Post
+def button_post(
+    call: telegram.callback_query = None,
+    user: dict = None
 ) -> None:
     """
-    Sends a rejection message to the user who sent the message.
+    The handler for the Post button.
 
     Args:
-        message (telegram.telegram_types.Message): The message object received from the user.
+        call (telegram.callback_query): The callback query object.
+        user (dict): The user object.
 
     Returns:
         None
     """
-    try:
-        bot.send_message(
-            chat_id=message.chat.id,
-            text=messages.render_template(
-                template_alias='reject_message',
-                username=message.from_user.username,
-                userid=message.chat.id
-            )
-        )
-    # pylint: disable=W0718
-    # will be fixed after https://github.com/obervinov/telegram-package/issues/19
-    except Exception as exception:
-        log.warning(
-            '[Bot]: Error sending message to user %s: %s',
-            message.chat.id,
-            exception
-        )
+    help_message = telegram.send_styled_message(
+        chat_id=call.message.chat.id,
+        message_template={'alias': 'help_for_post'}
+    )
+    bot.register_next_step_handler(
+        call.message,
+        process_one_post,
+        help_message,
+        user.get('rate_limits', None)('end_time', None)
+    )
+
+
+# Inline button handler for Posts List
+def button_posts_list(call: telegram.callback_query = None) -> None:
+    """
+    The handler for the Posts List button.
+
+    Args:
+        call (telegram.callback_query): The callback query object.
+
+    Returns:
+        None
+    """
+    help_message = telegram.send_styled_message(
+        chat_id=call.message.chat.id,
+        message_template={'alias': 'help_for_posts_list'}
+    )
+    bot.register_next_step_handler(
+        call.message,
+        process_list_posts,
+        help_message
+    )
+
+
+# Inline button handler for Profile Posts
+def button_user_queue(call: telegram.callback_query = None) -> None:
+    """
+    The handler for the Profile Posts button.
+
+    Args:
+        call (telegram.callback_query): The callback query object.
+
+    Returns:
+        None
+    """
+    queue_dict = database.get_user_queue(call.message.chat.id)
+    queue_string = ''
+
+    if queue_dict is not None:
+        for item in queue_dict[call.message.chat.id]:
+            queue_string = queue_string + f"+ <code>{item['post_id']}: {item['scheduled_time']}</code>\n"
+    else:
+        queue_string = '<code>empty</code>'
+
+    telegram.send_styled_message(
+        chat_id=call.message.chat.id,
+        message_template={
+            'alias': 'user_queue',
+            'kwargs': {
+                'userid': call.message.chat.id,
+                'queue': queue_string
+            }
+        }
+    )
+
+
+# Inline button handler for Profile Posts
+def button_profile_posts(call: telegram.callback_query = None) -> None:
+    """
+    The handler for the Profile Posts button.
+
+    Args:
+        call (telegram.callback_query): The callback query object.
+
+    Returns:
+        None
+    """
+    telegram.send_styled_message(
+        chat_id=call.message.chat.id,
+        message_template={'alias': 'feature_not_implemented'}
+    )
 
 
 def process_one_post(
     message: telegram.telegram_types.Message = None,
     help_message: telegram.telegram_types.Message = None,
     time_to_process: datetime = None
-):
+) -> None:
     """
     Processes an Instagram post link sent by a user and adds it to the queue for download.
 
     Args:
         message (telegram.telegram_types.Message): The Telegram message object containing the post link.
+        help_message (telegram.telegram_types.Message): The help message to be deleted.
         time_to_process (datetime): The scheduled time to process the post link.
 
     Returns:
         None
     """
-    if re.match(r'^https://www.instagram.com/(p|reel)/.*', message.text):
-        if database.check_message_uniqueness(
-            post_id=message.text.split('/')[-2],
-            user_id=message.chat.id
-        ):
+    # Check permissions
+    if users_rl.user_access_check(message.chat.id, constants.ROLES_MAP['Post']).get('permissions', None) == users_rl.user_status_allow:
+        if re.match(r'^https://www.instagram.com/(p|reel)/.*', message.text):
             data = {}
-            data['user_id'] = message.chat.id
-            data['post_url'] = message.text
-            data['post_id'] = data['post_url'].split('/')[-2]
-            data['post_owner'] = 'undefined'
-            data['link_type'] = 'post'
-            data['message_id'] = message.id
-            data['chat_id'] = message.chat.id
-            if time_to_process is None:
-                data['scheduled_time'] = datetime.now()
-            else:
-                data['scheduled_time'] = time_to_process
-
-            response_message = send_message(
-                chat_id=message.chat.id,
-                template={'alias': 'added_in_queue'}
-            )
-            bot.delete_message(
-                chat_id=message.chat.id,
-                message_id=message.id
-            )
-            if help_message is not None:
-                bot.delete_message(
+            try:
+                data['user_id'] = message.chat.id
+                data['post_url'] = message.text
+                data['post_id'] = data['post_url'].split('/')[-2]
+                data['post_owner'] = 'undefined'
+                data['link_type'] = 'post'
+                data['message_id'] = message.id
+                data['chat_id'] = message.chat.id
+                if time_to_process is None:
+                    data['scheduled_time'] = datetime.now()
+                else:
+                    data['scheduled_time'] = time_to_process
+            except KeyError as error:
+                telegram.send_styled_message(
                     chat_id=message.chat.id,
-                    message_id=help_message.id
+                    message_template={'alias': 'url_error'}
                 )
-            data['response_message_id'] = response_message.id
-            _ = database.add_message_to_queue(
-                data=data
-            )
-            log.info(
-                '[Bot]: Post link %s for user %s added in queue',
-                message.text,
-                message.chat.id
-            )
+                log.error(
+                    '[Bot]: Error processing post link %s for user %s: %s',
+                    message.text,
+                    message.chat.id,
+                    error
+                )
+            if database.check_message_uniqueness(data['post_id'], data['user_id']):
+                response_message = telegram.send_styled_message(
+                    chat_id=message.chat.id,
+                    message_template={'alias': 'added_in_queue'}
+                )
+                bot.delete_message(message.chat.id, message.id)
+                if help_message is not None:
+                    bot.delete_message(message.chat.id, help_message.id)
+                data['response_message_id'] = response_message.id
+                _ = database.add_message_to_queue(data)
+                log.info(
+                    '[Bot]: Post link %s for user %s added in queue',
+                    message.text,
+                    message.chat.id
+                )
+            else:
+                telegram.send_styled_message(
+                    chat_id=message.chat.id,
+                    message_template={
+                        'alias': 'post_already_downloaded',
+                        'kwargs': {'post_id': message.text.split('/')[-2]}
+                    }
+                )
+                log.info(
+                    '[Bot]: Post link %s for user %s already in queue or processed',
+                    message.text,
+                    message.chat.id
+                )
         else:
-            send_message(
+            telegram.send_styled_message(
                 chat_id=message.chat.id,
-                template={
-                    'alias': 'post_already_downloaded',
-                    'kwargs': {'post_id': message.text.split('/')[-2]}
-                }
+                message_template={'alias': 'url_error'}
             )
-            log.info(
-                '[Bot]: Post link %s for user %s already in queue or processed',
+            log.error(
+                '[Bot]: Post link %s from user %s is incorrect',
                 message.text,
                 message.chat.id
             )
     else:
-        send_message(
+        telegram.send_styled_message(
             chat_id=message.chat.id,
-            template={'alias': 'url_error'}
-        )
-        log.error(
-            '[Bot]: Post link %s from user %s is incorrect',
-            message.text,
-            message.chat.id
+            message_template={
+                'alias': 'reject_message',
+                'kwargs': {
+                    'username': message.from_user.username,
+                    'userid': message.chat.id
+                }
+            }
         )
 
 
@@ -365,107 +352,126 @@ def process_list_posts(
     Returns:
         None
     """
-    links = message.text.split('\n')
-    for link in links:
-        # To register each link as a separate request
-        user = users.user_access_check(
-            user_id=message.chat.id,
-            role_id=constants.POSTS_LIST_ROLE
-        )
-        if (
-            user['access'] == users.user_status_allow
-            and
-            user['permissions'] == users.user_status_allow
-        ):
-            message.text = link
-            if user.get('rate_limits', None).get('end_time', None) is None:
-                time_to_process = datetime.now()
-            else:
-                time_to_process = user['rate_limits']['end_time']
-            process_one_post(
-                message=message,
-                help_message=help_message,
-                time_to_process=time_to_process
-            )
+    user = users.user_access_check(message.chat.id, constants.ROLES_MAP['Posts List'])
+    if user.get('permissions', None) == users.user_status_allow:
+        pattern = re.compile(r'^https://www.instagram.com/(p|reel)/.*(\n^https://www.instagram.com/(p|reel)/.*)*$')
+        if bool(pattern.match(message.text)):
+            links = message.text.split('\n')
+            for link in links:
+                # To register each link as a separate request for account rate limits
+                user = users_rl.user_access_check(message.chat.id, constants.ROLES_MAP['Posts List'])
+                message.text = link
+                if user.get('rate_limits', None).get('end_time', None) is None:
+                    time_to_process = datetime.now()
+                else:
+                    time_to_process = user['rate_limits']['end_time']
+                process_one_post(
+                    message=message,
+                    help_message=help_message,
+                    time_to_process=time_to_process
+                )
+                bot.delete_message(message.chat.id, message.id)
+                if help_message is not None:
+                    bot.delete_message(message.chat.id, help_message.id)
         else:
-            reject_message(message=message)
-
-    bot.delete_message(
-        chat_id=message.chat.id,
-        message_id=message.id
-    )
-    if help_message is not None:
-        bot.delete_message(
+            telegram.send_styled_message(
+                chat_id=message.chat.id,
+                message_template={'alias': 'url_error'}
+            )
+            log.error(
+                '[Bot]: List of post links from user %s is incorrect: %s',
+                message.chat.id,
+                message.text
+            )
+    else:
+        telegram.send_styled_message(
             chat_id=message.chat.id,
-            message_id=help_message.id
+            message_template={
+                'alias': 'reject_message',
+                'kwargs': {
+                    'username': message.from_user.username,
+                    'userid': message.chat.id
+                }
+            }
         )
 
 
-def queue_handler():
+def queue_handler() -> None:
+    """
+    The handler for the queue of posts to be processed.
+
+    Args:
+        None
+
+    Returns:
+        None
+    """
     log.info(
         '[Bot]: Starting thread for queue handler...'
     )
     while True:
-        time.sleep(
-            constants.QUEUE_FREQUENCY
-        )
-        message = database.get_message_from_queue(
-            scheduled_time=datetime.now()
-        )
+        time.sleep(constants.QUEUE_FREQUENCY)
+        message = database.get_message_from_queue(datetime.now())
+
         if message is not None:
-            if message[5] == 'post':
+            link_type = message[5]
+            download_status = message[9]
+            upload_status = message[10]
+            post_id = message[2]
+            chat_id = message[1]
+            message_id = message[7]
+
+            if link_type == 'post':
                 log.info(
                     '[Queue-thread-1] Starting handler for post url %s...',
                     message[3]
                 )
-                download_status = message[9]
-                upload_status = message[10]
                 # download the contents of an instagram post to a temporary folder
-                if message[9] != 'completed':
-                    #download_status = downloader.get_post_content(
+                if download_status != 'completed':
+                    # download_status = downloader.get_post_content(
                     #    shortcode=message[1]
-                    #)
+                    # )
                     download_status = 'completed'
                     database.update_message_state_in_queue(
-                        post_id=message[2],
+                        post_id=post_id,
                         state='processing download',
                         download_status=download_status,
                         upload_status=upload_status
                     )
                 # upload the received content to the destination storage
-                if message[10] != 'completed':
-                    #upload_status = uploader.start_upload(
+                if upload_status != 'completed':
+                    # upload_status = uploader.start_upload(
                     #    sub_dir_name=d_response['owner']
-                    #)
+                    # )
                     upload_status = 'completed'
                     database.update_message_state_in_queue(
-                        post_id=message[2],
+                        post_id=post_id,
                         state='processing upload',
                         download_status=download_status,
                         upload_status=upload_status
-                        #upload_status=u_response['status']
+                        # upload_status=u_response['status']
                     )
                 # mark item in queue as processed
                 if download_status == 'completed' and upload_status == 'completed':
                     database.update_message_state_in_queue(
-                        post_id=message[2],
+                        post_id=post_id,
                         state='processed',
                         download_status=download_status,
                         upload_status=upload_status
                     )
                     # send a message to the user with a link to the uploaded file
                     bot.edit_message_text(
-                        chat_id=message[1],
-                        message_id=message[7],
+                        chat_id=chat_id,
+                        message_id=message_id,
                         text=messages.render_template(
                             template_alias='post_downloaded',
-                            post_id=message[2],
+                            post_id=post_id,
                             timestamp=str(datetime.now())
                         )
                     )
                     log.info(
                         '[Queue-thread-1] The URL of the post %s has been processed',
-                        message[2]
+                        post_id
                     )
 
 
@@ -485,13 +491,7 @@ def main():
         args=()
     )
     thread_queue_handler.start()
-
-    while True:
-        log.info(
-            '[Bot]: Starting bot %s...',
-            constants.BOT_NAME
-        )
-        bot.polling()
+    telegram.launch_bot()
 
 
 if __name__ == "__main__":
