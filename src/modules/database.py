@@ -368,13 +368,13 @@ class DatabaseClient:
         self.cursor.execute(f"SELECT {columns} FROM {table_name} WHERE {condition} LIMIT {limit}")
         return self.cursor.fetchall()
 
-    def _update(self, table_name, set, condition):
+    def _update(self, table_name, values, condition):
         """
-        Update the specified table with the given set of values based on the specified condition.
+        Update the specified table with the given values of values based on the specified condition.
 
         Args:
             table_name (str): The name of the table to update.
-            set (str): The set of values to update in the table.
+            values (str): The values of values to update in the table.
             condition (str): The condition to use for updating the table.
 
         Returns:
@@ -384,7 +384,7 @@ class DatabaseClient:
             To update the 'users' table with a new username and password for a user with ID 1:
             >>> _update('users', "username='new_username', password='new_password'", "id=1")
         """
-        self.cursor.execute(f"UPDATE {table_name} SET {set} WHERE {condition}")
+        self.cursor.execute(f"UPDATE {table_name} SET {values} WHERE {condition}")
         self.database_connection.commit()
 
     def _delete(self, table_name: str, condition: str) -> None:
@@ -466,7 +466,19 @@ class DatabaseClient:
         """
         self._insert(
             table_name='queue',
-            columns='user_id, post_id, post_url, post_owner, link_type, message_id, response_message_id, chat_id, scheduled_time, download_status, upload_status',
+            columns=(
+                'user_id, '
+                'post_id, '
+                'post_url, '
+                'post_owner, '
+                'link_type, '
+                'message_id, '
+                'response_message_id, '
+                'chat_id, '
+                'scheduled_time, '
+                'download_status, '
+                'upload_status'
+            ),
             values=(
                 f"'{data.get('user_id', None)}', "
                 f"'{data.get('post_id', None)}', "
@@ -499,7 +511,8 @@ class DatabaseClient:
 
         Examples:
             >>> get_message_from_queue('2022-01-01 12:00:00')
-            (1, '123456789', 'vahj5AN8aek', 'https://www.instagram.com/p/vahj5AN8aek', 'johndoe', 'post', '12345', '12346', '123456789', datetime.datetime(2023, 11, 14, 21, 21, 22, 603440), 'None', 'None', datetime.datetime(2023, 11, 14, 21, 14, 26, 680024), 'waiting')
+            (1, '123456789', 'vahj5AN8aek', 'https://www.instagram.com/p/vahj5AN8aek', 'johndoe', 'post', '12345', '12346', '123456789',
+            datetime.datetime(2023, 11, 14, 21, 21, 22, 603440), 'None', 'None', datetime.datetime(2023, 11, 14, 21, 14, 26, 680024), 'waiting')
         """
         message = self._select(
             table_name='queue',
@@ -526,7 +539,7 @@ class DatabaseClient:
 
         Parameters:
             table_name (str): The name of the table to update.
-            set (str): The new value for the state column.
+            values (str): The new value for the state column.
             condition (str): The condition to use to select the row to update.
 
         Returns:
@@ -543,7 +556,7 @@ class DatabaseClient:
         """
         self._update(
             table_name='queue',
-            set=f"state = '{state}'",
+            values=f"state = '{state}'",
             condition=f"post_id = '{post_id}'"
         )
 
@@ -622,7 +635,7 @@ class DatabaseClient:
 
         return result if result else None
 
-    def set_lock(
+    def values_lock(
         self,
         lock_name: str = None
     ) -> str:
@@ -630,43 +643,43 @@ class DatabaseClient:
         Set a lock in the database.
 
         Args:
-            lock_name (str): The name of the lock to set.
+            lock_name (str): The name of the lock to values.
 
         Returns:
-            str: A message indicating that the lock has been set.
+            str: A message indicating that the lock has been values.
 
         Examples:
-            >>> set_lock('example_lock')
+            >>> values_lock('example_lock')
             'example_lock: locked'
         """
         self._update(
             table_name='locks',
-            set='enabled = TRUE',
+            values='enabled = TRUE',
             condition=f"name = '{lock_name}'"
         )
 
         return f"{lock_name}: locked"
 
-    def reset_lock(
+    def revalues_lock(
         self,
         lock_name: str = None
     ) -> str:
         """
-        Resets the lock with the given name by setting its 'enabled' field to False.
+        Revaluess the lock with the given name by valuesting its 'enabled' field to False.
 
         Args:
-            lock_name (str): The name of the lock to reset.
+            lock_name (str): The name of the lock to revalues.
 
         Returns:
             str: A message indicating that the lock has been unlocked.
 
         Examples:
-            >>> reset_lock('my_lock')
+            >>> revalues_lock('my_lock')
             'my_lock: unlocked'
         """
         self._update(
             table_name='locks',
-            set='enabled = FALSE',
+            values='enabled = FALSE',
             condition=f"name = '{lock_name}'"
         )
 

@@ -32,6 +32,9 @@ def pytest_configure(config):
 
 @pytest.fixture(name="prepare_dev_environment", scope='session')
 def fixture_prepare_dev_environment():
+    """
+    Prepare a local environment or ci environment and return the URL of the Vault server
+    """
     if not os.getenv("CI"):
         if not os.getenv("TG_USERID"):
             print("You need to set the TG_USER_ID environment variable to run the tests (telegram user-id)")
@@ -49,6 +52,8 @@ def fixture_prepare_dev_environment():
         with subprocess.Popen(command, shell=True):
             print("Running dev environment...")
         return 'ready'
+    return None
+
 
 @pytest.fixture(name="vault_url", scope='session')
 def fixture_vault_url(prepare_dev_environment):
