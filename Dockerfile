@@ -15,8 +15,7 @@ LABEL org.opencontainers.image.documentation https://github.com/obervinov/${PROJ
 LABEL org.opencontainers.image.source https://github.com/obervinov/${PROJECT_NAME}/blob/${PROJECT_VERSION}
 
 ### Environment variables ###
-ENV PATH=/home/${PROJECT_NAME}/.local/bin:$PATH
-ENV PYTHONPATH=/home/${PROJECT_NAME}/app
+ENV PYTHONPATH=/home/${PROJECT_NAME}/app/src:/home/${PROJECT_NAME}/app/.venv/lib/python3.10/site-packages
 ENV PIP_NO_CACHE_DIR=off
 ENV PIP_DISABLE_PIP_VERSION_CHECK=on
 ENV POETRY_VIRTUALENVS_IN_PROJECT=true
@@ -24,6 +23,8 @@ ENV POETRY_NO_INTERACTION=1
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV VENV_PATH=/home/${PROJECT_NAME}/app/.venv
+ENV PATH=/home/${PROJECT_NAME}/.local/bin:$VENV_PATH/bin:$PATH
+
 
 ### Preparing user and directories ###
 RUN adduser -D -h /home/${PROJECT_NAME} -s /bin/sh ${PROJECT_NAME} && \
