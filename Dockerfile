@@ -38,8 +38,7 @@ RUN apk add --no-cache git curl
 RUN apk upgrade --no-cache
 RUN curl -sSL https://install.python-poetry.org | python -
 
-### Switching context ###
-USER ${PROJECT_NAME}
+# Switch working directory
 WORKDIR /home/${PROJECT_NAME}/app
 
 ### Copy source code ###
@@ -48,6 +47,9 @@ COPY src/ src/
 
 ### Installing a python dependeces ###
 RUN poetry install --no-dev --no-root
+
+### Switching context ###
+USER ${PROJECT_NAME}
 
 ### Entrypoint ###
 CMD [ "python3", "bot.py" ]
