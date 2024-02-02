@@ -68,7 +68,7 @@ def start_command(message: telegram.telegram_types.Message = None) -> None:
         reply_markup = telegram.create_inline_markup(constants.ROLES_MAP.keys())
         start_message = telegram.send_styled_message(
             chat_id=message.chat.id,
-            message_template={
+            messages_template={
                 'alias': 'start_message',
                 'kwargs': {
                     'username': message.from_user.username,
@@ -81,7 +81,7 @@ def start_command(message: telegram.telegram_types.Message = None) -> None:
     else:
         telegram.send_styled_message(
             chat_id=message.chat.id,
-            message_template={
+            messages_template={
                 'alias': 'reject_message',
                 'kwargs': {
                     'username': message.from_user.username,
@@ -136,7 +136,7 @@ def bot_callback_query_handler(call: telegram.callback_query = None) -> None:
     else:
         telegram.send_styled_message(
             chat_id=call.message.chat.id,
-            message_template={
+            messages_template={
                 'alias': 'reject_message',
                 'kwargs': {
                     'username': call.message.from_user.username,
@@ -163,7 +163,7 @@ def button_post(
     """
     help_message = telegram.send_styled_message(
         chat_id=call.message.chat.id,
-        message_template={'alias': 'help_for_post'}
+        messages_template={'alias': 'help_for_post'}
     )
     bot.register_next_step_handler(
         call.message,
@@ -186,7 +186,7 @@ def button_posts_list(call: telegram.callback_query = None) -> None:
     """
     help_message = telegram.send_styled_message(
         chat_id=call.message.chat.id,
-        message_template={'alias': 'help_for_posts_list'}
+        messages_template={'alias': 'help_for_posts_list'}
     )
     bot.register_next_step_handler(
         call.message,
@@ -217,7 +217,7 @@ def button_user_queue(call: telegram.callback_query = None) -> None:
 
     telegram.send_styled_message(
         chat_id=call.message.chat.id,
-        message_template={
+        messages_template={
             'alias': 'user_queue',
             'kwargs': {
                 'userid': call.message.chat.id,
@@ -240,7 +240,7 @@ def button_profile_posts(call: telegram.callback_query = None) -> None:
     """
     telegram.send_styled_message(
         chat_id=call.message.chat.id,
-        message_template={'alias': 'feature_not_implemented'}
+        messages_template={'alias': 'feature_not_implemented'}
     )
 
 
@@ -279,7 +279,7 @@ def process_one_post(
             except KeyError as error:
                 telegram.send_styled_message(
                     chat_id=message.chat.id,
-                    message_template={'alias': 'url_error'}
+                    messages_template={'alias': 'url_error'}
                 )
                 log.error(
                     '[Bot]: Error processing post link %s for user %s: %s',
@@ -290,7 +290,7 @@ def process_one_post(
             if database.check_message_uniqueness(data['post_id'], data['user_id']):
                 response_message = telegram.send_styled_message(
                     chat_id=message.chat.id,
-                    message_template={'alias': 'added_in_queue'}
+                    messages_template={'alias': 'added_in_queue'}
                 )
                 bot.delete_message(message.chat.id, message.id)
                 if help_message is not None:
@@ -305,7 +305,7 @@ def process_one_post(
             else:
                 telegram.send_styled_message(
                     chat_id=message.chat.id,
-                    message_template={
+                    messages_template={
                         'alias': 'post_already_downloaded',
                         'kwargs': {'post_id': message.text.split('/')[-2]}
                     }
@@ -318,7 +318,7 @@ def process_one_post(
         else:
             telegram.send_styled_message(
                 chat_id=message.chat.id,
-                message_template={'alias': 'url_error'}
+                messages_template={'alias': 'url_error'}
             )
             log.error(
                 '[Bot]: Post link %s from user %s is incorrect',
@@ -328,7 +328,7 @@ def process_one_post(
     else:
         telegram.send_styled_message(
             chat_id=message.chat.id,
-            message_template={
+            messages_template={
                 'alias': 'reject_message',
                 'kwargs': {
                     'username': message.from_user.username,
@@ -376,7 +376,7 @@ def process_list_posts(
         else:
             telegram.send_styled_message(
                 chat_id=message.chat.id,
-                message_template={'alias': 'url_error'}
+                messages_template={'alias': 'url_error'}
             )
             log.error(
                 '[Bot]: List of post links from user %s is incorrect: %s',
@@ -386,7 +386,7 @@ def process_list_posts(
     else:
         telegram.send_styled_message(
             chat_id=message.chat.id,
-            message_template={
+            messages_template={
                 'alias': 'reject_message',
                 'kwargs': {
                     'username': message.from_user.username,
