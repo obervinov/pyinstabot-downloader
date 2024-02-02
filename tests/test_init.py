@@ -4,6 +4,7 @@ A test for quick setup of the dev environment for testing the release.
 import subprocess
 import pytest
 
+
 @pytest.mark.order(1)
 def test_init_dev_environment(vault_configuration_data, vault_approle):
     """
