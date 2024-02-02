@@ -16,6 +16,7 @@ LABEL org.opencontainers.image.source https://github.com/obervinov/${PROJECT_NAM
 
 ### Environment variables ###
 ENV PATH=/home/${PROJECT_NAME}/.local/bin:/root/.local/bin:$PATH
+ENV PYTHONPATH=/home/${PROJECT_NAME}/app:$PYTHONPATH
 ENV PIP_NO_CACHE_DIR=off
 ENV PIP_DISABLE_PIP_VERSION_CHECK=on
 ENV POETRY_VIRTUALENVS_IN_PROJECT=false
@@ -41,7 +42,7 @@ COPY src/ ./
 
 ### Installing poetry and python dependeces ###
 RUN curl -sSL https://install.python-poetry.org | python -
-RUN poetry install --no-root
+RUN poetry install
 
 ### Entrypoint ###
 CMD [ "python3", "bot.py" ]
