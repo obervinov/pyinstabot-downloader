@@ -19,8 +19,11 @@ ENV PATH=/home/${PROJECT_NAME}/.local/bin:$PATH
 ENV PYTHONPATH=/home/${PROJECT_NAME}/app
 ENV PIP_NO_CACHE_DIR=off
 ENV PIP_DISABLE_PIP_VERSION_CHECK=on
-ENV POETRY_VIRTUALENVS_IN_PROJECT=false
+ENV POETRY_VIRTUALENVS_IN_PROJECT=true
 ENV POETRY_NO_INTERACTION=1
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV VENV_PATH=/home/${PROJECT_NAME}/app/.venv
 
 ### Preparing user and directories ###
 RUN adduser -D -h /home/${PROJECT_NAME} -s /bin/sh ${PROJECT_NAME} && \
@@ -37,7 +40,12 @@ USER ${PROJECT_NAME}
 WORKDIR /home/${PROJECT_NAME}/app
 
 ### Copy source code ###
-COPY ./ ./
+COPY src/ src/
+COPY tests/ tests/
+COPY pyproject.toml .
+COPY poetry.lock .
+COPY *.md ./
+COPY LICENSE ./
 
 ### Installing poetry and python dependeces ###
 RUN curl -sSL https://install.python-poetry.org | python -
