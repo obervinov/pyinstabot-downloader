@@ -32,7 +32,7 @@ RUN adduser -D -h /home/${PROJECT_NAME} -s /bin/sh ${PROJECT_NAME} && \
     chown ${PROJECT_NAME}. /home/${PROJECT_NAME} -R
 
 ### Prepare git
-RUN apk add --no-cache git
+RUN apk add --no-cache git curl
 
 # Fix vulnerabilities and updated packages
 RUN apk upgrade --no-cache
