@@ -37,14 +37,11 @@ USER ${PROJECT_NAME}
 WORKDIR /home/${PROJECT_NAME}/app
 
 ### Copy source code ###
-COPY poetry.lock pyproject.toml ./
-COPY *.md ./
-COPY LICENSE ./
-COPY src/ ./
+COPY ./ ./
 
 ### Installing poetry and python dependeces ###
 RUN curl -sSL https://install.python-poetry.org | python -
 RUN poetry install
 
 ### Entrypoint ###
-CMD [ "python3", "bot.py" ]
+CMD [ "python3", "src/bot.py" ]
