@@ -16,40 +16,32 @@ LABEL org.opencontainers.image.source https://github.com/obervinov/${PROJECT_NAM
 
 ### Environment variables ###
 ENV PATH=/home/${PROJECT_NAME}/.local/bin:/root/.local/bin:$PATH
-ENV PYTHONUNBUFFERED=1
-ENV PYTHONDONTWRITEBYTECODE=1
 ENV PIP_NO_CACHE_DIR=off
 ENV PIP_DISABLE_PIP_VERSION_CHECK=on
-ENV PIP_DEFAULT_TIMEOUT=100
-ENV POETRY_VIRTUALENVS_IN_PROJECT=true
+ENV POETRY_VIRTUALENVS_IN_PROJECT=false
 ENV POETRY_NO_INTERACTION=1
 
-### Preparing user and dirs ###
+### Preparing user and directories ###
 RUN adduser -D -h /home/${PROJECT_NAME} -s /bin/sh ${PROJECT_NAME} && \
     mkdir -p /home/${PROJECT_NAME} && \
     mkdir -p /home/${PROJECT_NAME}/app && \
     mkdir -p /home/${PROJECT_NAME}/tmp && \
     chown ${PROJECT_NAME}. /home/${PROJECT_NAME} -R
 
-### Prepare git
-RUN apk add --no-cache git curl
+### Prepare tools and fix vulnerabilities ###
+RUN apk upgrade --no-cache && apk add --no-cache git curl
 
-# Fix vulnerabilities and updated packages
-RUN apk upgrade --no-cache
-RUN curl -sSL https://install.python-poetry.org | python -
-
-# Switch working directory
+### Switching context ###
+USER ${PROJECT_NAME}
 WORKDIR /home/${PROJECT_NAME}/app
 
 ### Copy source code ###
 COPY poetry.lock pyproject.toml ./
 COPY src/ ./
 
-### Installing a python dependeces ###
-RUN poetry install --no-dev --no-root
-
-### Switching context ###
-USER ${PROJECT_NAME}
+### Installing poetry and python dependeces ###
+RUN curl -sSL https://install.python-poetry.org | python -
+RUN poetry install --no-root
 
 ### Entrypoint ###
 CMD [ "python3", "bot.py" ]
