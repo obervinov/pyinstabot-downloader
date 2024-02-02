@@ -15,8 +15,8 @@ LABEL org.opencontainers.image.documentation https://github.com/obervinov/${PROJ
 LABEL org.opencontainers.image.source https://github.com/obervinov/${PROJECT_NAME}/blob/${PROJECT_VERSION}
 
 ### Environment variables ###
-ENV PATH=/home/${PROJECT_NAME}/.local/bin:/root/.local/bin:$PATH
-ENV PYTHONPATH=/home/${PROJECT_NAME}/app:$PYTHONPATH
+ENV PATH=/home/${PROJECT_NAME}/.local/bin:$PATH
+ENV PYTHONPATH=/home/${PROJECT_NAME}/app
 ENV PIP_NO_CACHE_DIR=off
 ENV PIP_DISABLE_PIP_VERSION_CHECK=on
 ENV POETRY_VIRTUALENVS_IN_PROJECT=false
@@ -38,6 +38,8 @@ WORKDIR /home/${PROJECT_NAME}/app
 
 ### Copy source code ###
 COPY poetry.lock pyproject.toml ./
+COPY *.md ./
+COPY LICENSE ./
 COPY src/ ./
 
 ### Installing poetry and python dependeces ###
