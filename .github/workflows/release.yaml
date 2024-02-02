@@ -21,10 +21,10 @@ jobs:
   pyproject:
     uses: obervinov/_templates/.github/workflows/pyproject.yaml@v1.0.12
 
-  build-image:
+  build-release-image:
     uses: obervinov/_templates/.github/workflows/docker.yaml@v1.0.12
     needs: [changelog, pylint, pytest, pyproject]
 
   create-release:
     uses: obervinov/_templates/.github/workflows/release.yaml@v1.0.12
-    needs: [changelog, pylint, pytest, pyproject, build-image]
+    needs: [changelog, pylint, pytest, pyproject, build-release-image]
