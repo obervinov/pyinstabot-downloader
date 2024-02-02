@@ -15,7 +15,7 @@ LABEL org.opencontainers.image.documentation https://github.com/obervinov/${PROJ
 LABEL org.opencontainers.image.source https://github.com/obervinov/${PROJECT_NAME}/blob/${PROJECT_VERSION}
 
 ### Environment variables ###
-ENV PATH=/home/${PROJECT_NAME}/.local/bin:$PATH
+ENV PATH=/home/${PROJECT_NAME}/.local/bin:/root/.local/bin:$PATH
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PIP_NO_CACHE_DIR=off
