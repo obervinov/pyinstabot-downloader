@@ -39,7 +39,7 @@ RUN apk upgrade --no-cache
 RUN curl -sSL https://install.python-poetry.org | python -
 
 # Switch working directory
-WORKDIR /home/${PROJECT_NAME}/app
+WORKDIR /home/${PROJECT_NAME}/app/src
 
 ### Copy source code ###
 COPY poetry.lock pyproject.toml ./
