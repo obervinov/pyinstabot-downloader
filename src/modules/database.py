@@ -3,7 +3,7 @@
 import os
 import sys
 import importlib
-from typing import Union 
+from typing import Union
 import psycopg2
 from logger import log
 
