@@ -3,6 +3,7 @@
 import os
 import sys
 import importlib
+from typing import Union 
 import psycopg2
 from logger import log
 
@@ -35,7 +36,7 @@ class DatabaseClient:
     def __init__(
         self,
         vault: object = None
-    ):
+    ) -> None:
         """
         Initializes a new instance of the Database class.
 
@@ -82,7 +83,7 @@ class DatabaseClient:
         self._prepare_db()
         self._migrations()
 
-    def _prepare_db(self):
+    def _prepare_db(self) -> None:
         """
         Creates and initializes the necessary tables in the database.
 
@@ -214,7 +215,7 @@ class DatabaseClient:
             )
         )
 
-    def _migrations(self):
+    def _migrations(self) -> None:
         """
         Executes all pending database migrations.
 
@@ -309,7 +310,11 @@ class DatabaseClient:
         )
         self.database_connection.commit()
 
-    def _create_table(self, table_name, columns):
+    def _create_table(
+        self,
+        table_name: str = None,
+        columns: str = None
+    ) -> None:
         """
         Create a new table in the database with the given name and columns.
 
@@ -328,7 +333,12 @@ class DatabaseClient:
         self.cursor.execute(f"CREATE TABLE IF NOT EXISTS {table_name} ({columns})")
         self.database_connection.commit()
 
-    def _insert(self, table_name, columns, values):
+    def _insert(
+        self,
+        table_name: str = None,
+        columns: str = None,
+        values: str = None
+    ) -> None:
         """
         Inserts a new row into the specified table with the given columns and values.
 
@@ -347,28 +357,39 @@ class DatabaseClient:
         self.cursor.execute(f"INSERT INTO {table_name} ({columns}) VALUES ({values})")
         self.database_connection.commit()
 
-    def _select(self, table_name: str, columns: str, condition: str, limit: int) -> list:
+    def _select(
+        self,
+        table_name: str = None,
+        columns: str = None,
+        condition: str = None,
+        limit: int = 0
+    ) -> list:
         """
         Selects data from a table in the database based on the given condition.
 
         Args:
-        table_name (str): The name of the table to select data from.
-        columns (str): The columns to select data from.
-        condition (str): The condition to filter the data by.
-        limit (int): The maximum number of rows to return.
+            table_name (str): The name of the table to select data from.
+            columns (str): The columns to select data from.
+            condition (str): The condition to filter the data by.
+            limit (int): The maximum number of rows to return.
 
         Returns:
-        list: A list of tuples containing the selected data.
+            list: A list of tuples containing the selected data.
 
         Examples:
-        >>> db = Database()
-        >>> db._select("users", "username, email", "age > 18")
-        [('john_doe', 'john_doe@example.com'), ('jane_doe', 'jane_doe@example.com')]
+            >>> db = Database()
+            >>> db._select("users", "username, email", "age > 18")
+            [('john_doe', 'john_doe@example.com'), ('jane_doe', 'jane_doe@example.com')]
         """
         self.cursor.execute(f"SELECT {columns} FROM {table_name} WHERE {condition} LIMIT {limit}")
         return self.cursor.fetchall()
 
-    def _update(self, table_name, values, condition):
+    def _update(
+        self,
+        table_name: str = None,
+        values: str = None,
+        condition: str = None
+    ) -> None:
         """
         Update the specified table with the given values of values based on the specified condition.
 
@@ -387,7 +408,11 @@ class DatabaseClient:
         self.cursor.execute(f"UPDATE {table_name} SET {values} WHERE {condition}")
         self.database_connection.commit()
 
-    def _delete(self, table_name: str, condition: str) -> None:
+    def _delete(
+        self,
+        table_name: str = None,
+        condition: str = None
+    ) -> None:
         """
         Delete rows from a table based on a condition.
 
@@ -405,7 +430,7 @@ class DatabaseClient:
         self.cursor.execute(f"DELETE FROM {table_name} WHERE {condition}")
         self.database_connection.commit()
 
-    def _close(self):
+    def _close(self) -> None:
         """
         Close the database connection.
 
@@ -596,7 +621,7 @@ class DatabaseClient:
     def get_user_queue(
         self,
         user_id: str = None
-    ) -> dict | None:
+    ) -> Union[dict, None]:
         """
         Get all messages from the queue table for the specified user.
 

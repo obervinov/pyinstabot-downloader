@@ -11,18 +11,18 @@ on:
 
 jobs:
   changelog:
-    uses: obervinov/_templates/.github/workflows/changelog.yaml@v1.0.12
+    uses: obervinov/_templates/.github/workflows/changelog.yaml@v1.0.13
 
   pylint:
-    uses: obervinov/_templates/.github/workflows/pylint.yaml@v1.0.12
+    uses: obervinov/_templates/.github/workflows/pylint.yaml@v1.0.13
 
   pytest:
-    uses: obervinov/_templates/.github/workflows/pytest-with-vault.yaml@v1.0.12
+    uses: obervinov/_templates/.github/workflows/pytest-with-vault.yaml@v1.0.13
 
   pyproject:
-    uses: obervinov/_templates/.github/workflows/pyproject.yaml@v1.0.12
+    uses: obervinov/_templates/.github/workflows/pyproject.yaml@v1.0.13
 
   build-pr-image:
-    uses: obervinov/_templates/.github/workflows/docker.yaml@v1.0.12
+    uses: obervinov/_templates/.github/workflows/docker.yaml@v1.0.13
     needs: [changelog, pylint, pytest, pyproject]
   

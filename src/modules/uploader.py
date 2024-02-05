@@ -3,6 +3,7 @@ This module processes the content uploaded from Instagram
 and uploads the found media files (image, video) to the destination storage.
 """
 import os
+from typing import Union
 import dropbox
 from mega import Mega
 from logger import log
@@ -177,7 +178,7 @@ class Uploader:
         self,
         source: str = None,
         destination: str = None
-    ) -> str | None:
+    ) -> Union[str, None]:
         """
         The method of uploading the contents of the target directory
         to the cloud or local directory.

@@ -7,6 +7,7 @@ and saving the history of already downloaded messages in the vault.
 https://instaloader.github.io/module/instaloader.html
 """
 import os
+from typing import Union
 import instaloader
 from logger import log
 
@@ -118,7 +119,7 @@ class Downloader:
     def _login(
         self,
         method: str = None
-    ) -> str | None:
+    ) -> Union[str, None]:
         """
         The method for authentication in instagram api.
 
@@ -179,7 +180,7 @@ class Downloader:
     def get_posts(
         self,
         username: str = None
-    ) -> list | None:
+    ) -> Union[list, None]:
         """
         The method for getting a list posts of instagram account.
 
@@ -209,7 +210,7 @@ class Downloader:
     def get_post_content(
         self,
         shortcode: str = None
-    ) -> dict | None:
+    ) -> Union[dict, None]:
         """
         The method for getting the content of a post from a specified Instagram account.
 
@@ -250,7 +251,7 @@ class Downloader:
     def get_download_info(
         self,
         account: str = None
-    ) -> dict | None:
+    ) -> Union[dict, None]:
         """
         The method for collecting all the necessary information
         to download all posts from the specified account.
