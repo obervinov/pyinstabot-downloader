@@ -17,15 +17,15 @@ packages = [{include = "src"}]
 "Bug Tracker" = "https://github.com/obervinov/pyinstabot-downloader/issues"
 
 [tool.poetry.dependencies]
-python = "^3.10"
+python = "^3.9"
 instaloader = "^4"
 dropbox = "^11"
 'mega.py' = "^1.0.8"
 psycopg2-binary = "^2"
-logger = { git = "https://github.com/obervinov/logger-package.git", tag = "v1.0.4" }
-vault  = { git = "https://github.com/obervinov/vault-package.git", tag = "v2.0.2" }
-messages = { git = "https://github.com/obervinov/messages-package.git", tag = "v1.0.3" }
-users = { git = "https://github.com/obervinov/users-package.git", tag = "v2.0.2" }
+logger = { git = "https://github.com/obervinov/logger-package.git", tag = "v1.0.5" }
+vault  = { git = "https://github.com/obervinov/vault-package.git", tag = "v2.0.3" }
+messages = { git = "https://github.com/obervinov/messages-package.git", tag = "v1.0.4" }
+users = { git = "https://github.com/obervinov/users-package.git", tag = "v2.0.3" }
 telegram = { git = "https://github.com/obervinov/telegram-package.git", branch = "release/v1.2.0" }
 
 [build-system]
