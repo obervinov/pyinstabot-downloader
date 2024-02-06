@@ -34,7 +34,7 @@ def execute(obj):
         print(f"{NAME}: Found {posts_counter} posts in history/{owner}")
 
         for post in posts:
-            user_id = obj.vault.read_secret(path='configuration/users').keys()[0]
+            user_id = next(iter(obj.vault.read_secret(path='configuration/users').keys()))
             post_id = post
             post_url = f"https://www.instagram.com/p/{post}"
             post_owner = owner
