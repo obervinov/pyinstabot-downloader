@@ -229,7 +229,7 @@ class DatabaseClient:
                         f"'{lock['behavior']}', "
                         f"'{lock['description']}', "
                         f"'{lock['caused_by']}', "
-                        f"'{lock['tip']}', "
+                        f"'{lock['tip']}'"
                     )
                 )
             else:
