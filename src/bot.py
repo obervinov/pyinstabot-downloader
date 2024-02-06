@@ -6,7 +6,7 @@ import re
 import threading
 import time
 from datetime import datetime
-from logger import log
+from logger import log, logging
 from telegram import TelegramBot
 from users import Users
 from messages import Messages
@@ -18,6 +18,7 @@ from configs import constants
 
 
 # init instances
+log = logging.getLogger(__name__)
 vault = VaultClient(name=constants.BOT_NAME)
 telegram = TelegramBot(vault=vault)
 bot = telegram.telegram_bot

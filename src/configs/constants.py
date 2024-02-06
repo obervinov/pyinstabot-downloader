@@ -4,21 +4,6 @@ This module contains the constants for this python project.
 import os
 
 # environment variables
-LOGGER_LEVEL = os.environ.get(
-    'LOGGER_LEVEL',
-    'INFO'
-)
-
-BOT_NAME = os.environ.get(
-    'BOT_NAME',
-    'pyinstabot-downloader'
-)
-
-MESSAGES_CONFIG = os.environ.get(
-    'MESSAGES_CONFIG',
-    'src/configs/messages.json'
-)
-
 STORAGE_TYPE = os.environ.get(
     'STORAGE_TYPE',
     'mega'
