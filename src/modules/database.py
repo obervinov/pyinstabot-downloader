@@ -194,8 +194,9 @@ class DatabaseClient:
         )
         self._insert(
             table_name='locks',
-            columns='name, behavior, description, caused_by, tip',
+            columns='id, name, behavior, description, caused_by, tip',
             values=(
+                '\'1\', '
                 '\'Unauthorized\', '
                 '\'block:downloader_class\', '
                 '\'Locks the post downloading functionality\', '
@@ -207,6 +208,7 @@ class DatabaseClient:
             table_name='locks',
             columns='name, behavior, description, caused_by, tip',
             values=(
+                '\'2\', '
                 '\'BadRequest\', '
                 '\'block:downloader_class:post_link\', '
                 '\'Locks the specified post downloading functionality\', '

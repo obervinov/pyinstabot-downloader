@@ -40,7 +40,7 @@ def execute(obj):
             post_owner = owner
             link_type = 'post'
             message_id = 'unknown'
-            chat_id = obj.vault.list_secrets(path='configuration/users')[0]
+            chat_id = next(iter(obj.vault.read_secret(path='configuration/users').keys()))
             download_status = 'completed'
             upload_status = 'completed'
             state = 'processed'
