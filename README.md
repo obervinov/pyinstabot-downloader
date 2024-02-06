@@ -133,23 +133,23 @@ If the target storage is a local file system, then any further steps to process 
 ```bash
 docker-compose -f docker-compose.dev.yml up vault-server -d
 pip3 install -r requirements.txt
-curl -L https://gist.githubusercontent.com/obervinov/9bd452fee681f0493da7fd0b2bfe1495/raw/bbc4aad0ed7be064e9876dde64ad8b26b185091b/setup_vault_server.py | python3 --url=http://localhost:8200 --name=pyinstabot-downloader --policy=vault/policy.hcl
+curl -L https://gist.githubusercontent.com/obervinov/9bd452fee681f0493da7fd0b2bfe1495/raw/bbc4aad0ed7be064e9876dde64ad8b26b185091b/setup_vault_server.py | python3 --url=http://localhost:8200 --name=pyinstabot-downloader --policy=vault/policy.release.hcl
 ```
 
 - instructions for configuring an existing vault server
 ```bash
 pip3 install -r requirements.txt
-curl -L https://gist.githubusercontent.com/obervinov/9bd452fee681f0493da7fd0b2bfe1495/raw/bbc4aad0ed7be064e9876dde64ad8b26b185091b/setup_vault_server.py | python3 --url=http://localhost:8200 --name=pyinstabot-downloader --policy=vault/policy.hcl --token=hvs.123456qwerty
+curl -L https://gist.githubusercontent.com/obervinov/9bd452fee681f0493da7fd0b2bfe1495/raw/bbc4aad0ed7be064e9876dde64ad8b26b185091b/setup_vault_server.py | python3 --url=http://localhost:8200 --name=pyinstabot-downloader --policy=vault/policy.release.hcl --token=hvs.123456qwerty
 ```
 
-`setup_vault_server.py` - This script performs a quick and convenient configuration of the vault-server for this bot project: `initial` initialization of vault-server,  `unseal` vault-server, creating an isolated `mount point`, loading `policy.hcl`, creating an `approle`.
+`setup_vault_server.py` - This script performs a quick and convenient configuration of the vault-server for this bot project: `initial` initialization of vault-server,  `unseal` vault-server, creating an isolated `mount point`, loading `policy.release.hcl`, creating an `approle`.
 
 All these actions can also be performed using the vault cli:
 ```bash
 vault operator init
 vault operator unseal
 vault secrets enable -path=pyinstabot-downloader kv-v2 
-vault policy write pyinstabot-downloader vault/policy.hcl
+vault policy write pyinstabot-downloader vault/policy.release.hcl
 vault auth enable -path=pyinstabot-downloader approle
 vault write auth/pyinstabot-downloader/role/pyinstabot-downloader \
     token_policies=["pyinstabot-downloader"] \
