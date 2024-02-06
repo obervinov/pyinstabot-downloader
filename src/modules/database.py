@@ -192,30 +192,46 @@ class DatabaseClient:
             '[class.%s] Preparing database: add locks to table \'locks\'...',
             __class__.__name__
         )
-        self._insert(
-            table_name='locks',
-            columns='id, name, behavior, description, caused_by, tip',
-            values=(
-                '\'1\', '
-                '\'Unauthorized\', '
-                '\'block:downloader_class\', '
-                '\'Locks the post downloading functionality\', '
-                '\'401:unauthorized\', '
-                '\'Instagram session expired, invalid credentials or account is blocked\''
+        table_name = 'locks'
+        columns = 'id, name, behavior, description, caused_by, tip'
+        try:
+            self._insert(
+                table_name=table_name,
+                columns=columns,
+                values=(
+                    '\'1\', '
+                    '\'Unauthorized\', '
+                    '\'block:downloader_class\', '
+                    '\'Locks the post downloading functionality\', '
+                    '\'401:unauthorized\', '
+                    '\'Instagram session expired, invalid credentials or account is blocked\''
+                )
             )
-        )
-        self._insert(
-            table_name='locks',
-            columns='name, behavior, description, caused_by, tip',
-            values=(
-                '\'2\', '
-                '\'BadRequest\', '
-                '\'block:downloader_class:post_link\', '
-                '\'Locks the specified post downloading functionality\', '
-                '\'400:badrequest\', '
-                '\'When trying to upload content, an error occurs with an invalid request\''
+        except psycopg2.errors.UniqueViolation:
+            log.info(
+                '[class.%s] The lock `id1:Unauthorized` has already been added to the table %s and was skipped',
+                __class__.__name__,
+                table_name
             )
-        )
+        try:
+            self._insert(
+                table_name=table_name,
+                columns=columns,
+                values=(
+                    '\'2\', '
+                    '\'BadRequest\', '
+                    '\'block:downloader_class:post_link\', '
+                    '\'Locks the specified post downloading functionality\', '
+                    '\'400:badrequest\', '
+                    '\'When trying to upload content, an error occurs with an invalid request\''
+                )
+            )
+        except psycopg2.errors.UniqueViolation:
+            log.info(
+                '[class.%s] The lock `id2:BadRequest` has already been added to the table %s and was skipped',
+                __class__.__name__,
+                table_name
+            )
 
     def _migrations(self) -> None:
         """
