@@ -33,6 +33,11 @@ path "pyinstabot-downloader/metadata/history/*" {
   capabilities = ["read", "list"]
 }
 
+# Allowed to read users list
+path "pyinstabot-downloader/metadata/configuration/*" {
+  capabilities = ["read", "list"]
+}
+
 # Allowed to create, read, update, and list bot history
 path "pyinstabot-downloader/data/history/*" {
   capabilities = ["create", "read", "list", "update"]
