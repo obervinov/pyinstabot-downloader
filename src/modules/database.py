@@ -200,7 +200,7 @@ class DatabaseClient:
                 'behavior': 'block:downloader_class',
                 'description': 'Locks the post downloading functionality',
                 'caused_by': '401:unauthorized',
-                'tip': 'Instagram session expired, invalid credentials or account is blocked'               
+                'tip': 'Instagram session expired, invalid credentials or account is blocked'
             },
             {
                 'id': 2,
