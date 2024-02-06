@@ -192,46 +192,53 @@ class DatabaseClient:
             '[class.%s] Preparing database: add locks to table \'locks\'...',
             __class__.__name__
         )
+        # Dictionary of locks for the table
+        locks = [
+            {
+                'id': 1,
+                'name': 'Unauthorized',
+                'behavior': 'block:downloader_class',
+                'description': 'Locks the post downloading functionality',
+                'caused_by': '401:unauthorized',
+                'tip': 'Instagram session expired, invalid credentials or account is blocked'               
+            },
+            {
+                'id': 2,
+                'name': 'BadRequest',
+                'behavior': 'block:downloader_class:post_link',
+                'description': 'Locks the specified post downloading functionality',
+                'caused_by': '400:badrequest',
+                'tip': 'When trying to upload content, an error occurs with an invalid request'
+            }
+        ]
         table_name = 'locks'
         columns = 'id, name, behavior, description, caused_by, tip'
-        try:
-            self._insert(
+        for lock in locks:
+            check_exist_lock = self._select(
                 table_name=table_name,
                 columns=columns,
-                values=(
-                    '\'1\', '
-                    '\'Unauthorized\', '
-                    '\'block:downloader_class\', '
-                    '\'Locks the post downloading functionality\', '
-                    '\'401:unauthorized\', '
-                    '\'Instagram session expired, invalid credentials or account is blocked\''
+                condition=f"name = \'{lock['name']}\'"
+            )
+            if not check_exist_lock:
+                self._insert(
+                    table_name=table_name,
+                    columns=columns,
+                    values=(
+                        f"'{lock['id']}', "
+                        f"'{lock['name']}', "
+                        f"'{lock['behavior']}', "
+                        f"'{lock['description']}', "
+                        f"'{lock['caused_by']}', "
+                        f"'{lock['tip']}', "
+                    )
                 )
-            )
-        except psycopg2.errors.UniqueViolation:
-            log.info(
-                '[class.%s] The lock `id1:Unauthorized` has already been added to the table %s and was skipped',
-                __class__.__name__,
-                table_name
-            )
-        try:
-            self._insert(
-                table_name=table_name,
-                columns=columns,
-                values=(
-                    '\'2\', '
-                    '\'BadRequest\', '
-                    '\'block:downloader_class:post_link\', '
-                    '\'Locks the specified post downloading functionality\', '
-                    '\'400:badrequest\', '
-                    '\'When trying to upload content, an error occurs with an invalid request\''
+            else:
+                log.info(
+                    '[class.%s] The lock %s has already been added to the table %s and was skipped',
+                    __class__.__name__,
+                    lock['name'],
+                    table_name
                 )
-            )
-        except psycopg2.errors.UniqueViolation:
-            log.info(
-                '[class.%s] The lock `id2:BadRequest` has already been added to the table %s and was skipped',
-                __class__.__name__,
-                table_name
-            )
 
     def _migrations(self) -> None:
         """
@@ -381,7 +388,7 @@ class DatabaseClient:
         columns: str = None,
         condition: str = None,
         limit: int = 0
-    ) -> list:
+    ) -> Union[list, None]:
         """
         Selects data from a table in the database based on the given condition.
 
@@ -393,6 +400,8 @@ class DatabaseClient:
 
         Returns:
             list: A list of tuples containing the selected data.
+                or
+            None: If no data is found.
 
         Examples:
             >>> db = Database()
