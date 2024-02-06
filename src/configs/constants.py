@@ -4,6 +4,11 @@ This module contains the constants for this python project.
 import os
 
 # environment variables
+TELEGRAM_BOT_NAME = os.environ.get(
+    'TELEGRAM_BOT_NAME',
+    'pyinstabot-downloader'
+)
+
 STORAGE_TYPE = os.environ.get(
     'STORAGE_TYPE',
     'mega'

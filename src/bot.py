@@ -6,7 +6,7 @@ import re
 import threading
 import time
 from datetime import datetime
-from logger import log, logging
+from logger import log
 from telegram import TelegramBot
 from users import Users
 from messages import Messages
@@ -18,15 +18,14 @@ from configs import constants
 
 
 # init instances
-log = logging.getLogger(__name__)
-vault = VaultClient(name=constants.BOT_NAME)
+vault = VaultClient(name=constants.TELEGRAM_BOT_NAME)
 telegram = TelegramBot(vault=vault)
 bot = telegram.telegram_bot
 # Users module with rate limits option
 users_rl = Users(vault=vault)
 # Users module without rate limits option
 users = Users(vault=vault, rate_limits=False)
-messages = Messages(config_path=constants.MESSAGES_CONFIG)
+messages = Messages()
 # downloader = Downloader(
 #    auth={
 #        'sessionfile': constants.INSTAGRAM_SESSION
