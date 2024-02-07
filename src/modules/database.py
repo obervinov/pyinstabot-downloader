@@ -217,11 +217,8 @@ class DatabaseClient:
             check_exist_lock = self._select(
                 table_name=table_name,
                 columns=columns,
-                condition=f"name = \'{lock['name']}\'"
+                condition=f"name = '{lock['name']}'"
             )
-            #
-            log.error(check_exist_lock)
-            #
             if not check_exist_lock:
                 self._insert(
                     table_name=table_name,
@@ -390,7 +387,7 @@ class DatabaseClient:
         table_name: str = None,
         columns: str = None,
         condition: str = None,
-        limit: int = 0
+        limit: int = 1
     ) -> Union[list, None]:
         """
         Selects data from a table in the database based on the given condition.
