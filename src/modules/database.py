@@ -220,7 +220,7 @@ class DatabaseClient:
                 condition=f"name = \'{lock['name']}\'"
             )
             #
-            print(check_exist_lock)
+            log.error(check_exist_lock)
             #
             if not check_exist_lock:
                 self._insert(

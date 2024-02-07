@@ -28,13 +28,8 @@ path "pyinstabot-downloader/data/configuration/*" {
   capabilities = ["read", "list"]
 }
 
-# Allowed to read bot includes configuration
-path "pyinstabot-downloader/data/configuration/*/*" {
-  capabilities = ["read", "list"]
-}
-
 # Allowed read and write of bot data
-path "pyinstabot-downloader/data/data/*/*" {
+path "pyinstabot-downloader/data/data/*" {
   capabilities = ["read", "list", "create", "update"]
 }
 
