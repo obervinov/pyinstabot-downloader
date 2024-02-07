@@ -24,14 +24,14 @@ def execute(obj):
     # information about owners
     owners = obj.vault.list_secrets(path='history/')
     owners_counter = len(owners)
-    print(f"Found {owners_counter} owners in history")
+    print(f"Founded {owners_counter} owners in history")
 
     # reade history form Vault
     for owner in owners:
         # information about owner posts
         posts = obj.vault.read_secret(path=f"history/{owner}")
         posts_counter = len(posts)
-        print(f"{NAME}: Found {posts_counter} posts in history/{owner}")
+        print(f"{NAME}: Founded {posts_counter} posts in history/{owner}")
 
         for post in posts:
             user_id = next(iter(obj.vault.read_secret(path='configuration/users').keys()))

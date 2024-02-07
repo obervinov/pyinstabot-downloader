@@ -23,22 +23,34 @@ path "pyinstabot-downloader/configuration/*" {
   capabilities = ["read", "list"]
 }
 
-# Allowed to read bot configuration
+# Allowed to read other configurations
 path "pyinstabot-downloader/data/configuration/*" {
   capabilities = ["read", "list"]
 }
 
-# Allowed to read bot history
+# Allowed to read bot includes configuration
+path "pyinstabot-downloader/data/configuration/*/*" {
+  capabilities = ["read", "list"]
+}
+
+# Allowed read and write of bot data
+path "pyinstabot-downloader/data/data/*/*" {
+  capabilities = ["read", "list", "create", "update"]
+}
+
+
+
+# Allowed to read bot history (!!!deprecated after migration to database!!!)
 path "pyinstabot-downloader/metadata/history/*" {
   capabilities = ["read", "list"]
 }
 
-# Allowed to create, read, update, and list bot history
+# Allowed to create, read, update, and list bot history (!!!deprecated after migration to database!!!)
 path "pyinstabot-downloader/data/history/*" {
   capabilities = ["create", "read", "list", "update"]
 }
 
-# Allowed to read and record security events by a bot
+# Allowed to read and record security events by a bot (!!!deprecated after v2.1.0 !!!)
 path "pyinstabot-downloader/data/events/*" {
   capabilities = ["read", "list", "create", "update"]
 }

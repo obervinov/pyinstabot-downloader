@@ -189,7 +189,7 @@ class DatabaseClient:
         # Add kind of locks to the table
         # The table stores the name of the lock and its description
         log.info(
-            '[class.%s] Preparing database: add locks to table \'locks\'...',
+            '[class.%s] Preparing database: add system records to table \'locks\'...',
             __class__.__name__
         )
         # Dictionary of locks for the table
@@ -219,6 +219,9 @@ class DatabaseClient:
                 columns=columns,
                 condition=f"name = \'{lock['name']}\'"
             )
+            #
+            print(check_exist_lock)
+            #
             if not check_exist_lock:
                 self._insert(
                     table_name=table_name,
