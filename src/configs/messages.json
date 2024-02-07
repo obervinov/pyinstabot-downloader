@@ -5,8 +5,12 @@
             "args": ["username", "userid", ":raised_hand:", ":unlocked:"]
         },
         "reject_message": {
-            "text": "Greetings to <b>{0}</b>({1})! \n{3} This is a <b>private bot</b> and it looks like you don't have the necessary access rights...\nHave a nice day and bye!",
+            "text": "Greetings to <b>{0}</b> ({1})! \nThis is a <b>private bot</b> and it looks like you don't have the necessary access rights {3}\nHave a nice day and bye!",
             "args": ["username", "userid", ":raised_hand:", ":no_entry:"]
+        },
+        "permission_denied_message": {
+            "text": "{0} Sorry, you have not permissions for use this feature. Please, check you permission roles.\n<code>Metadata:</code>\n<code>userid: {1}</code>\n<code>username: {2}</code>",
+            "args": [":no_entry:", "userid", "username"]
         },
         "help_for_post": {
             "text": "{0} <b>For a download post, just send a link to this post.</b>\nfor example:\n<code>https://www.instagram.com/p/CyWn_tQyKAH/?igshid=xoimahYoh7Aihael</code>",

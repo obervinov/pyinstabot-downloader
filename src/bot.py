@@ -134,12 +134,13 @@ def bot_callback_query_handler(call: telegram.callback_query = None) -> None:
                 call.data
             )
     else:
+        log.debug(call.message.chat)
         telegram.send_styled_message(
             chat_id=call.message.chat.id,
             messages_template={
-                'alias': 'reject_message',
+                'alias': 'permission_denied_message',
                 'kwargs': {
-                    'username': call.message.from_user.username,
+                    'username': call.message.chat.username,
                     'userid': call.message.chat.id
                 }
             }

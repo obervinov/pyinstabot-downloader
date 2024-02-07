@@ -41,7 +41,6 @@ ROLES_MAP = {
     'Posts List': 'posts_list',
     'Profile Posts': 'profile_posts',
     'User Queue': 'user_queue',
-    'User History': 'user_history',
     'Clear Messages': 'clear_messages',
 }
 
