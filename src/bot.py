@@ -84,7 +84,7 @@ def start_command(message: telegram.telegram_types.Message = None) -> None:
             messages_template={
                 'alias': 'reject_message',
                 'kwargs': {
-                    'username': message.from_user.username,
+                    'username': message.chat.username,
                     'userid': message.chat.id
                 }
             }
@@ -113,8 +113,7 @@ def bot_callback_query_handler(call: telegram.callback_query = None) -> None:
     if user.get('permissions', None) == users.user_status_allow:
         if call.data == "Post":
             button_post(
-                call=call,
-                user=user
+                call=call
             )
         elif call.data == "Posts List":
             button_posts_list(
@@ -134,7 +133,6 @@ def bot_callback_query_handler(call: telegram.callback_query = None) -> None:
                 call.data
             )
     else:
-        log.debug(call.message.chat)
         telegram.send_styled_message(
             chat_id=call.message.chat.id,
             messages_template={
@@ -149,29 +147,40 @@ def bot_callback_query_handler(call: telegram.callback_query = None) -> None:
 
 # Inline button handler for Post
 def button_post(
-    call: telegram.callback_query = None,
-    user: dict = None
+    call: telegram.callback_query = None
 ) -> None:
     """
     The handler for the Post button.
 
     Args:
         call (telegram.callback_query): The callback query object.
-        user (dict): The user object.
 
     Returns:
         None
     """
-    help_message = telegram.send_styled_message(
-        chat_id=call.message.chat.id,
-        messages_template={'alias': 'help_for_post'}
-    )
-    bot.register_next_step_handler(
-        call.message,
-        process_one_post,
-        help_message,
-        user.get('rate_limits', None)('end_time', None)
-    )
+    user = users_rl.user_access_check(call.message.chat.id, constants.ROLES_MAP['Post'])
+    if user.get('permissions', None) == users.user_status_allow:
+        help_message = telegram.send_styled_message(
+            chat_id=call.message.chat.id,
+            messages_template={'alias': 'help_for_post'}
+        )
+        bot.register_next_step_handler(
+            call.message,
+            process_one_post,
+            help_message,
+            user.get('rate_limits', None)('end_time', None)
+        )
+    else:
+        telegram.send_styled_message(
+            chat_id=call.message.chat.id,
+            messages_template={
+                'alias': 'permission_denied_message',
+                'kwargs': {
+                    'username': call.message.chat.username,
+                    'userid': call.message.chat.id
+                }
+            }
+        )
 
 
 # Inline button handler for Posts List
@@ -185,15 +194,28 @@ def button_posts_list(call: telegram.callback_query = None) -> None:
     Returns:
         None
     """
-    help_message = telegram.send_styled_message(
-        chat_id=call.message.chat.id,
-        messages_template={'alias': 'help_for_posts_list'}
-    )
-    bot.register_next_step_handler(
-        call.message,
-        process_list_posts,
-        help_message
-    )
+    user = users_rl.user_access_check(call.message.chat.id, constants.ROLES_MAP['Posts List'])
+    if user.get('permissions', None) == users.user_status_allow:
+        help_message = telegram.send_styled_message(
+            chat_id=call.message.chat.id,
+            messages_template={'alias': 'help_for_posts_list'}
+        )
+        bot.register_next_step_handler(
+            call.message,
+            process_list_posts,
+            help_message
+        )
+    else:
+        telegram.send_styled_message(
+            chat_id=call.message.chat.id,
+            messages_template={
+                'alias': 'permission_denied_message',
+                'kwargs': {
+                    'username': call.message.chat.username,
+                    'userid': call.message.chat.id
+                }
+            }
+        )
 
 
 # Inline button handler for Profile Posts
@@ -332,7 +354,7 @@ def process_one_post(
             messages_template={
                 'alias': 'reject_message',
                 'kwargs': {
-                    'username': message.from_user.username,
+                    'username': message.chat.username,
                     'userid': message.chat.id
                 }
             }
@@ -390,7 +412,7 @@ def process_list_posts(
             messages_template={
                 'alias': 'reject_message',
                 'kwargs': {
-                    'username': message.from_user.username,
+                    'username': message.chat.username,
                     'userid': message.chat.id
                 }
             }
