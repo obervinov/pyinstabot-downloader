@@ -22,10 +22,10 @@ instaloader = "^4"
 dropbox = "^11"
 'mega.py' = "^1.0.8"
 psycopg2-binary = "^2"
-logger = { git = "https://github.com/obervinov/logger-package.git", tag = "v1.0.5" }
-vault  = { git = "https://github.com/obervinov/vault-package.git", tag = "v2.0.3" }
+logger = { git = "https://github.com/obervinov/logger-package.git", tag = "v1.0.6" }
+vault  = { git = "https://github.com/obervinov/vault-package.git", tag = "v2.0.4" }
 messages = { git = "https://github.com/obervinov/messages-package.git", tag = "v1.0.4" }
-users = { git = "https://github.com/obervinov/users-package.git", tag = "v2.0.3" }
+users = { git = "https://github.com/obervinov/users-package.git", branch = "fix/v2.0.4" }
 telegram = { git = "https://github.com/obervinov/telegram-package.git", branch = "release/v1.2.0" }
 
 [build-system]
