@@ -723,7 +723,7 @@ vault = {git = "https://github.com/obervinov/vault-package.git", tag = "v2.0.4"}
 type = "git"
 url = "https://github.com/obervinov/telegram-package.git"
 reference = "release/v1.2.0"
-resolved_reference = "219004df9753d6c1665d9db1c6e04991c543f0f5"
+resolved_reference = "e4fedb805c475b65094e8b1c59a6427eaec2faa6"
 
 [[package]]
 name = "tenacity"
@@ -776,7 +776,7 @@ vault = {git = "https://github.com/obervinov/vault-package.git", tag = "v2.0.4"}
 type = "git"
 url = "https://github.com/obervinov/users-package.git"
 reference = "fix/v2.0.4"
-resolved_reference = "2c339b5e23290e1769015bf8d4885773a2d09928"
+resolved_reference = "bb7f59f1749a5cc9d0b3a35d0547bf5138097239"
 
 [[package]]
 name = "vault"
