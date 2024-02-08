@@ -776,7 +776,7 @@ vault = {git = "https://github.com/obervinov/vault-package.git", tag = "v2.0.4"}
 type = "git"
 url = "https://github.com/obervinov/users-package.git"
 reference = "fix/v2.0.4"
-resolved_reference = "bb7f59f1749a5cc9d0b3a35d0547bf5138097239"
+resolved_reference = "3fe3a5feaae1233a57b472f53eabe98158edae28"
 
 [[package]]
 name = "vault"
