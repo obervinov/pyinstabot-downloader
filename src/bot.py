@@ -62,7 +62,7 @@ def start_command(message: telegram.telegram_types.Message = None) -> None:
     """
     if users.user_access_check(message.chat.id).get('access', None) == users.user_status_allow:
         log.info(
-            '[Bot]: Processing start command for user %s...',
+            '[Bot]: Processing `start` command for user %s...',
             message.chat.id
         )
         reply_markup = telegram.create_inline_markup(constants.ROLES_MAP.keys())
