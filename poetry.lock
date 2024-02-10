@@ -801,13 +801,14 @@ develop = false
 logger = {git = "https://github.com/obervinov/logger-package.git", tag = "v1.0.6"}
 messages = {git = "https://github.com/obervinov/messages-package.git", tag = "v1.0.4"}
 pyTelegramBotAPI = "^4"
+pytest = "^8"
 vault = {git = "https://github.com/obervinov/vault-package.git", tag = "v2.0.4"}
 
 [package.source]
 type = "git"
 url = "https://github.com/obervinov/telegram-package.git"
 reference = "release/v1.2.0"
-resolved_reference = "e4fedb805c475b65094e8b1c59a6427eaec2faa6"
+resolved_reference = "78fabb76d58580405ca0d8ebcb572e613a25ab5b"
 
 [[package]]
 name = "tenacity"
@@ -872,7 +873,7 @@ vault = {git = "https://github.com/obervinov/vault-package.git", tag = "v2.0.4"}
 type = "git"
 url = "https://github.com/obervinov/users-package.git"
 reference = "fix/v2.0.4"
-resolved_reference = "fc4ae0de8eb5b36c4d22e96e4f9e37ab74ce1c99"
+resolved_reference = "79fa03fe76cb2ba9b9890e07446533ef32b5a4cc"
 
 [[package]]
 name = "vault"
