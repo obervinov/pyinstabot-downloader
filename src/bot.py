@@ -168,7 +168,7 @@ def button_post(
             call.message,
             process_one_post,
             help_message,
-            user.get('rate_limits', None)('end_time', None)
+            user.get('rate_limits', None).get('end_time', None)
         )
     else:
         telegram.send_styled_message(
