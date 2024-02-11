@@ -25,13 +25,3 @@ jobs:
   build-pr-image:
     uses: obervinov/_templates/.github/workflows/docker.yaml@v1.0.13
     needs: [changelog, pylint, pytest, pyproject]
-
-  delete-untagged-images:
-    name: Delete all untagged images from this repository on GitHub Container Registry
-    uses: Chizkiyahu/delete-untagged-ghcr-action@v3
-    with:
-      token: ${{ secrets.PACKAGE_REGISTRY_TOKEN }}
-      repository_owner: ${{ github.repository_owner }}
-      repository: ${{ github.repository }}
-      untagged_only: true
-      owner_type: user
