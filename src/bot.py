@@ -326,6 +326,11 @@ def process_one_post(
                     message.chat.id
                 )
             else:
+                log.info(
+                    '[Bot]: Post link %s for user %s already in queue or processed',
+                    message.text,
+                    message.chat.id
+                )
                 telegram.send_styled_message(
                     chat_id=message.chat.id,
                     messages_template={
@@ -333,20 +338,15 @@ def process_one_post(
                         'kwargs': {'post_id': message.text.split('/')[-2]}
                     }
                 )
-                log.info(
-                    '[Bot]: Post link %s for user %s already in queue or processed',
-                    message.text,
-                    message.chat.id
-                )
         else:
-            telegram.send_styled_message(
-                chat_id=message.chat.id,
-                messages_template={'alias': 'url_error'}
-            )
             log.error(
                 '[Bot]: Post link %s from user %s is incorrect',
                 message.text,
                 message.chat.id
+            )
+            telegram.send_styled_message(
+                chat_id=message.chat.id,
+                messages_template={'alias': 'url_error'}
             )
     else:
         telegram.send_styled_message(
