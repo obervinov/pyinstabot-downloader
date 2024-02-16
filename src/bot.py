@@ -326,7 +326,7 @@ def process_one_post(
                     message.chat.id
                 )
             else:
-                post_id = message.text.split('/')[-2]                    
+                post_id = message.text.split('/')[-2]
                 log.info(
                     '[Bot]: Post %s for user %s already in queue or processed',
                     message.post_id,
