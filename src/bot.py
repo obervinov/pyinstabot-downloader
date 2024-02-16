@@ -329,7 +329,7 @@ def process_one_post(
                 post_id = message.text.split('/')[-2]
                 log.info(
                     '[Bot]: Post %s for user %s already in queue or processed',
-                    message.post_id,
+                    post_id,
                     message.chat.id
                 )
                 telegram.send_styled_message(
