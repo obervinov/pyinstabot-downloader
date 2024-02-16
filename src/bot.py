@@ -326,16 +326,17 @@ def process_one_post(
                     message.chat.id
                 )
             else:
+                post_id = message.text.split('/')[-2]                    
                 log.info(
-                    '[Bot]: Post link %s for user %s already in queue or processed',
-                    message.text,
+                    '[Bot]: Post %s for user %s already in queue or processed',
+                    message.post_id,
                     message.chat.id
                 )
                 telegram.send_styled_message(
                     chat_id=message.chat.id,
                     messages_template={
                         'alias': 'post_already_downloaded',
-                        'kwargs': {'post_id': message.text.split('/')[-2]}
+                        'kwargs': {'post_id': post_id}
                     }
                 )
         else:
