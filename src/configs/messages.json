@@ -61,7 +61,7 @@
             "args": [":framed_picture:", "post_id", ":down_arrow:", "download_response", ":up_arrow:", "upload_response"]
         },
         "post_already_downloaded": {
-            "text": "{0} The content of the post <b>{1}</b> has already been downloaded.\n{3} The download was skipped.",
+            "text": "{0} The content of the post <b>{1}</b> has already been downloaded.\n{2} The download was skipped.",
             "args": [":construction:", "post_id", ":boxing_glove:"]
         }
     }
