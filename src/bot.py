@@ -287,10 +287,11 @@ def process_one_post(
     if users_rl.user_access_check(message.chat.id, constants.ROLES_MAP['Post']).get('permissions', None) == users_rl.user_status_allow:
         if re.match(r'^https://www.instagram.com/(p|reel)/.*', message.text):
             data = {}
+            post_id = message.text.split('/')[3]
             try:
                 data['user_id'] = message.chat.id
                 data['post_url'] = message.text
-                data['post_id'] = data['post_url'].split('/')[-2]
+                data['post_id'] = post_id
                 data['post_owner'] = 'undefined'
                 data['link_type'] = 'post'
                 data['message_id'] = message.id
@@ -326,7 +327,6 @@ def process_one_post(
                     message.chat.id
                 )
             else:
-                post_id = message.text.split('/')[-2]
                 log.info(
                     '[Bot]: Post %s for user %s already in queue or processed',
                     post_id,
