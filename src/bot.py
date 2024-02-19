@@ -293,7 +293,6 @@ def post_link_message_parser(message: telegram.telegram_types.Message = None) ->
             data['link_type'] = 'post'
             data['message_id'] = message.id
             data['chat_id'] = message.chat.id
-            return data
         else:
             log.error(
                 '[Bot]: Post id %s from user %s is wrong',
@@ -316,6 +315,7 @@ def post_link_message_parser(message: telegram.telegram_types.Message = None) ->
             messages_template={'alias': 'url_error'}
         )
         raise InvalidPostLink(message.text)
+    return data
 
 
 def process_one_post(
