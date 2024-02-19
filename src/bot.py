@@ -11,7 +11,6 @@ from telegram import TelegramBot
 from users import Users
 from messages import Messages
 from vault import VaultClient
-from modules.exceptions import InvalidPostId, InvalidPostLink
 # from modules.downloader import Downloader
 # from modules.uploader import Uploader
 from modules.database import DatabaseClient
@@ -282,9 +281,9 @@ def post_link_message_parser(message: telegram.telegram_types.Message = None) ->
         InvalidPostId: The post id is invalid.
         InvalidPostLink: The post link is invalid.
     """
+    data = {}
     if re.match(r'^https://www.instagram.com/(p|reel)/.*', message.text):
-        data = {}
-        post_id = message.text.split('/')[3]
+        post_id = message.text.split('/')[4]
         if len(post_id) == 11 and re.match(r'^[a-zA-Z0-9_]+$', post_id):
             data['user_id'] = message.chat.id
             data['post_url'] = message.text
@@ -303,7 +302,6 @@ def post_link_message_parser(message: telegram.telegram_types.Message = None) ->
                 chat_id=message.chat.id,
                 messages_template={'alias': 'url_error'}
             )
-            raise InvalidPostId(post_id)
     else:
         log.error(
             '[Bot]: Post link %s from user %s is incorrect',
@@ -314,7 +312,6 @@ def post_link_message_parser(message: telegram.telegram_types.Message = None) ->
             chat_id=message.chat.id,
             messages_template={'alias': 'url_error'}
         )
-        raise InvalidPostLink(message.text)
     return data
 
 
@@ -337,39 +334,40 @@ def process_one_post(
     # Check permissions
     if users_rl.user_access_check(message.chat.id, constants.ROLES_MAP['Post']).get('permissions', None) == users_rl.user_status_allow:
         data = post_link_message_parser(message)
-        if time_to_process is None:
-            data['scheduled_time'] = datetime.now()
-        else:
-            data['scheduled_time'] = time_to_process
+        if data:
+            if time_to_process is None:
+                data['scheduled_time'] = datetime.now()
+            else:
+                data['scheduled_time'] = time_to_process
 
-        if database.check_message_uniqueness(data['post_id'], data['user_id']):
-            response_message = telegram.send_styled_message(
-                chat_id=message.chat.id,
-                messages_template={'alias': 'added_in_queue'}
-            )
-            bot.delete_message(message.chat.id, message.id)
-            if help_message is not None:
-                bot.delete_message(message.chat.id, help_message.id)
-            data['response_message_id'] = response_message.id
-            _ = database.add_message_to_queue(data)
-            log.info(
-                '[Bot]: Post link %s for user %s added in queue',
-                message.text,
-                message.chat.id
-            )
-        else:
-            log.info(
-                '[Bot]: Post %s for user %s already in queue or processed',
-                data['post_id'],
-                message.chat.id
-            )
-            telegram.send_styled_message(
-                chat_id=message.chat.id,
-                messages_template={
-                    'alias': 'post_already_downloaded',
-                    'kwargs': {'post_id': data['post_id']}
-                }
-            )
+            if database.check_message_uniqueness(data['post_id'], data['user_id']):
+                response_message = telegram.send_styled_message(
+                    chat_id=message.chat.id,
+                    messages_template={'alias': 'added_in_queue'}
+                )
+                bot.delete_message(message.chat.id, message.id)
+                if help_message is not None:
+                    bot.delete_message(message.chat.id, help_message.id)
+                data['response_message_id'] = response_message.id
+                _ = database.add_message_to_queue(data)
+                log.info(
+                    '[Bot]: Post link %s for user %s added in queue',
+                    message.text,
+                    message.chat.id
+                )
+            else:
+                log.info(
+                    '[Bot]: Post %s for user %s already in queue or processed',
+                    data['post_id'],
+                    message.chat.id
+                )
+                telegram.send_styled_message(
+                    chat_id=message.chat.id,
+                    messages_template={
+                        'alias': 'post_already_downloaded',
+                        'kwargs': {'post_id': data['post_id']}
+                    }
+                )
     else:
         telegram.send_styled_message(
             chat_id=message.chat.id,
