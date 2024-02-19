@@ -11,6 +11,7 @@ from telegram import TelegramBot
 from users import Users
 from messages import Messages
 from vault import VaultClient
+from modules.exceptions import InvalidPostId, InvalidPostLink
 # from modules.downloader import Downloader
 # from modules.uploader import Uploader
 from modules.database import DatabaseClient
@@ -267,6 +268,56 @@ def button_profile_posts(call: telegram.callback_query = None) -> None:
     )
 
 
+def post_link_message_parser(message: telegram.telegram_types.Message = None) -> dict:
+    """
+    Parses the message containing the Instagram post link and returns the data.
+
+    Args:
+        message (telegram.telegram_types.Message): The message object containing the post link.
+
+    Returns:
+        dict: The data containing the user id, post url, post id, post owner, link type, message id, and chat id.
+
+    Raises:
+        InvalidPostId: The post id is invalid.
+        InvalidPostLink: The post link is invalid.
+    """
+    if re.match(r'^https://www.instagram.com/(p|reel)/.*', message.text):
+        data = {}
+        post_id = message.text.split('/')[3]
+        if len(post_id) == 11 and re.match(r'^[a-zA-Z0-9_]+$', post_id):
+            data['user_id'] = message.chat.id
+            data['post_url'] = message.text
+            data['post_id'] = post_id
+            data['post_owner'] = 'undefined'
+            data['link_type'] = 'post'
+            data['message_id'] = message.id
+            data['chat_id'] = message.chat.id
+            return data
+        else:
+            log.error(
+                '[Bot]: Post id %s from user %s is wrong',
+                post_id,
+                message.chat.id
+            )
+            telegram.send_styled_message(
+                chat_id=message.chat.id,
+                messages_template={'alias': 'url_error'}
+            )
+            raise InvalidPostId(post_id)
+    else:
+        log.error(
+            '[Bot]: Post link %s from user %s is incorrect',
+            message.text,
+            message.chat.id
+        )
+        telegram.send_styled_message(
+            chat_id=message.chat.id,
+            messages_template={'alias': 'url_error'}
+        )
+        raise InvalidPostLink(message.text)
+
+
 def process_one_post(
     message: telegram.telegram_types.Message = None,
     help_message: telegram.telegram_types.Message = None,
@@ -285,69 +336,39 @@ def process_one_post(
     """
     # Check permissions
     if users_rl.user_access_check(message.chat.id, constants.ROLES_MAP['Post']).get('permissions', None) == users_rl.user_status_allow:
-        if re.match(r'^https://www.instagram.com/(p|reel)/.*', message.text):
-            data = {}
-            post_id = message.text.split('/')[3]
-            try:
-                data['user_id'] = message.chat.id
-                data['post_url'] = message.text
-                data['post_id'] = post_id
-                data['post_owner'] = 'undefined'
-                data['link_type'] = 'post'
-                data['message_id'] = message.id
-                data['chat_id'] = message.chat.id
-                if time_to_process is None:
-                    data['scheduled_time'] = datetime.now()
-                else:
-                    data['scheduled_time'] = time_to_process
-            except KeyError as error:
-                telegram.send_styled_message(
-                    chat_id=message.chat.id,
-                    messages_template={'alias': 'url_error'}
-                )
-                log.error(
-                    '[Bot]: Error processing post link %s for user %s: %s',
-                    message.text,
-                    message.chat.id,
-                    error
-                )
-            if database.check_message_uniqueness(data['post_id'], data['user_id']):
-                response_message = telegram.send_styled_message(
-                    chat_id=message.chat.id,
-                    messages_template={'alias': 'added_in_queue'}
-                )
-                bot.delete_message(message.chat.id, message.id)
-                if help_message is not None:
-                    bot.delete_message(message.chat.id, help_message.id)
-                data['response_message_id'] = response_message.id
-                _ = database.add_message_to_queue(data)
-                log.info(
-                    '[Bot]: Post link %s for user %s added in queue',
-                    message.text,
-                    message.chat.id
-                )
-            else:
-                log.info(
-                    '[Bot]: Post %s for user %s already in queue or processed',
-                    post_id,
-                    message.chat.id
-                )
-                telegram.send_styled_message(
-                    chat_id=message.chat.id,
-                    messages_template={
-                        'alias': 'post_already_downloaded',
-                        'kwargs': {'post_id': post_id}
-                    }
-                )
+        data = post_link_message_parser(message)
+        if time_to_process is None:
+            data['scheduled_time'] = datetime.now()
         else:
-            log.error(
-                '[Bot]: Post link %s from user %s is incorrect',
+            data['scheduled_time'] = time_to_process
+
+        if database.check_message_uniqueness(data['post_id'], data['user_id']):
+            response_message = telegram.send_styled_message(
+                chat_id=message.chat.id,
+                messages_template={'alias': 'added_in_queue'}
+            )
+            bot.delete_message(message.chat.id, message.id)
+            if help_message is not None:
+                bot.delete_message(message.chat.id, help_message.id)
+            data['response_message_id'] = response_message.id
+            _ = database.add_message_to_queue(data)
+            log.info(
+                '[Bot]: Post link %s for user %s added in queue',
                 message.text,
+                message.chat.id
+            )
+        else:
+            log.info(
+                '[Bot]: Post %s for user %s already in queue or processed',
+                data['post_id'],
                 message.chat.id
             )
             telegram.send_styled_message(
                 chat_id=message.chat.id,
-                messages_template={'alias': 'url_error'}
+                messages_template={
+                    'alias': 'post_already_downloaded',
+                    'kwargs': {'post_id': data['post_id']}
+                }
             )
     else:
         telegram.send_styled_message(
