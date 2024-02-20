@@ -202,8 +202,7 @@ def button_post(call: telegram.callback_query = None) -> None:
         bot.register_next_step_handler(
             call.message,
             process_one_post,
-            help_message,
-            user.get('rate_limits', None).get('end_time', None)
+            help_message
         )
     else:
         telegram.send_styled_message(
@@ -377,8 +376,7 @@ def post_link_message_parser(message: telegram.telegram_types.Message = None) ->
 # START BLOCK PROCESSING FUNCTIONS ####################################################################################################
 def process_one_post(
     message: telegram.telegram_types.Message = None,
-    help_message: telegram.telegram_types.Message = None,
-    time_to_process: datetime = None
+    help_message: telegram.telegram_types.Message = None
 ) -> None:
     """
     Processes an Instagram post link sent by a user and adds it to the queue for download.
@@ -392,8 +390,10 @@ def process_one_post(
         None
     """
     # Check permissions
-    if users_rl.user_access_check(message.chat.id, constants.ROLES_MAP['Post']).get('permissions', None) == users_rl.user_status_allow:
+    user = users_rl.user_access_check(message.chat.id, constants.ROLES_MAP['Post'])
+    if user.get('permissions', None) == users_rl.user_status_allow:
         data = post_link_message_parser(message)
+        time_to_process = user.get('requests_ratelimits', {}).get('end_time', None)
         if data:
             if time_to_process is None:
                 data['scheduled_time'] = datetime.now()
