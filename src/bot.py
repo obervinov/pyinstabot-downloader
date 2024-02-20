@@ -461,17 +461,10 @@ def process_list_posts(
         if bool(pattern.match(message.text)):
             links = message.text.split('\n')
             for link in links:
-                # To register each link as a separate request for account rate limits
-                user = users_rl.user_access_check(message.chat.id, constants.ROLES_MAP['Posts List'])
                 message.text = link
-                if user.get('rate_limits', None).get('end_time', None) is None:
-                    time_to_process = datetime.now()
-                else:
-                    time_to_process = user['rate_limits']['end_time']
                 process_one_post(
                     message=message,
-                    help_message=help_message,
-                    time_to_process=time_to_process
+                    help_message=help_message
                 )
                 bot.delete_message(message.chat.id, message.id)
                 if help_message is not None:
