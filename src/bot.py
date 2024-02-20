@@ -393,18 +393,14 @@ def process_one_post(
     user = users_rl.user_access_check(message.chat.id, constants.ROLES_MAP['Post'])
     if user.get('permissions', None) == users_rl.user_status_allow:
         data = post_link_message_parser(message)
-
-        log.info(user)
-
-        time_to_process = user.get('requests_ratelimits', {}).get('end_time', None)
+        log.debug(user)
+        time_to_process = user.get('rate_limits', {}).get('end_time', None)
         if data:
             if time_to_process is None:
                 data['scheduled_time'] = datetime.now()
             else:
                 data['scheduled_time'] = time_to_process
-
-            log.info(data['scheduled_time'])
-
+            log.debug(data['scheduled_time'])
             if database.check_message_uniqueness(data['post_id'], data['user_id']):
                 response_message = telegram.send_styled_message(
                     chat_id=message.chat.id,
