@@ -48,7 +48,8 @@ messages = Messages()
 database = DatabaseClient(vault=vault)
 
 
-# Command handler for start command
+# START HANDLERS BLOCK ##############################################################################################################
+# Command handler for START command
 @bot.message_handler(commands=['start'])
 def start_command(message: telegram.telegram_types.Message = None) -> None:
     """
@@ -91,7 +92,7 @@ def start_command(message: telegram.telegram_types.Message = None) -> None:
         )
 
 
-# Callback query handler for InlineKeyboardButton
+# Callback query handler for InlineKeyboardButton (BUTTONS)
 @bot.callback_query_handler(func=lambda call: True)
 def bot_callback_query_handler(call: telegram.callback_query = None) -> None:
     """
@@ -109,8 +110,7 @@ def bot_callback_query_handler(call: telegram.callback_query = None) -> None:
         call.data,
         call.message.chat.id
     )
-    user = users.user_access_check(call.message.chat.id, constants.ROLES_MAP[call.data])
-    if user.get('permissions', None) == users.user_status_allow:
+    if users.user_access_check(call.message.chat.id, constants.ROLES_MAP[call.data]).get('permissions', None) == users.user_status_allow:
         if call.data == "Post":
             button_post(
                 call=call
@@ -145,10 +145,45 @@ def bot_callback_query_handler(call: telegram.callback_query = None) -> None:
         )
 
 
+# Handler for incorrect flow (UNKNOWN INPUT)
+@bot.message_handler(regexp=r'.*')
+def unknown_command(message: telegram.telegram_types.Message = None) -> None:
+    """
+    Sends a message to the user if the command is not recognized.
+
+    Args:
+        message (telegram.telegram_types.Message): The message object containing the unrecognized command.
+
+    Returns:
+        None
+    """
+    if users.user_access_check(message.chat.id).get('access', None) == users.user_status_allow:
+        log.error(
+            '[Bot]: Invalid command `%s` from user %s',
+            message.text,
+            message.chat.id
+        )
+        telegram.send_styled_message(
+            chat_id=message.chat.id,
+            messages_template={'alias': 'unknown_command'}
+        )
+    else:
+        telegram.send_styled_message(
+            chat_id=message.chat.id,
+            messages_template={
+                'alias': 'reject_message',
+                'kwargs': {
+                    'username': message.chat.username,
+                    'userid': message.chat.id
+                }
+            }
+        )
+# END HANDLERS BLOCK ##############################################################################################################
+
+
+# START BUTTONS BLOCK #############################################################################################################
 # Inline button handler for Post
-def button_post(
-    call: telegram.callback_query = None
-) -> None:
+def button_post(call: telegram.callback_query = None) -> None:
     """
     The handler for the Post button.
 
@@ -158,7 +193,7 @@ def button_post(
     Returns:
         None
     """
-    user = users_rl.user_access_check(call.message.chat.id, constants.ROLES_MAP['Post'])
+    user = users.user_access_check(call.message.chat.id, constants.ROLES_MAP['Post'])
     if user.get('permissions', None) == users.user_status_allow:
         help_message = telegram.send_styled_message(
             chat_id=call.message.chat.id,
@@ -194,7 +229,7 @@ def button_posts_list(call: telegram.callback_query = None) -> None:
     Returns:
         None
     """
-    user = users_rl.user_access_check(call.message.chat.id, constants.ROLES_MAP['Posts List'])
+    user = users.user_access_check(call.message.chat.id, constants.ROLES_MAP['Posts List'])
     if user.get('permissions', None) == users.user_status_allow:
         help_message = telegram.send_styled_message(
             chat_id=call.message.chat.id,
@@ -229,25 +264,35 @@ def button_user_queue(call: telegram.callback_query = None) -> None:
     Returns:
         None
     """
-    queue_dict = database.get_user_queue(call.message.chat.id)
-    queue_string = ''
-
-    if queue_dict is not None:
-        for item in queue_dict[call.message.chat.id]:
-            queue_string = queue_string + f"+ <code>{item['post_id']}: {item['scheduled_time']}</code>\n"
-    else:
-        queue_string = '<code>empty</code>'
-
-    telegram.send_styled_message(
-        chat_id=call.message.chat.id,
-        messages_template={
-            'alias': 'user_queue',
-            'kwargs': {
-                'userid': call.message.chat.id,
-                'queue': queue_string
+    if users.user_access_check(call.message.chat.id, constants.ROLES_MAP['User Queue']).get('permissions', None) == users.user_status_allow:
+        queue_dict = database.get_user_queue(call.message.chat.id)
+        queue_string = ''
+        if queue_dict is not None:
+            for item in queue_dict[call.message.chat.id]:
+                queue_string = queue_string + f"+ <code>{item['post_id']}: {item['scheduled_time']}</code>\n"
+        else:
+            queue_string = '<code>empty</code>'
+        telegram.send_styled_message(
+            chat_id=call.message.chat.id,
+            messages_template={
+                'alias': 'user_queue',
+                'kwargs': {
+                    'userid': call.message.chat.id,
+                    'queue': queue_string
+                }
             }
-        }
-    )
+        )
+    else:
+        telegram.send_styled_message(
+            chat_id=call.message.chat.id,
+            messages_template={
+                'alias': 'permission_denied_message',
+                'kwargs': {
+                    'username': call.message.chat.username,
+                    'userid': call.message.chat.id
+                }
+            }
+        )
 
 
 # Inline button handler for Profile Posts
@@ -261,12 +306,25 @@ def button_profile_posts(call: telegram.callback_query = None) -> None:
     Returns:
         None
     """
-    telegram.send_styled_message(
-        chat_id=call.message.chat.id,
-        messages_template={'alias': 'feature_not_implemented'}
-    )
+    if users.user_access_check(call.message.chat.id, constants.ROLES_MAP['Profile Posts']).get('permissions', None) == users.user_status_allow:
+        telegram.send_styled_message(
+            chat_id=call.message.chat.id,
+            messages_template={'alias': 'feature_not_implemented'}
+        )
+    else:
+        telegram.send_styled_message(
+            chat_id=call.message.chat.id,
+            messages_template={
+                'alias': 'permission_denied_message',
+                'kwargs': {
+                    'username': call.message.chat.username,
+                    'userid': call.message.chat.id
+                }
+            }
+        )
 
 
+# START BLOCK ADDITIONAL FUNCTIONS ######################################################################################################
 def post_link_message_parser(message: telegram.telegram_types.Message = None) -> dict:
     """
     Parses the message containing the Instagram post link and returns the data.
@@ -313,8 +371,10 @@ def post_link_message_parser(message: telegram.telegram_types.Message = None) ->
             messages_template={'alias': 'url_error'}
         )
     return data
+# END BLOCK ADDITIONAL FUNCTIONS ######################################################################################################
 
 
+# START BLOCK PROCESSING FUNCTIONS ####################################################################################################
 def process_one_post(
     message: telegram.telegram_types.Message = None,
     help_message: telegram.telegram_types.Message = None,
@@ -437,6 +497,7 @@ def process_list_posts(
                 }
             }
         )
+# END BLOCK PROCESSING FUNCTIONS ####################################################################################################
 
 
 def queue_handler() -> None:
