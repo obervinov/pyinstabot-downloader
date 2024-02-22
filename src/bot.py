@@ -390,7 +390,7 @@ def button_clear_messages(call: telegram.callback_query = None) -> None:
     if users.user_access_check(call.message.chat.id, constants.ROLES_MAP['Clear Messages']).get('permissions', None) == users.user_status_allow:
         messages_list = database.consider_bot_messages(call.message.chat.id)
         for message in messages_list:
-            telegram.delete_message(
+            bot.delete_message(
                 chat_id=call.message.chat.id,
                 message_id=message[1]
             )
