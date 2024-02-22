@@ -239,6 +239,22 @@ class DatabaseClient:
                     lock['name'],
                     table_name
                 )
+        # Create a table to keep track of the bot's messages
+        # The table stores the message ID and the chat ID
+        log.info(
+            '[class.%s] Preparing database: table \'messages\'...',
+            __class__.__name__
+        )
+        self._create_table(
+            table_name='messages',
+            columns=(
+                'id SERIAL PRIMARY KEY, '
+                'message_id VARCHAR(255) NOT NULL, '
+                'chat_id VARCHAR(255) NOT NULL, '
+                'timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, '
+                'can_be_deleted BOOLEAN NOT NULL DEFAULT TRUE'
+            )
+        )
 
     def _migrations(self) -> None:
         """
@@ -772,3 +788,60 @@ class DatabaseClient:
         if queue or processed:
             return False
         return True
+
+    def keep_bot_message(
+        self,
+        message_id: str = None,
+        chat_id: str = None
+    ) -> str:
+        """
+        Add a bot message to the messages table in the database.
+
+        Args:
+            message_id (str): The ID of the message.
+            chat_id (str): The ID of the chat.
+
+        Returns:
+            str: A message indicating that the message was added to the messages table.
+
+        Examples:
+            >>> keep_bot_message(message_id='12345', chat_id='67890')
+            '12345: added to messages'
+        """
+        self._insert(
+            table_name='messages',
+            columns='message_id, chat_id',
+            values=f"'{message_id}', '{chat_id}'"
+        )
+
+        return f"{message_id}: added to messages"
+
+    def consider_bot_messages(
+        self,
+        chat_id: str = None
+    ) -> list:
+        """
+        Get list of messages for deletion from the messages table in the database.
+
+        Args:
+            chat_id (str): The ID of the chat.
+
+        Returns:
+            list: A list of messages for deletion.
+
+        Examples:
+            >>> consider_bot_message()
+            [('12345', '67890')]
+        """
+        messages = self._select(
+            table_name='messages',
+            columns='id, message_id',
+            condition='can_be_deleted = TRUE AND chat_id = {chat_id}',
+            limit=10000
+        )
+        for message in messages:
+            self._delete(
+                table_name='messages',
+                condition=f"id = {message[0]}"
+            )
+        return messages

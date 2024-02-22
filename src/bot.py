@@ -127,6 +127,10 @@ def bot_callback_query_handler(call: telegram.callback_query = None) -> None:
             button_profile_posts(
                 call=call
             )
+        elif call.data == "Clear Messages":
+            button_clear_messages(
+                call=call
+            )
         else:
             log.error(
                 '[Bot]: Handler for button %s not found',
@@ -163,10 +167,11 @@ def unknown_command(message: telegram.telegram_types.Message = None) -> None:
             message.text,
             message.chat.id
         )
-        telegram.send_styled_message(
+        response_message = telegram.send_styled_message(
             chat_id=message.chat.id,
             messages_template={'alias': 'unknown_command'}
         )
+        database.keep_bot_message(response_message.message_id, response_message.chat.id)
     else:
         telegram.send_styled_message(
             chat_id=message.chat.id,
@@ -370,6 +375,36 @@ def post_link_message_parser(message: telegram.telegram_types.Message = None) ->
             messages_template={'alias': 'url_error'}
         )
     return data
+
+
+def button_clear_messages(call: telegram.callback_query = None) -> None:
+    """
+    The handler for the clear bot messages in the chat.
+
+    Args:
+        call (telegram.callback_query): The callback query object.
+
+    Returns:
+        None
+    """
+    if users.user_access_check(call.message.chat.id, constants.ROLES_MAP['Clear Messages']).get('permissions', None) == users.user_status_allow:
+        messages_list = database.consider_bot_messages(call.message.chat.id)
+        for message in messages_list:
+            telegram.delete_message(
+                chat_id=call.message.chat.id,
+                message_id=message[1]
+            )
+    else:
+        telegram.send_styled_message(
+            chat_id=call.message.chat.id,
+            messages_template={
+                'alias': 'permission_denied_message',
+                'kwargs': {
+                    'username': call.message.chat.username,
+                    'userid': call.message.chat.id
+                }
+            }
+        )
 # END BLOCK ADDITIONAL FUNCTIONS ######################################################################################################
 
 
@@ -422,13 +457,14 @@ def process_one_post(
                     data['post_id'],
                     message.chat.id
                 )
-                telegram.send_styled_message(
+                response_message = telegram.send_styled_message(
                     chat_id=message.chat.id,
                     messages_template={
                         'alias': 'post_already_downloaded',
                         'kwargs': {'post_id': data['post_id']}
                     }
                 )
+                database.keep_bot_message(response_message.message_id, response_message.chat.id)
     else:
         telegram.send_styled_message(
             chat_id=message.chat.id,
@@ -567,6 +603,7 @@ def queue_handler() -> None:
                             timestamp=str(datetime.now())
                         )
                     )
+                    database.keep_bot_message(message_id, chat_id)
                     log.info(
                         '[Queue-thread-1] The URL of the post %s has been processed',
                         post_id
