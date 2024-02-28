@@ -412,7 +412,8 @@ def button_clear_messages(call: telegram.callback_query = None) -> None:
 # START BLOCK PROCESSING FUNCTIONS ####################################################################################################
 def process_one_post(
     message: telegram.telegram_types.Message = None,
-    help_message: telegram.telegram_types.Message = None
+    help_message: telegram.telegram_types.Message = None,
+    mode: str = 'single'
 ) -> None:
     """
     Processes an Instagram post link sent by a user and adds it to the queue for download.
@@ -420,7 +421,7 @@ def process_one_post(
     Args:
         message (telegram.telegram_types.Message): The Telegram message object containing the post link.
         help_message (telegram.telegram_types.Message): The help message to be deleted.
-        time_to_process (datetime): The scheduled time to process the post link.
+        mode (str, optional): The mode of processing. Defaults to 'single'.
 
     Returns:
         None
@@ -442,9 +443,10 @@ def process_one_post(
                     chat_id=message.chat.id,
                     messages_template={'alias': 'added_in_queue'}
                 )
-                bot.delete_message(message.chat.id, message.id)
-                if help_message is not None:
-                    bot.delete_message(message.chat.id, help_message.id)
+                if mode == 'single':
+                    bot.delete_message(message.chat.id, message.id)
+                    if help_message is not None:
+                        bot.delete_message(message.chat.id, help_message.id)
                 data['response_message_id'] = response_message.id
                 _ = database.add_message_to_queue(data)
                 log.info(
@@ -502,11 +504,12 @@ def process_list_posts(
                 message.text = link
                 process_one_post(
                     message=message,
-                    help_message=help_message
+                    help_message=help_message,
+                    mode='list'
                 )
-                bot.delete_message(message.chat.id, message.id)
-                if help_message is not None:
-                    bot.delete_message(message.chat.id, help_message.id)
+            bot.delete_message(message.chat.id, message.id)
+            if help_message is not None:
+                bot.delete_message(message.chat.id, help_message.id)
         else:
             telegram.send_styled_message(
                 chat_id=message.chat.id,
