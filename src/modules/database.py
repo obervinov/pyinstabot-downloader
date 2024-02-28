@@ -836,7 +836,7 @@ class DatabaseClient:
         messages = self._select(
             table_name='messages',
             columns='id, message_id',
-            condition=f"can_be_deleted = TRUE AND chat_id = {chat_id}",
+            condition=f"can_be_deleted = TRUE and chat_id = '{chat_id}'",
             limit=10000
         )
         for message in messages:
