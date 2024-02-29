@@ -45,7 +45,7 @@ messages = Messages()
 #    },
 #    vault=vault
 # )
-database = DatabaseClient(vault=vault)
+database = DatabaseClient(vault=vault, environment=constants.PROJECT_ENVIRONMENT)
 
 
 # START HANDLERS BLOCK ##############################################################################################################
