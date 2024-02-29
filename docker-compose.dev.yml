@@ -50,6 +50,7 @@ services:
         container_name: pyinstabot-downloader
         restart: always
         environment:
+            - PROJECT_ENVIRONMENT=dev
             - BOT_NAME=pyinstabot-downloader
             - VAULT_APPROLE_ID=${VAULT_APPROLE_ID}
             - VAULT_APPROLE_SECRETID=${VAULT_APPROLE_SECRETID}

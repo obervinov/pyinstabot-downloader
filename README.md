@@ -88,6 +88,7 @@ Code dependencies
 ## <img src="https://github.com/obervinov/_templates/blob/v1.0.5/icons/build.png" width="25" title="build"> Environment variables
 | Variable  | Description | Default value |
 | ------------- | ------------- | ------------- |
+| `PROJECT_ENVIRONMENT` | The environment in which the project is running (`dev`, `prod`) | `dev` |
 | `LOGGER_LEVEL` | [The logging level of the logging module](https://docs.python.org/3/library/logging.html#logging-levels) | `INFO` |
 | `BOT_NAME` | The name of the bot, used to determine the unique mount point in the vault | `pyinstabot-downloader` |
 | `MESSAGES_CONFIG` | The path to the message template file | `src/configs/messages.json` |

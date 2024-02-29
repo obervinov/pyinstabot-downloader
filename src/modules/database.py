@@ -35,13 +35,15 @@ class DatabaseClient:
 
     def __init__(
         self,
-        vault: object = None
+        vault: object = None,
+        environment: str = None
     ) -> None:
         """
         Initializes a new instance of the Database class.
 
         Args:
             vault (object): An instance of the Vault class.
+            environment (str): The environment to use for the database connection.
 
         Parameters:
             host (str): The hostname of the database server.
@@ -61,9 +63,14 @@ class DatabaseClient:
             >>> vault = Vault()
             >>> db = Database(vault)
         """
-        db_configuration = vault.read_secret(
-            path='configuration/database'
-        )
+        if environment:
+            db_configuration = vault.read_secret(
+                path=f"configuration/database-{environment}"
+            )
+        else:
+            db_configuration = vault.read_secret(
+                path='configuration/database'
+            )
         log.info(
             '[class.%s] Initializing database connection to %s:%s',
             __class__.__name__,

@@ -272,12 +272,12 @@ def button_user_queue(call: telegram.callback_query = None) -> None:
         queue_dict = database.get_user_queue(call.message.chat.id)
         queue_string = ''
         if queue_dict is not None:
-            sorted_data = sorted(queue_dict[call.message.chat.id], key=lambda x: x['scheduled_time'], reverse=True)
+            sorted_data = sorted(queue_dict[call.message.chat.id], key=lambda x: x['scheduled_time'], reverse=False)
             for item in sorted_data:
                 queue_string = queue_string + f"+ <code>{item['post_id']}: {item['scheduled_time']}</code>\n"
         else:
             queue_string = '<code>empty</code>'
-        telegram.send_styled_message(
+        response_message = telegram.send_styled_message(
             chat_id=call.message.chat.id,
             messages_template={
                 'alias': 'user_queue',
@@ -287,6 +287,7 @@ def button_user_queue(call: telegram.callback_query = None) -> None:
                 }
             }
         )
+        database.keep_bot_message(response_message.message_id, response_message.chat.id)
     else:
         telegram.send_styled_message(
             chat_id=call.message.chat.id,
