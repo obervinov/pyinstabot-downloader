@@ -17,7 +17,7 @@
             "args": [":link:"]
         },
         "help_for_posts_list": {
-            "text": "{0} To get a backup copy of the list of posts, send links to posts in a list: each new link with a new message line. This message will be automatically split into a number of messages equal to the number of links and processed in the order of the queue.\n {1} Example:\n<code>https://www.instagram.com/p/CyWn_tQyKAH/?igshid=xoimahYoh7Aihael\nhttps://www.instagram.com/p/CyWn_tQyKAH/?igshid=xoimahYoh7Aihael\nhttps://www.instagram.com/p/CyWn_tQyKAH/?igshid=xoimahYoh7Aihael</code>",
+            "text": "{0} To get a backup copy of the list of posts, send links to posts in a list (each new link with a new message line). This message will be automatically split into a number of messages equal to the number of links and processed in the order of the queue.\n {1} Example:\n<code>https://www.instagram.com/p/CyWn_tQyKAH/?igshid=xoimahYoh7Aihael\nhttps://www.instagram.com/p/CyWn_tQyKAH/?igshid=xoimahYoh7Aihael\nhttps://www.instagram.com/p/CyWn_tQyKAH/?igshid=xoimahYoh7Aihael</code>",
             "args": [":information:", ":link:"]
         },
         "help_for_profile_posts": {

@@ -498,7 +498,7 @@ def process_list_posts(
     """
     user = users.user_access_check(message.chat.id, constants.ROLES_MAP['Posts List'])
     if user.get('permissions', None) == users.user_status_allow:
-        pattern = re.compile(r'^https://www.instagram.com/(p|reel)/.*(\n^https://www.instagram.com/(p|reel)/.*)*$')
+        pattern = re.compile(r'https://(www\.)?example\.com/(p|reel)/.*')
         if bool(pattern.match(message.text)):
             links = message.text.split('\n')
             for link in links:
