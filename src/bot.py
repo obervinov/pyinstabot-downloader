@@ -498,29 +498,17 @@ def process_list_posts(
     """
     user = users.user_access_check(message.chat.id, constants.ROLES_MAP['Posts List'])
     if user.get('permissions', None) == users.user_status_allow:
-        pattern = re.compile(r'https://(www\.)?example\.com/(p|reel)/.*')
-        if bool(pattern.match(message.text)):
-            links = message.text.split('\n')
-            for link in links:
-                message.text = link
-                process_one_post(
-                    message=message,
-                    help_message=help_message,
-                    mode='list'
-                )
-            bot.delete_message(message.chat.id, message.id)
-            if help_message is not None:
-                bot.delete_message(message.chat.id, help_message.id)
-        else:
-            telegram.send_styled_message(
-                chat_id=message.chat.id,
-                messages_template={'alias': 'url_error'}
+        links = message.text.split('\n')
+        for link in links:
+            message.text = link
+            process_one_post(
+                message=message,
+                help_message=help_message,
+                mode='list'
             )
-            log.error(
-                '[Bot]: List of post links from user %s is incorrect: %s',
-                message.chat.id,
-                message.text
-            )
+        bot.delete_message(message.chat.id, message.id)
+        if help_message is not None:
+            bot.delete_message(message.chat.id, help_message.id)
     else:
         telegram.send_styled_message(
             chat_id=message.chat.id,
