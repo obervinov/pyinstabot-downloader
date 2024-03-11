@@ -449,10 +449,14 @@ class DatabaseClient:
             >>> db._select("users", "username, email", "age > 18")
             [('john_doe', 'john_doe@example.com'), ('jane_doe', 'jane_doe@example.com')]
         """
+        # base query
+        sql_query = f"SELECT {columns} FROM {table_name}"
+        if condition:
+            sql_query += f" WHERE {condition}"
         if order_by:
-            self.cursor.execute(f"SELECT {columns} FROM {table_name} WHERE {condition} ORDER BY {order_by} LIMIT {limit}")
-        else:
-            self.cursor.execute(f"SELECT {columns} FROM {table_name} WHERE {condition} LIMIT {limit}")
+            sql_query += f" ORDER BY {order_by}"
+        sql_query += f" LIMIT {limit}"
+        self.cursor.execute(sql_query)
         return self.cursor.fetchall()
 
     def _update(
