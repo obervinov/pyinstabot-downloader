@@ -14,7 +14,11 @@ from vault import VaultClient
 # from modules.downloader import Downloader
 # from modules.uploader import Uploader
 from modules.database import DatabaseClient
-from configs.constants import PROJECT_ENVIRONMENT, TELEGRAM_BOT_NAME, ROLES_MAP, QUEUE_FREQUENCY, STATUS_MESSAGE_FREQUENCY, TEMPORARY_DIR, STORAGE_TYPE, STORAGE_EXCLUDE_TYPE, INSTAGRAM_SESSION, INSTAGRAM_USERAGENT
+from configs.constants import (
+    PROJECT_ENVIRONMENT, TELEGRAM_BOT_NAME, ROLES_MAP,
+    QUEUE_FREQUENCY, STATUSES_MESSAGE_FREQUENCY,
+    TEMPORARY_DIR, STORAGE_TYPE, STORAGE_EXCLUDE_TYPE, INSTAGRAM_SESSION, INSTAGRAM_USERAGENT
+)
 
 
 # init instances
@@ -299,7 +303,7 @@ def button_profile_posts(call: telegram.callback_query = None) -> None:
 
 
 # START BLOCK ADDITIONAL FUNCTIONS ######################################################################################################
-def  get_message_statuses(
+def get_message_statuses(
     user_id: str = None
 ) -> dict:
     """
@@ -443,7 +447,7 @@ def process_one_post(
                         'kwargs': {'post_id': data['post_id']}
                     }
                 )
-                database.keep_bot_message(response_message.message_id, response_message.chat.id)
+                database.keep_message(response_message.message_id, response_message.chat.id)
     else:
         telegram.send_styled_message(
             chat_id=message.chat.id,
@@ -512,7 +516,7 @@ def status_message_updater() -> None:
         '[Bot]: Starting thread for status message updater...'
     )
     while True:
-        time.sleep(STATUS_MESSAGE_FREQUENCY)
+        time.sleep(STATUSES_MESSAGE_FREQUENCY)
         for user in database.users_list():
             last_status_message = database.get_current_message_id(message_type='status_message', chat_id=user[1])
             statuses_message = get_message_statuses(user_id=user[0])
@@ -549,7 +553,7 @@ def status_message_updater() -> None:
                     )
                 )
             else:
-                log.warn(
+                log.warning(
                     '[Bot]: Message with type `status_message` for user %s not found',
                 )
 
@@ -627,7 +631,7 @@ def queue_handler() -> None:
                             timestamp=str(datetime.now())
                         )
                     )
-                    database.keep_bot_message(message_id, chat_id)
+                    database.keep_message(message_id, chat_id)
                     log.info(
                         '[Queue-thread-1] The URL of the post %s has been processed',
                         post_id
