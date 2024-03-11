@@ -316,6 +316,13 @@ def get_message_statuses(
 
     Returns:
         dict: The queue and processed posts for the user.
+
+    Examples:
+        >>> get_message_statuses(user_id='1234567890')
+        {
+            'queue': '<code>queue is empty</code>',
+            'processed': '<code>no processed posts</code>'
+        }
     """
     queue_dict = database.get_user_queue(user_id=user_id)
     processed_dict = database.get_user_processed(user_id=user_id)
@@ -523,11 +530,12 @@ def status_message_updater() -> None:
             for user in database.users_list():
                 last_status_message = database.get_current_message_id(message_type='status_message', chat_id=user[1])
                 statuses_message = get_message_statuses(user_id=user[0])
-                last_status_message_timestamp = datetime.strptime(last_status_message[1], "%Y-%m-%d %H:%M:%S")
+                if last_status_message:
+                    last_status_message_timestamp = datetime.strptime(last_status_message[1], "%Y-%m-%d %H:%M:%S")
 
                 # if message already sended and expiring (because bot can edit message only first 48 hours)
                 # automatic renew message every 23 hours
-                if last_status_message is not None and datetime.strptime(last_status_message_timestamp) < datetime.now() - timedelta(hours=23):
+                if last_status_message and datetime.strptime(last_status_message_timestamp) < datetime.now() - timedelta(hours=23):
                     _ = bot.delete_message(
                         chat_id=user[1],
                         message_id=last_status_message[0]
@@ -536,11 +544,7 @@ def status_message_updater() -> None:
                         chat_id=user[1],
                         messages_template={
                             'alias': 'statuses_message',
-                            'kwargs': {
-                                'username': user[0],
-                                'statuses_processed': statuses_message['processed'],
-                                'statuses_queue': statuses_message['queue']
-                            }
+                            'kwargs': get_message_statuses(user_id=user[0])
                         }
                     )
                     database.keep_message(message_id=response_message.message_id, chat_id=response_message.chat.id, message_type='status_message')
@@ -550,9 +554,8 @@ def status_message_updater() -> None:
                         message_id=last_status_message[1],
                         text=messages.render_template(
                             template_alias='statuses_message',
-                            username=user[0],
-                            statuses_processed=statuses_message['processed'],
-                            statuses_queue=statuses_message['queue']
+                            processed=statuses_message['processed'],
+                            queue=statuses_message['queue']
                         )
                     )
                 else:

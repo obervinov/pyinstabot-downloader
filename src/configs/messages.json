@@ -5,8 +5,8 @@
             "args": ["username", "userid", ":raised_hand:", ":unlocked:"]
         },
         "statuses_message": {
-            "text": "{0} Last activity for <b>{1}</b>:\n<b>processed</b>\n{2}\n<b>in queue</b>\n{3}",
-            "args": [":bar_chart:", "username", "statuses_processed", "statuses_in_queue"]
+            "text": "{0} <br>Your last activity:</br>\n<b>{1} processed</b>\n{2}\n<b>{3} in queue</b>\n{4}",
+            "args": [":bar_chart:",  ":hourglass:", "processed", ":hourglass_flowing_sand:", "queue"]
         },
         "reject_message": {
             "text": "Greetings to <b>{0}</b> ({1})! \nThis is a <b>private bot</b> and it looks like you don't have the necessary access rights {3}\nHave a nice day and bye!",
