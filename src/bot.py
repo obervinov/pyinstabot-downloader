@@ -33,22 +33,12 @@ users_rl = Users(vault=vault)
 users = Users(vault=vault, rate_limits=False)
 messages = Messages()
 # downloader = Downloader(
-#    auth={
-#        'sessionfile': INSTAGRAM_SESSION
-#    },
-#    settings={
-#        'savepath': TEMPORARY_DIR,
-#        'useragent': INSTAGRAM_USERAGENT
-#    },
+#    auth={'sessionfile': INSTAGRAM_SESSION},
+#    settings={'savepath': TEMPORARY_DIR, 'useragent': INSTAGRAM_USERAGENT},
 #    vault=vault
 # )
 # uploader = Uploader(
-#    storage={
-#        'type': STORAGE_TYPE,
-#        'temporary': TEMPORARY_DIR,
-#        'cloud_root_path': BOT_NAME,
-#        'exclude_type': STORAGE_EXCLUDE_TYPE
-#    },
+#    storage={'type': STORAGE_TYPE, 'temporary': TEMPORARY_DIR, 'cloud_root_path': BOT_NAME, 'exclude_type': STORAGE_EXCLUDE_TYPE},
 #    vault=vault
 # )
 database = DatabaseClient(vault=vault, environment=PROJECT_ENVIRONMENT)
@@ -68,30 +58,24 @@ def start_command(message: telegram.telegram_types.Message = None) -> None:
         None
     """
     if users.user_access_check(message.chat.id).get('access', None) == users.user_status_allow:
-        log.info(
-            '[Bot]: Processing `start` command for user %s...',
-            message.chat.id
-        )
+        log.info('[Bot]: Processing `start` command for user %s...', message.chat.id)
+
         # Add user to the database
-        _ = database.add_user(
-            user_id=message.chat.id,
-            chat_id=message.chat.id,
-        )
+        _ = database.add_user(user_id=message.chat.id, chat_id=message.chat.id)
+
         # Main message
         reply_markup = telegram.create_inline_markup(ROLES_MAP.keys())
         start_message = telegram.send_styled_message(
             chat_id=message.chat.id,
             messages_template={
                 'alias': 'start_message',
-                'kwargs': {
-                    'username': message.from_user.username,
-                    'userid': message.chat.id
-                }
+                'kwargs': {'username': message.from_user.username, 'userid': message.chat.id}
             },
             reply_markup=reply_markup
         )
         bot.pin_chat_message(start_message.chat.id, start_message.id)
         bot.delete_message(message.chat.id, message.id)
+
         # Status message
         status_message = telegram.send_styled_message(
             chat_id=message.chat.id,
@@ -101,6 +85,8 @@ def start_command(message: telegram.telegram_types.Message = None) -> None:
             }
         )
         bot.pin_chat_message(status_message.chat.id, status_message.id)
+
+        # Consider the status message
         database.keep_message(
             message_id=status_message.id,
             chat_id=status_message.chat.id,
@@ -111,10 +97,7 @@ def start_command(message: telegram.telegram_types.Message = None) -> None:
             chat_id=message.chat.id,
             messages_template={
                 'alias': 'reject_message',
-                'kwargs': {
-                    'username': message.chat.username,
-                    'userid': message.chat.id
-                }
+                'kwargs': {'username': message.chat.username, 'userid': message.chat.id}
             }
         )
 
@@ -132,38 +115,20 @@ def bot_callback_query_handler(call: telegram.callback_query = None) -> None:
     Returns:
         None
     """
-    log.info(
-        '[Bot]: Processing button %s for user %s...',
-        call.data,
-        call.message.chat.id
-    )
+    log.info('[Bot]: Processing button %s for user %s...', call.data, call.message.chat.id)
     if users.user_access_check(call.message.chat.id, ROLES_MAP[call.data]).get('permissions', None) == users.user_status_allow:
         if call.data == "Post":
-            button_post(
-                call=call
-            )
+            button_post(call=call)
         elif call.data == "Posts List":
-            button_posts_list(
-                call=call
-            )
-        elif call.data == "Profile Posts":
-            button_profile_posts(
-                call=call
-            )
+            button_posts_list(call=call)
         else:
-            log.error(
-                '[Bot]: Handler for button %s not found',
-                call.data
-            )
+            log.error('[Bot]: Handler for button %s not found', call.data)
     else:
         telegram.send_styled_message(
             chat_id=call.message.chat.id,
             messages_template={
                 'alias': 'permission_denied_message',
-                'kwargs': {
-                    'username': call.message.chat.username,
-                    'userid': call.message.chat.id
-                }
+                'kwargs': {'username': call.message.chat.username, 'userid': call.message.chat.id}
             }
         )
 
@@ -181,11 +146,7 @@ def unknown_command(message: telegram.telegram_types.Message = None) -> None:
         None
     """
     if users.user_access_check(message.chat.id).get('access', None) == users.user_status_allow:
-        log.error(
-            '[Bot]: Invalid command `%s` from user %s',
-            message.text,
-            message.chat.id
-        )
+        log.error('[Bot]: Invalid command `%s` from user %s', message.text, message.chat.id)
         telegram.send_styled_message(
             chat_id=message.chat.id,
             messages_template={'alias': 'unknown_command'}
@@ -195,10 +156,7 @@ def unknown_command(message: telegram.telegram_types.Message = None) -> None:
             chat_id=message.chat.id,
             messages_template={
                 'alias': 'reject_message',
-                'kwargs': {
-                    'username': message.chat.username,
-                    'userid': message.chat.id
-                }
+                'kwargs': {'username': message.chat.username, 'userid': message.chat.id}
             }
         )
 # END HANDLERS BLOCK ##############################################################################################################
@@ -232,10 +190,7 @@ def button_post(call: telegram.callback_query = None) -> None:
             chat_id=call.message.chat.id,
             messages_template={
                 'alias': 'permission_denied_message',
-                'kwargs': {
-                    'username': call.message.chat.username,
-                    'userid': call.message.chat.id
-                }
+                'kwargs': {'username': call.message.chat.username, 'userid': call.message.chat.id}
             }
         )
 
@@ -267,39 +222,7 @@ def button_posts_list(call: telegram.callback_query = None) -> None:
             chat_id=call.message.chat.id,
             messages_template={
                 'alias': 'permission_denied_message',
-                'kwargs': {
-                    'username': call.message.chat.username,
-                    'userid': call.message.chat.id
-                }
-            }
-        )
-
-
-# Inline button handler for Profile Posts
-def button_profile_posts(call: telegram.callback_query = None) -> None:
-    """
-    The handler for the Profile Posts button.
-
-    Args:
-        call (telegram.callback_query): The callback query object.
-
-    Returns:
-        None
-    """
-    if users.user_access_check(call.message.chat.id, ROLES_MAP['Profile Posts']).get('permissions', None) == users.user_status_allow:
-        telegram.send_styled_message(
-            chat_id=call.message.chat.id,
-            messages_template={'alias': 'feature_not_implemented'}
-        )
-    else:
-        telegram.send_styled_message(
-            chat_id=call.message.chat.id,
-            messages_template={
-                'alias': 'permission_denied_message',
-                'kwargs': {
-                    'username': call.message.chat.username,
-                    'userid': call.message.chat.id
-                }
+                'kwargs': {'username': call.message.chat.username, 'userid': call.message.chat.id}
             }
         )
 
@@ -319,10 +242,7 @@ def get_message_statuses(
 
     Examples:
         >>> get_message_statuses(user_id='1234567890')
-        {
-            'queue': '<code>queue is empty</code>',
-            'processed': '<code>no processed posts</code>'
-        }
+        {'queue': '<code>queue is empty</code>', 'processed': '<code>no processed posts</code>'}
     """
     queue_dict = database.get_user_queue(user_id=user_id)
     processed_dict = database.get_user_processed(user_id=user_id)
@@ -343,10 +263,7 @@ def get_message_statuses(
     else:
         processed_string = '<code>no processed posts</code>'
 
-    return {
-        'queue': queue_string,
-        'processed': processed_string
-    }
+    return {'queue': queue_string, 'processed': processed_string}
 
 
 def post_link_message_parser(message: telegram.telegram_types.Message = None) -> dict:
@@ -375,21 +292,13 @@ def post_link_message_parser(message: telegram.telegram_types.Message = None) ->
             data['message_id'] = message.id
             data['chat_id'] = message.chat.id
         else:
-            log.error(
-                '[Bot]: Post id %s from user %s is wrong',
-                post_id,
-                message.chat.id
-            )
+            log.error('[Bot]: Post id %s from user %s is wrong', post_id, message.chat.id)
             telegram.send_styled_message(
                 chat_id=message.chat.id,
                 messages_template={'alias': 'url_error'}
             )
     else:
-        log.error(
-            '[Bot]: Post link %s from user %s is incorrect',
-            message.text,
-            message.chat.id
-        )
+        log.error('[Bot]: Post link %s from user %s is incorrect', message.text, message.chat.id)
         telegram.send_styled_message(
             chat_id=message.chat.id,
             messages_template={'alias': 'url_error'}
@@ -421,6 +330,7 @@ def process_one_post(
         data = post_link_message_parser(message)
         log.debug(user)
         time_to_process = user.get('rate_limits', {}).get('end_time', None)
+
         if data:
             if time_to_process is None:
                 data['scheduled_time'] = datetime.now()
@@ -438,17 +348,9 @@ def process_one_post(
                         bot.delete_message(message.chat.id, help_message.id)
                 data['response_message_id'] = response_message.id
                 _ = database.add_message_to_queue(data)
-                log.info(
-                    '[Bot]: Post link %s for user %s added in queue',
-                    message.text,
-                    message.chat.id
-                )
+                log.info('[Bot]: Post link %s for user %s added in queue', message.text, message.chat.id)
             else:
-                log.info(
-                    '[Bot]: Post %s for user %s already in queue or processed',
-                    data['post_id'],
-                    message.chat.id
-                )
+                log.info('[Bot]: Post %s for user %s already in queue or processed', data['post_id'], message.chat.id)
                 response_message = telegram.send_styled_message(
                     chat_id=message.chat.id,
                     messages_template={
@@ -462,10 +364,7 @@ def process_one_post(
             chat_id=message.chat.id,
             messages_template={
                 'alias': 'reject_message',
-                'kwargs': {
-                    'username': message.chat.username,
-                    'userid': message.chat.id
-                }
+                'kwargs': {'username': message.chat.username, 'userid': message.chat.id}
             }
         )
 
@@ -502,10 +401,7 @@ def process_list_posts(
             chat_id=message.chat.id,
             messages_template={
                 'alias': 'reject_message',
-                'kwargs': {
-                    'username': message.chat.username,
-                    'userid': message.chat.id
-                }
+                'kwargs': {'username': message.chat.username, 'userid': message.chat.id}
             }
         )
 # END BLOCK PROCESSING FUNCTIONS ####################################################################################################
@@ -521,21 +417,16 @@ def status_message_updater() -> None:
     Returns:
         None
     """
-    log.info(
-        '[Bot]: Starting thread for status message updater...'
-    )
+    log.info('[Bot]: Starting thread for status message updater...')
     while True:
         time.sleep(STATUSES_MESSAGE_FREQUENCY)
         if database.users_list():
             for user in database.users_list():
                 last_status_message = database.get_current_message_id(message_type='status_message', chat_id=user[1])
                 statuses_message = get_message_statuses(user_id=user[0])
-                if last_status_message:
-                    last_status_message_timestamp = datetime.strptime(last_status_message[1], "%Y-%m-%d %H:%M:%S")
-
                 # if message already sended and expiring (because bot can edit message only first 48 hours)
                 # automatic renew message every 23 hours
-                if last_status_message and datetime.strptime(last_status_message_timestamp) < datetime.now() - timedelta(hours=23):
+                if last_status_message and last_status_message[1] < datetime.now() - timedelta(hours=23):
                     _ = bot.delete_message(
                         chat_id=user[1],
                         message_id=last_status_message[0]
@@ -544,10 +435,11 @@ def status_message_updater() -> None:
                         chat_id=user[1],
                         messages_template={
                             'alias': 'statuses_message',
-                            'kwargs': get_message_statuses(user_id=user[0])
+                            'kwargs': statuses_message
                         }
                     )
                     database.keep_message(message_id=response_message.message_id, chat_id=response_message.chat.id, message_type='status_message')
+                    log.info('[Bot]: Message with type `status_message` for user %s has been renewed', user[0])
                 elif statuses_message is not None:
                     _ = bot.edit_message_text(
                         chat_id=last_status_message[0],
@@ -558,10 +450,9 @@ def status_message_updater() -> None:
                             queue=statuses_message['queue']
                         )
                     )
+                    log.info('[Bot]: Message with type `status_message` for user %s has been updated', user[0])
                 else:
-                    log.warning(
-                        '[Bot]: Message with type `status_message` for user %s not found',
-                    )
+                    log.warning('[Bot]: Message with type `status_message` for user %s not found', user[0])
 
 
 def queue_handler() -> None:
@@ -574,9 +465,7 @@ def queue_handler() -> None:
     Returns:
         None
     """
-    log.info(
-        '[Bot]: Starting thread for queue handler...'
-    )
+    log.info('[Bot]: Starting thread for queue handler...')
     while True:
         time.sleep(QUEUE_FREQUENCY)
         message = database.get_message_from_queue(datetime.now())
@@ -627,21 +516,7 @@ def queue_handler() -> None:
                         download_status=download_status,
                         upload_status=upload_status
                     )
-                    # send a message to the user with a link to the uploaded file
-                    bot.edit_message_text(
-                        chat_id=chat_id,
-                        message_id=message_id,
-                        text=messages.render_template(
-                            template_alias='post_downloaded',
-                            post_id=post_id,
-                            timestamp=str(datetime.now())
-                        )
-                    )
-                    database.keep_message(message_id, chat_id)
-                    log.info(
-                        '[Queue-thread-1] The URL of the post %s has been processed',
-                        post_id
-                    )
+                    log.info('[Queue-thread-1] The URL of the post %s has been processed', post_id)
 
 
 def main():
@@ -655,18 +530,12 @@ def main():
         None
     """
     # Thread for processing queue
-    thread_queue_handler = threading.Thread(
-        target=queue_handler,
-        args=()
-    )
+    thread_queue_handler = threading.Thread(target=queue_handler, args=())
     thread_queue_handler.start()
     # Thread for update status message
-    thread_status_message = threading.Thread(
-        target=status_message_updater,
-        args=()
-    )
+    thread_status_message = threading.Thread(target=status_message_updater, args=())
     thread_status_message.start()
-
+    # Run bot
     telegram.launch_bot()
 
 
