@@ -420,6 +420,7 @@ class DatabaseClient:
         self.cursor.execute(f"INSERT INTO {table_name} ({columns}) VALUES ({values})")
         self.database_connection.commit()
 
+    # pylint: disable=too-many-arguments
     def _select(
         self,
         table_name: str = None,

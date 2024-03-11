@@ -14,6 +14,8 @@ from vault import VaultClient
 # from modules.downloader import Downloader
 # from modules.uploader import Uploader
 from modules.database import DatabaseClient
+# pylint: disable=unused-import
+# flake8: noqa
 from configs.constants import (
     PROJECT_ENVIRONMENT, TELEGRAM_BOT_NAME, ROLES_MAP,
     QUEUE_FREQUENCY, STATUSES_MESSAGE_FREQUENCY,
@@ -540,7 +542,7 @@ def status_message_updater() -> None:
                         }
                     }
                 )
-                database.keep_message(message_id=response_message.message_id, chat_id=response_message.chat_id, message_type='status_message')
+                database.keep_message(message_id=response_message.message_id, chat_id=response_message.chat.id, message_type='status_message')
             elif statuses_message is not None:
                 _ = bot.edit_message_text(
                     chat_id=last_status_message[0],
@@ -656,7 +658,7 @@ def main():
     thread_queue_handler.start()
     # Thread for update status message
     thread_status_message = threading.Thread(
-        target=telegram.update_status_message,
+        target=status_message_updater,
         args=()
     )
     thread_status_message.start()
