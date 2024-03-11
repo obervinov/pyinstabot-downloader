@@ -475,8 +475,6 @@ def queue_handler() -> None:
             download_status = message[9]
             upload_status = message[10]
             post_id = message[2]
-            chat_id = message[1]
-            message_id = message[7]
 
             if link_type == 'post':
                 log.info(
