@@ -259,7 +259,22 @@ class DatabaseClient:
                 'message_id VARCHAR(255) NOT NULL, '
                 'chat_id VARCHAR(255) NOT NULL, '
                 'timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, '
-                'can_be_deleted BOOLEAN NOT NULL DEFAULT TRUE'
+                'message_type VARCHAR(255) NOT NULL , '
+                'producer VARCHAR(255) NOT NULL, '
+            )
+        )
+        # Create a table to keep users in the database
+        # The table stores the chat ID, the user ID
+        log.info(
+            '[class.%s] Preparing database: table \'users\'...',
+            __class__.__name__
+        )
+        self._create_table(
+            table_name='users',
+            columns=(
+                'id SERIAL PRIMARY KEY, '
+                'chat_id VARCHAR(255) NOT NULL, '
+                'user_id VARCHAR(255) NOT NULL'
             )
         )
 
@@ -410,6 +425,7 @@ class DatabaseClient:
         table_name: str = None,
         columns: str = None,
         condition: str = None,
+        order_by: str = None,
         limit: int = 1
     ) -> Union[list, None]:
         """
@@ -419,6 +435,7 @@ class DatabaseClient:
             table_name (str): The name of the table to select data from.
             columns (str): The columns to select data from.
             condition (str): The condition to filter the data by.
+            order_by (str): The column to order the data by.
             limit (int): The maximum number of rows to return.
 
         Returns:
@@ -431,7 +448,10 @@ class DatabaseClient:
             >>> db._select("users", "username, email", "age > 18")
             [('john_doe', 'john_doe@example.com'), ('jane_doe', 'jane_doe@example.com')]
         """
-        self.cursor.execute(f"SELECT {columns} FROM {table_name} WHERE {condition} LIMIT {limit}")
+        if order_by:
+            self.cursor.execute(f"SELECT {columns} FROM {table_name} WHERE {condition} ORDER BY {order_by} LIMIT {limit}")
+        else:
+            self.cursor.execute(f"SELECT {columns} FROM {table_name} WHERE {condition} LIMIT {limit}")
         return self.cursor.fetchall()
 
     def _update(
@@ -702,12 +722,53 @@ class DatabaseClient:
         for message in queue:
             if user_id not in result:
                 result[user_id] = []
-
             result[user_id].append({
                 'post_id': message[0],
                 'scheduled_time': message[1]
             })
+        return result if result else None
 
+    def get_user_processed(
+        self,
+        user_id: str = None
+    ) -> Union[dict, None]:
+        """
+        Get last five messages from the processed table for the specified user.
+
+        Args:
+            user_id (str): The ID of the user.
+
+        Returns:
+            dict: A dictionary containing the last five messages from the processed table for the specified user.
+
+        Examples:
+            >>> get_user_processed(user_id='12345')
+            {
+                '12345': [
+                    {
+                        'post_id': '123456789',
+                        'processed_time': '2022-01-01 12:00:00',
+                        'state': 'completed'
+                    }
+                ]
+            }
+        """
+        result = {}
+        processed = self._select(
+            table_name='processed',
+            columns='post_id, timestamp, state',
+            condition=f"user_id = '{user_id}'",
+            order_by='timestamp DESC',
+            limit=5
+        )
+        for message in processed:
+            if user_id not in result:
+                result[user_id] = []
+            result[user_id].append({
+                'post_id': message[0],
+                'timestamp': message[1],
+                'state': message[2]
+            })
         return result if result else None
 
     def values_lock(
@@ -796,59 +857,115 @@ class DatabaseClient:
             return False
         return True
 
-    def keep_bot_message(
+    def keep_message(
         self,
         message_id: str = None,
-        chat_id: str = None
+        chat_id: str = None,
+        producer: str = 'bot',
+        message_type: str = None
     ) -> str:
         """
-        Add a bot message to the messages table in the database.
+        Add a message to the messages table in the database.
 
         Args:
             message_id (str): The ID of the message.
             chat_id (str): The ID of the chat.
+            producer (str): The name of the producer of the message.
+            message_type (str): The type of the message.
 
         Returns:
             str: A message indicating that the message was added to the messages table.
 
         Examples:
-            >>> keep_bot_message(message_id='12345', chat_id='67890')
-            '12345: added to messages'
+            >>> keep_message('12345', '67890', 'bot', 'status_message')
+            '12345 kept'
         """
         self._insert(
             table_name='messages',
-            columns='message_id, chat_id',
-            values=f"'{message_id}', '{chat_id}'"
+            columns='message_id, chat_id, message_type, producer',
+            values=f"'{message_id}', '{chat_id}', '{message_type}', '{producer}'"
         )
+        return f"{message_id} kept"
 
-        return f"{message_id}: added to messages"
-
-    def consider_bot_messages(
+    def add_user(
         self,
+        user_id: str = None,
         chat_id: str = None
-    ) -> list:
+    ) -> str:
         """
-        Get list of messages for deletion from the messages table in the database.
+        Add a user to the users table in the database.
 
         Args:
+            user_id (str): The ID of the user.
             chat_id (str): The ID of the chat.
 
         Returns:
-            list: A list of messages for deletion.
+            str: A message indicating that the user was added to the users table or that the user already exists.
 
         Examples:
-            >>> consider_bot_message()
-            [('12345', '67890')]
+            >>> add_user('12345')
+            '12345 added'
         """
-        messages = self._select(
-            table_name='messages',
-            columns='id, message_id',
-            condition=f"can_be_deleted = TRUE and chat_id = '{chat_id}'",
-            limit=10000
+        if user_id in self._select(
+            table_name='users',
+            columns='user_id',
+            condition=f"user_id = '{user_id}'"
+        ):
+            return f"{user_id} already exists"
+        self._insert(
+            table_name='users',
+            columns='chat_id, user_id',
+            values=f"'{chat_id}', '{user_id}'"
         )
-        for message in messages:
-            self._delete(
-                table_name='messages',
-                condition=f"id = {message[0]}"
-            )
-        return messages
+        return f"{user_id} added"
+
+    def users_list(
+        self
+    ) -> list:
+        """
+        Get a list of all users in the database.
+
+        Args:
+            None
+
+        Returns:
+            list: A list of all users from the messages table.
+
+        Examples:
+            >>> users_list()
+            # ('{user_id}', '{chat_id}')
+            [('12345', '67890'), ('54321', '09876')]
+        """
+        users = self._select(
+            table_name='users',
+            columns='user_id, chat_id',
+        )
+        return users if users else None
+
+    def get_current_message_id(
+        self,
+        message_type: str = None,
+        chat_id: str = None
+    ) -> str:
+        """
+        Get the current message ID for the specified type.
+
+        Args:
+            message_type (str): The type of the message.
+            chat_id (str): The ID of the chat.
+
+        Returns:
+            str: The current message ID for the specified type.
+
+        Examples:
+            >>> current_message_id('status_message', chat_id='12345')
+            ('123456789', '2022-01-01 12:00:00')
+        """
+        message = self._select(
+            table_name='messages',
+            columns='message_id, timestamp',
+            condition=f"message_type = '{message_type}' AND chat_id = '{chat_id}'",
+            order_by='timestamp DESC',
+            limit=1
+        )
+        return message[0] if message else None

@@ -5,7 +5,7 @@ to work and contains the main logic linking the additional modules.
 import re
 import threading
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 from logger import log
 from telegram import TelegramBot
 from users import Users
@@ -14,11 +14,11 @@ from vault import VaultClient
 # from modules.downloader import Downloader
 # from modules.uploader import Uploader
 from modules.database import DatabaseClient
-from configs import constants
+from configs.constants import PROJECT_ENVIRONMENT, TELEGRAM_BOT_NAME, ROLES_MAP, QUEUE_FREQUENCY, STATUS_MESSAGE_FREQUENCY, TEMPORARY_DIR, STORAGE_TYPE, STORAGE_EXCLUDE_TYPE, INSTAGRAM_SESSION, INSTAGRAM_USERAGENT
 
 
 # init instances
-vault = VaultClient(name=constants.TELEGRAM_BOT_NAME)
+vault = VaultClient(name=TELEGRAM_BOT_NAME)
 telegram = TelegramBot(vault=vault)
 bot = telegram.telegram_bot
 # Users module with rate limits option
@@ -28,24 +28,24 @@ users = Users(vault=vault, rate_limits=False)
 messages = Messages()
 # downloader = Downloader(
 #    auth={
-#        'sessionfile': constants.INSTAGRAM_SESSION
+#        'sessionfile': INSTAGRAM_SESSION
 #    },
 #    settings={
-#        'savepath': constants.TEMPORARY_DIR,
-#        'useragent': constants.INSTAGRAM_USERAGENT
+#        'savepath': TEMPORARY_DIR,
+#        'useragent': INSTAGRAM_USERAGENT
 #    },
 #    vault=vault
 # )
 # uploader = Uploader(
 #    storage={
-#        'type': constants.STORAGE_TYPE,
-#        'temporary': constants.TEMPORARY_DIR,
-#        'cloud_root_path': constants.BOT_NAME,
-#        'exclude_type': constants.STORAGE_EXCLUDE_TYPE
+#        'type': STORAGE_TYPE,
+#        'temporary': TEMPORARY_DIR,
+#        'cloud_root_path': BOT_NAME,
+#        'exclude_type': STORAGE_EXCLUDE_TYPE
 #    },
 #    vault=vault
 # )
-database = DatabaseClient(vault=vault, environment=constants.PROJECT_ENVIRONMENT)
+database = DatabaseClient(vault=vault, environment=PROJECT_ENVIRONMENT)
 
 
 # START HANDLERS BLOCK ##############################################################################################################
@@ -66,7 +66,13 @@ def start_command(message: telegram.telegram_types.Message = None) -> None:
             '[Bot]: Processing `start` command for user %s...',
             message.chat.id
         )
-        reply_markup = telegram.create_inline_markup(constants.ROLES_MAP.keys())
+        # Add user to the database
+        _ = database.add_user(
+            user_id=message.chat.id,
+            chat_id=message.chat.id,
+        )
+        # Main message
+        reply_markup = telegram.create_inline_markup(ROLES_MAP.keys())
         start_message = telegram.send_styled_message(
             chat_id=message.chat.id,
             messages_template={
@@ -79,6 +85,21 @@ def start_command(message: telegram.telegram_types.Message = None) -> None:
             reply_markup=reply_markup
         )
         bot.pin_chat_message(start_message.chat.id, start_message.id)
+        bot.delete_message(message.chat.id, message.id)
+        # Status message
+        status_message = telegram.send_styled_message(
+            chat_id=message.chat.id,
+            messages_template={
+                'alias': 'status_message',
+                'kwargs': get_message_statuses(user_id=message.chat.id)
+            }
+        )
+        bot.pin_chat_message(status_message.chat.id, status_message.id)
+        database.keep_message(
+            message_id=status_message.id,
+            chat_id=status_message.chat.id,
+            message_type='status_message'
+        )
     else:
         telegram.send_styled_message(
             chat_id=message.chat.id,
@@ -110,7 +131,7 @@ def bot_callback_query_handler(call: telegram.callback_query = None) -> None:
         call.data,
         call.message.chat.id
     )
-    if users.user_access_check(call.message.chat.id, constants.ROLES_MAP[call.data]).get('permissions', None) == users.user_status_allow:
+    if users.user_access_check(call.message.chat.id, ROLES_MAP[call.data]).get('permissions', None) == users.user_status_allow:
         if call.data == "Post":
             button_post(
                 call=call
@@ -119,16 +140,8 @@ def bot_callback_query_handler(call: telegram.callback_query = None) -> None:
             button_posts_list(
                 call=call
             )
-        elif call.data == "User Queue":
-            button_user_queue(
-                call=call
-            )
         elif call.data == "Profile Posts":
             button_profile_posts(
-                call=call
-            )
-        elif call.data == "Clear Messages":
-            button_clear_messages(
                 call=call
             )
         else:
@@ -167,11 +180,10 @@ def unknown_command(message: telegram.telegram_types.Message = None) -> None:
             message.text,
             message.chat.id
         )
-        response_message = telegram.send_styled_message(
+        telegram.send_styled_message(
             chat_id=message.chat.id,
             messages_template={'alias': 'unknown_command'}
         )
-        database.keep_bot_message(response_message.message_id, response_message.chat.id)
     else:
         telegram.send_styled_message(
             chat_id=message.chat.id,
@@ -198,7 +210,7 @@ def button_post(call: telegram.callback_query = None) -> None:
     Returns:
         None
     """
-    user = users.user_access_check(call.message.chat.id, constants.ROLES_MAP['Post'])
+    user = users.user_access_check(call.message.chat.id, ROLES_MAP['Post'])
     if user.get('permissions', None) == users.user_status_allow:
         help_message = telegram.send_styled_message(
             chat_id=call.message.chat.id,
@@ -233,7 +245,7 @@ def button_posts_list(call: telegram.callback_query = None) -> None:
     Returns:
         None
     """
-    user = users.user_access_check(call.message.chat.id, constants.ROLES_MAP['Posts List'])
+    user = users.user_access_check(call.message.chat.id, ROLES_MAP['Posts List'])
     if user.get('permissions', None) == users.user_status_allow:
         help_message = telegram.send_styled_message(
             chat_id=call.message.chat.id,
@@ -258,50 +270,6 @@ def button_posts_list(call: telegram.callback_query = None) -> None:
 
 
 # Inline button handler for Profile Posts
-def button_user_queue(call: telegram.callback_query = None) -> None:
-    """
-    The handler for the Profile Posts button.
-
-    Args:
-        call (telegram.callback_query): The callback query object.
-
-    Returns:
-        None
-    """
-    if users.user_access_check(call.message.chat.id, constants.ROLES_MAP['User Queue']).get('permissions', None) == users.user_status_allow:
-        queue_dict = database.get_user_queue(call.message.chat.id)
-        queue_string = ''
-        if queue_dict is not None:
-            sorted_data = sorted(queue_dict[call.message.chat.id], key=lambda x: x['scheduled_time'], reverse=False)
-            for item in sorted_data:
-                queue_string = queue_string + f"+ <code>{item['post_id']}: {item['scheduled_time']}</code>\n"
-        else:
-            queue_string = '<code>empty</code>'
-        response_message = telegram.send_styled_message(
-            chat_id=call.message.chat.id,
-            messages_template={
-                'alias': 'user_queue',
-                'kwargs': {
-                    'userid': call.message.chat.id,
-                    'queue': queue_string
-                }
-            }
-        )
-        database.keep_bot_message(response_message.message_id, response_message.chat.id)
-    else:
-        telegram.send_styled_message(
-            chat_id=call.message.chat.id,
-            messages_template={
-                'alias': 'permission_denied_message',
-                'kwargs': {
-                    'username': call.message.chat.username,
-                    'userid': call.message.chat.id
-                }
-            }
-        )
-
-
-# Inline button handler for Profile Posts
 def button_profile_posts(call: telegram.callback_query = None) -> None:
     """
     The handler for the Profile Posts button.
@@ -312,7 +280,7 @@ def button_profile_posts(call: telegram.callback_query = None) -> None:
     Returns:
         None
     """
-    if users.user_access_check(call.message.chat.id, constants.ROLES_MAP['Profile Posts']).get('permissions', None) == users.user_status_allow:
+    if users.user_access_check(call.message.chat.id, ROLES_MAP['Profile Posts']).get('permissions', None) == users.user_status_allow:
         telegram.send_styled_message(
             chat_id=call.message.chat.id,
             messages_template={'alias': 'feature_not_implemented'}
@@ -331,6 +299,43 @@ def button_profile_posts(call: telegram.callback_query = None) -> None:
 
 
 # START BLOCK ADDITIONAL FUNCTIONS ######################################################################################################
+def  get_message_statuses(
+    user_id: str = None
+) -> dict:
+    """
+    Returns the queue and processed posts for the user.
+
+    Args:
+        user_id (str): The user id.
+
+    Returns:
+        dict: The queue and processed posts for the user.
+    """
+    queue_dict = database.get_user_queue(user_id=user_id)
+    processed_dict = database.get_user_processed(user_id=user_id)
+
+    queue_string = ''
+    if queue_dict is not None:
+        sorted_data = sorted(queue_dict[user_id], key=lambda x: x['scheduled_time'], reverse=False)
+        for item in sorted_data:
+            queue_string = queue_string + f"+ <code>{item['post_id']}: {item['scheduled_time']}</code>\n"
+    else:
+        queue_string = '<code>queue is empty</code>'
+
+    processed_string = ''
+    if processed_dict is not None:
+        sorted_data = sorted(processed_dict[user_id], key=lambda x: x['timestamp'], reverse=False)
+        for item in sorted_data:
+            processed_string = processed_string + f"* <code>{item['post_id']}: {item['state']} at {item['timestamp']}</code>\n"
+    else:
+        processed_string = '<code>no processed posts</code>'
+
+    return {
+        'queue': queue_string,
+        'processed': processed_string
+    }
+
+
 def post_link_message_parser(message: telegram.telegram_types.Message = None) -> dict:
     """
     Parses the message containing the Instagram post link and returns the data.
@@ -377,36 +382,6 @@ def post_link_message_parser(message: telegram.telegram_types.Message = None) ->
             messages_template={'alias': 'url_error'}
         )
     return data
-
-
-def button_clear_messages(call: telegram.callback_query = None) -> None:
-    """
-    The handler for the clear bot messages in the chat.
-
-    Args:
-        call (telegram.callback_query): The callback query object.
-
-    Returns:
-        None
-    """
-    if users.user_access_check(call.message.chat.id, constants.ROLES_MAP['Clear Messages']).get('permissions', None) == users.user_status_allow:
-        messages_list = database.consider_bot_messages(call.message.chat.id)
-        for message in messages_list:
-            bot.delete_message(
-                chat_id=call.message.chat.id,
-                message_id=message[1]
-            )
-    else:
-        telegram.send_styled_message(
-            chat_id=call.message.chat.id,
-            messages_template={
-                'alias': 'permission_denied_message',
-                'kwargs': {
-                    'username': call.message.chat.username,
-                    'userid': call.message.chat.id
-                }
-            }
-        )
 # END BLOCK ADDITIONAL FUNCTIONS ######################################################################################################
 
 
@@ -428,7 +403,7 @@ def process_one_post(
         None
     """
     # Check permissions
-    user = users_rl.user_access_check(message.chat.id, constants.ROLES_MAP['Post'])
+    user = users_rl.user_access_check(message.chat.id, ROLES_MAP['Post'])
     if user.get('permissions', None) == users_rl.user_status_allow:
         data = post_link_message_parser(message)
         log.debug(user)
@@ -496,7 +471,7 @@ def process_list_posts(
     Returns:
         None
     """
-    user = users.user_access_check(message.chat.id, constants.ROLES_MAP['Posts List'])
+    user = users.user_access_check(message.chat.id, ROLES_MAP['Posts List'])
     if user.get('permissions', None) == users.user_status_allow:
         links = message.text.split('\n')
         for link in links:
@@ -523,6 +498,62 @@ def process_list_posts(
 # END BLOCK PROCESSING FUNCTIONS ####################################################################################################
 
 
+def status_message_updater() -> None:
+    """
+    The handler for the status message.
+
+    Args:
+        None
+
+    Returns:
+        None
+    """
+    log.info(
+        '[Bot]: Starting thread for status message updater...'
+    )
+    while True:
+        time.sleep(STATUS_MESSAGE_FREQUENCY)
+        for user in database.users_list():
+            last_status_message = database.get_current_message_id(message_type='status_message', chat_id=user[1])
+            statuses_message = get_message_statuses(user_id=user[0])
+            last_status_message_timestamp = datetime.strptime(last_status_message[1], "%Y-%m-%d %H:%M:%S")
+
+            # if message already sended and expiring (because bot can edit message only first 48 hours)
+            # automatic renew message every 23 hours
+            if last_status_message is not None and datetime.strptime(last_status_message_timestamp) < datetime.now() - timedelta(hours=23):
+                _ = bot.delete_message(
+                    chat_id=user[1],
+                    message_id=last_status_message[0]
+                )
+                response_message = telegram.send_styled_message(
+                    chat_id=user[1],
+                    messages_template={
+                        'alias': 'statuses_message',
+                        'kwargs': {
+                            'username': user[0],
+                            'statuses_processed': statuses_message['processed'],
+                            'statuses_queue': statuses_message['queue']
+                        }
+                    }
+                )
+                database.keep_message(message_id=response_message.message_id, chat_id=response_message.chat_id, message_type='status_message')
+            elif statuses_message is not None:
+                _ = bot.edit_message_text(
+                    chat_id=last_status_message[0],
+                    message_id=last_status_message[1],
+                    text=messages.render_template(
+                        template_alias='status_message',
+                        username=user[0],
+                        statuses_processed=statuses_message['processed'],
+                        statuses_queue=statuses_message['queue']
+                    )
+                )
+            else:
+                log.warn(
+                    '[Bot]: Message with type `status_message` for user %s not found',
+                )
+
+
 def queue_handler() -> None:
     """
     The handler for the queue of posts to be processed.
@@ -537,7 +568,7 @@ def queue_handler() -> None:
         '[Bot]: Starting thread for queue handler...'
     )
     while True:
-        time.sleep(constants.QUEUE_FREQUENCY)
+        time.sleep(QUEUE_FREQUENCY)
         message = database.get_message_from_queue(datetime.now())
 
         if message is not None:
@@ -619,6 +650,13 @@ def main():
         args=()
     )
     thread_queue_handler.start()
+    # Thread for update status message
+    thread_status_message = threading.Thread(
+        target=telegram.update_status_message,
+        args=()
+    )
+    thread_status_message.start()
+
     telegram.launch_bot()
 
 

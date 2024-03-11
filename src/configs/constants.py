@@ -44,10 +44,9 @@ STORAGE_EXCLUDE_TYPE = os.environ.get(
 ROLES_MAP = {
     'Post': 'post',
     'Posts List': 'posts_list',
-    'Profile Posts': 'profile_posts',
-    'User Queue': 'user_queue',
-    'Clear Messages': 'clear_messages',
+    'Profile Posts': 'profile_posts'
 }
 
 # Queue handler
 QUEUE_FREQUENCY = 60
+QUEUE_MESSAGES_FREQUENCY = 60
