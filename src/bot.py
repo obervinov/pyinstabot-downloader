@@ -96,7 +96,7 @@ def start_command(message: telegram.telegram_types.Message = None) -> None:
         status_message = telegram.send_styled_message(
             chat_id=message.chat.id,
             messages_template={
-                'alias': 'status_message',
+                'alias': 'statuses_message',
                 'kwargs': get_message_statuses(user_id=message.chat.id)
             }
         )
