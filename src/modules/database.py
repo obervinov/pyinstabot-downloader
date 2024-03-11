@@ -916,13 +916,15 @@ class DatabaseClient:
             columns='user_id',
             condition=f"user_id = '{user_id}'"
         ):
-            return f"{user_id} already exists"
-        self._insert(
-            table_name='users',
-            columns='chat_id, user_id',
-            values=f"'{chat_id}', '{user_id}'"
-        )
-        return f"{user_id} added"
+            result = f"{user_id} already exists"
+        else:
+            self._insert(
+                table_name='users',
+                columns='chat_id, user_id',
+                values=f"'{chat_id}', '{user_id}'"
+            )
+            result = f"{user_id} added"
+        return result
 
     def users_list(
         self
