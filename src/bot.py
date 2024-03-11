@@ -519,45 +519,46 @@ def status_message_updater() -> None:
     )
     while True:
         time.sleep(STATUSES_MESSAGE_FREQUENCY)
-        for user in database.users_list():
-            last_status_message = database.get_current_message_id(message_type='status_message', chat_id=user[1])
-            statuses_message = get_message_statuses(user_id=user[0])
-            last_status_message_timestamp = datetime.strptime(last_status_message[1], "%Y-%m-%d %H:%M:%S")
+        if database.users_list():
+            for user in database.users_list():
+                last_status_message = database.get_current_message_id(message_type='status_message', chat_id=user[1])
+                statuses_message = get_message_statuses(user_id=user[0])
+                last_status_message_timestamp = datetime.strptime(last_status_message[1], "%Y-%m-%d %H:%M:%S")
 
-            # if message already sended and expiring (because bot can edit message only first 48 hours)
-            # automatic renew message every 23 hours
-            if last_status_message is not None and datetime.strptime(last_status_message_timestamp) < datetime.now() - timedelta(hours=23):
-                _ = bot.delete_message(
-                    chat_id=user[1],
-                    message_id=last_status_message[0]
-                )
-                response_message = telegram.send_styled_message(
-                    chat_id=user[1],
-                    messages_template={
-                        'alias': 'statuses_message',
-                        'kwargs': {
-                            'username': user[0],
-                            'statuses_processed': statuses_message['processed'],
-                            'statuses_queue': statuses_message['queue']
-                        }
-                    }
-                )
-                database.keep_message(message_id=response_message.message_id, chat_id=response_message.chat.id, message_type='status_message')
-            elif statuses_message is not None:
-                _ = bot.edit_message_text(
-                    chat_id=last_status_message[0],
-                    message_id=last_status_message[1],
-                    text=messages.render_template(
-                        template_alias='status_message',
-                        username=user[0],
-                        statuses_processed=statuses_message['processed'],
-                        statuses_queue=statuses_message['queue']
+                # if message already sended and expiring (because bot can edit message only first 48 hours)
+                # automatic renew message every 23 hours
+                if last_status_message is not None and datetime.strptime(last_status_message_timestamp) < datetime.now() - timedelta(hours=23):
+                    _ = bot.delete_message(
+                        chat_id=user[1],
+                        message_id=last_status_message[0]
                     )
-                )
-            else:
-                log.warning(
-                    '[Bot]: Message with type `status_message` for user %s not found',
-                )
+                    response_message = telegram.send_styled_message(
+                        chat_id=user[1],
+                        messages_template={
+                            'alias': 'statuses_message',
+                            'kwargs': {
+                                'username': user[0],
+                                'statuses_processed': statuses_message['processed'],
+                                'statuses_queue': statuses_message['queue']
+                            }
+                        }
+                    )
+                    database.keep_message(message_id=response_message.message_id, chat_id=response_message.chat.id, message_type='status_message')
+                elif statuses_message is not None:
+                    _ = bot.edit_message_text(
+                        chat_id=last_status_message[0],
+                        message_id=last_status_message[1],
+                        text=messages.render_template(
+                            template_alias='status_message',
+                            username=user[0],
+                            statuses_processed=statuses_message['processed'],
+                            statuses_queue=statuses_message['queue']
+                        )
+                    )
+                else:
+                    log.warning(
+                        '[Bot]: Message with type `status_message` for user %s not found',
+                    )
 
 
 def queue_handler() -> None:
