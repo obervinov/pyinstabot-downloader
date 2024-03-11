@@ -549,7 +549,7 @@ def status_message_updater() -> None:
                         chat_id=last_status_message[0],
                         message_id=last_status_message[1],
                         text=messages.render_template(
-                            template_alias='status_message',
+                            template_alias='statuses_message',
                             username=user[0],
                             statuses_processed=statuses_message['processed'],
                             statuses_queue=statuses_message['queue']
