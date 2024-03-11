@@ -5,7 +5,7 @@
             "args": ["username", "userid", ":raised_hand:", ":unlocked:"]
         },
         "statuses_message": {
-            "text": "{0} <br>Your last activity:</br>\n<b>{1} processed</b>\n{2}\n<b>{3} in queue</b>\n{4}",
+            "text": "{0} <b>Your last activity:</b>\n<b>{1} processed</b>\n{2}\n<b>{3} in queue</b>\n{4}",
             "args": [":bar_chart:",  ":hourglass:", "processed", ":hourglass_flowing_sand:", "queue"]
         },
         "reject_message": {
@@ -31,10 +31,6 @@
         "url_error": {
             "text": "{0} Validation error. The link is incorrect.",
             "args": [":warning:", ":link:"]
-        },
-        "post_already_downloaded": {
-            "text": "{0} The content of the post <b>{1}</b> has already been downloaded.\n{2} The download was skipped.",
-            "args": [":construction:", "post_id", ":boxing_glove:"]
         }
     }
 }

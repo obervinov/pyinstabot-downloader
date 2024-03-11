@@ -77,6 +77,12 @@ def start_command(message: telegram.telegram_types.Message = None) -> None:
         bot.delete_message(message.chat.id, message.id)
 
         # Status message
+        status_message = database.get_current_message_id(message_type='status_message', chat_id=message.chat.id)
+        if status_message:
+            _ = bot.delete_message(
+                chat_id=status_message[0],
+                message_id=status_message[1]
+            )
         status_message = telegram.send_styled_message(
             chat_id=message.chat.id,
             messages_template={
@@ -85,7 +91,6 @@ def start_command(message: telegram.telegram_types.Message = None) -> None:
             }
         )
         bot.pin_chat_message(status_message.chat.id, status_message.id)
-
         # Consider the status message
         database.keep_message(
             message_id=status_message.id,
