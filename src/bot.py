@@ -429,7 +429,7 @@ def status_message_updater() -> None:
                     # check difference between messages content
                     if last_status_message[3] not in base64.b64encode(str(statuses_message).encode('utf-8')):
                         diff_between_messages_content = True
-                    
+
                     # if message already sended and expiring (because bot can edit message only first 48 hours)
                     # automatic renew message every 23 hours
                     if last_status_message and last_status_message[2] < datetime.now() - timedelta(hours=23):
