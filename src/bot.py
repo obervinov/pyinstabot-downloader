@@ -447,8 +447,8 @@ def status_message_updater() -> None:
                     log.info('[Bot]: Message with type `status_message` for user %s has been renewed', user[0])
                 elif statuses_message is not None:
                     _ = bot.edit_message_text(
-                        chat_id=last_status_message[0],
-                        message_id=last_status_message[1],
+                        chat_id=user[1],
+                        message_id=last_status_message[0],
                         text=messages.render_template(
                             template_alias='statuses_message',
                             processed=statuses_message['processed'],

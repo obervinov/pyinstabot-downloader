@@ -5,7 +5,7 @@
             "args": ["username", "userid", ":raised_hand:", ":unlocked:"]
         },
         "statuses_message": {
-            "text": "{0} <b>Your last activity:</b>\n<b>{1} processed</b>\n{2}\n<b>{3} in queue</b>\n{4}",
+            "text": "{0} <b>Your last activity:</b>\n{1} <b>processed</b>\n{2}\n{3} <b>in queue</b>\n{4}",
             "args": [":bar_chart:",  ":hourglass:", "processed", ":hourglass_flowing_sand:", "queue"]
         },
         "reject_message": {
