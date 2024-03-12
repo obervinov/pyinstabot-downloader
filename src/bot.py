@@ -468,7 +468,14 @@ def status_message_updater() -> None:
                         log.warning('[Bot]: Message with type `status_message` for user %s not found', user[0])
         # pylint: disable=broad-exception-caught
         except Exception as exception:
-            log.error('[Status-message-updater-thread-1] %s', exception)
+            exception_context = {
+                'database.users_list': database.users_list(),
+                'last_status_message': last_status_message,
+                'statuses_message': statuses_message,
+                'diff_between_messages_content': diff_between_messages_content,
+                'exception': exception
+            }
+            log.error('[Status-message-updater-thread-1] exception context: %s', exception_context)
 
 
 def queue_handler() -> None:
