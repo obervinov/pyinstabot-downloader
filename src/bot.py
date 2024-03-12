@@ -77,11 +77,11 @@ def start_command(message: telegram.telegram_types.Message = None) -> None:
         bot.delete_message(message.chat.id, message.id)
 
         # Status message
-        status_message = database.get_current_message_id(message_type='status_message', chat_id=message.chat.id)
-        if status_message:
+        exist_status_message = database.get_current_message_id(message_type='status_message', chat_id=message.chat.id)
+        if database.get_current_message_id(message_type='status_message', chat_id=message.chat.id):
             _ = bot.delete_message(
-                chat_id=status_message[0],
-                message_id=status_message[1]
+                chat_id=message.chat.id,
+                message_id=exist_status_message[0]
             )
         status_message = telegram.send_styled_message(
             chat_id=message.chat.id,
