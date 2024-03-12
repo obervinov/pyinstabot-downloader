@@ -3,6 +3,7 @@
 import os
 import sys
 import importlib
+import base64
 from typing import Union
 import psycopg2
 from logger import log
@@ -111,10 +112,7 @@ class DatabaseClient:
         # Create a table for the message queue
         # Messages received by the bot are placed in this table for further processing
         # at the specified time by a separate thread
-        log.info(
-            '[class.%s] Preparing database: table \'queue\'...',
-            __class__.__name__
-        )
+        log.info('[class.%s] Preparing database: table \'queue\'...', __class__.__name__)
         self._create_table(
             table_name='queue',
             columns=(
@@ -137,10 +135,7 @@ class DatabaseClient:
         # Create a table for the message processed
         # After processing from the queue, the record should be moved to this table
         # and enriched with additional data
-        log.info(
-            '[class.%s] Preparing database: table \'processed\'...',
-            __class__.__name__
-        )
+        log.info('[class.%s] Preparing database: table \'processed\'...', __class__.__name__)
         self._create_table(
             table_name='processed',
             columns=(
@@ -160,10 +155,7 @@ class DatabaseClient:
         )
         # Create a table for service migrations when updating the service
         # The table stores the name of the migration and its version
-        log.info(
-            '[class.%s] Preparing database: table \'migrations\'...',
-            __class__.__name__
-        )
+        log.info('[class.%s] Preparing database: table \'migrations\'...', __class__.__name__)
         self._create_table(
             table_name='migrations',
             columns=(
@@ -176,10 +168,7 @@ class DatabaseClient:
         # Create a table for blocking exceptions (locks)
         # This table will record the locks caused by various exceptions when the bot is running.
         # These locks will block various bot functionality until manual intervention.
-        log.info(
-            '[class.%s] Preparing database: table \'locks\'...',
-            __class__.__name__
-        )
+        log.info('[class.%s] Preparing database: table \'locks\'...', __class__.__name__)
         self._create_table(
             table_name='locks',
             columns=(
@@ -195,10 +184,7 @@ class DatabaseClient:
         )
         # Add kind of locks to the table
         # The table stores the name of the lock and its description
-        log.info(
-            '[class.%s] Preparing database: add system records to table \'locks\'...',
-            __class__.__name__
-        )
+        log.info('[class.%s] Preparing database: add system records to table \'locks\'...', __class__.__name__)
         # Dictionary of locks for the table
         locks = [
             {
@@ -248,10 +234,7 @@ class DatabaseClient:
                 )
         # Create a table to keep track of the bot's messages
         # The table stores the message ID and the chat ID
-        log.info(
-            '[class.%s] Preparing database: table \'messages\'...',
-            __class__.__name__
-        )
+        log.info('[class.%s] Preparing database: table \'messages\'...', __class__.__name__)
         self._create_table(
             table_name='messages',
             columns=(
@@ -260,15 +243,13 @@ class DatabaseClient:
                 'chat_id VARCHAR(255) NOT NULL, '
                 'timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, '
                 'message_type VARCHAR(255) NOT NULL , '
-                'producer VARCHAR(255) NOT NULL'
+                'producer VARCHAR(255) NOT NULL , '
+                'message_content_base64 VARCHAR(255) NOT NULL'
             )
         )
         # Create a table to keep users in the database
         # The table stores the chat ID, the user ID
-        log.info(
-            '[class.%s] Preparing database: table \'users\'...',
-            __class__.__name__
-        )
+        log.info('[class.%s] Preparing database: table \'users\'...', __class__.__name__)
         self._create_table(
             table_name='users',
             columns=(
@@ -764,7 +745,7 @@ class DatabaseClient:
             columns='post_id, timestamp, state',
             condition=f"user_id = '{user_id}'",
             order_by='timestamp DESC',
-            limit=5
+            limit=10
         )
         for message in processed:
             if user_id not in result:
@@ -867,7 +848,8 @@ class DatabaseClient:
         message_id: str = None,
         chat_id: str = None,
         producer: str = 'bot',
-        message_type: str = None
+        message_type: str = None,
+        message_content: str = None
     ) -> str:
         """
         Add a message to the messages table in the database.
@@ -877,20 +859,40 @@ class DatabaseClient:
             chat_id (str): The ID of the chat.
             producer (str): The name of the producer of the message.
             message_type (str): The type of the message.
+            message_content (str): The content of the message.
 
         Returns:
             str: A message indicating that the message was added to the messages table.
 
         Examples:
-            >>> keep_message('12345', '67890', 'bot', 'status_message')
-            '12345 kept'
+            >>> keep_message('12345', '67890', 'bot', 'status_message', 'Hello, username\n...')
+            '12345 kept' or '12345 updated'
         """
-        self._insert(
+        message_content_base64 = base64.b64encode(str(message_content).encode('utf-8'))
+        check_exist_message_type = self._select(
             table_name='messages',
-            columns='message_id, chat_id, message_type, producer',
-            values=f"'{message_id}', '{chat_id}', '{message_type}', '{producer}'"
+            columns='id, message_id',
+            condition=f"message_type = '{message_type}' AND chat_id = '{chat_id}'",
         )
-        return f"{message_id} kept"
+        if check_exist_message_type:
+            self._update(
+                table_name='messages',
+                values=(
+                    f"message_content_base64 = '{message_content_base64}', "
+                    f"message_id = '{message_id}', "
+                    f"timestamp = CURRENT_TIMESTAMP()"
+                ),
+                condition=f"id = '{check_exist_message_type[0][0]}'"
+            )
+            response = f"{message_id} updated"
+        else:
+            self._insert(
+                table_name='messages',
+                columns='message_id, chat_id, message_type, message_content_base64, producer',
+                values=f"'{message_id}', '{chat_id}', '{message_type}', '{message_content_base64}', '{producer}'"
+            )
+            response = f"{message_id} kept"
+        return response
 
     def add_user(
         self,
@@ -949,30 +951,30 @@ class DatabaseClient:
         )
         return users if users else None
 
-    def get_current_message_id(
+    def get_considered_message(
         self,
         message_type: str = None,
         chat_id: str = None
     ) -> str:
         """
-        Get the current message ID for the specified type.
+        Get 
 
         Args:
             message_type (str): The type of the message.
             chat_id (str): The ID of the chat.
 
         Returns:
-            str: The current message ID for the specified type.
+            tuple: A tuple containing the message from the messages table.
 
         Examples:
-            >>> current_message_id('status_message', chat_id='12345')
-            ('123456789', '2022-01-01 12:00:00')
+            >>> current_message_id(message_type='status_message', chat_id='12345')
+            # ('message_id', 'chat_id', 'timestamp', 'message_content_base64')
+            ('123456789', '12345', datetime.datetime(2023, 11, 14, 21, 14, 26, 680024), 'SGVsbG8sIHVzZXJuYW1lCg==')
         """
         message = self._select(
             table_name='messages',
-            columns='message_id, timestamp',
+            columns='message_id, chat_id, timestamp, message_content_base64',
             condition=f"message_type = '{message_type}' AND chat_id = '{chat_id}'",
-            order_by='timestamp DESC',
             limit=1
         )
         return message[0] if message else None

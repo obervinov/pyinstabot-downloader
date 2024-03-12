@@ -5,6 +5,7 @@ to work and contains the main logic linking the additional modules.
 import re
 import threading
 import time
+import base64
 from datetime import datetime, timedelta
 from logger import log
 from telegram import TelegramBot
@@ -77,8 +78,8 @@ def start_command(message: telegram.telegram_types.Message = None) -> None:
         bot.delete_message(message.chat.id, message.id)
 
         # Status message
-        exist_status_message = database.get_current_message_id(message_type='status_message', chat_id=message.chat.id)
-        if database.get_current_message_id(message_type='status_message', chat_id=message.chat.id):
+        exist_status_message = database.get_considered_message(message_type='status_message', chat_id=message.chat.id)
+        if database.get_considered_message(message_type='status_message', chat_id=message.chat.id):
             _ = bot.delete_message(
                 chat_id=message.chat.id,
                 message_id=exist_status_message[0]
@@ -95,7 +96,8 @@ def start_command(message: telegram.telegram_types.Message = None) -> None:
         database.keep_message(
             message_id=status_message.id,
             chat_id=status_message.chat.id,
-            message_type='status_message'
+            message_type='status_message',
+            message_content=get_message_statuses(user_id=message.chat.id)
         )
     else:
         telegram.send_styled_message(
@@ -356,14 +358,6 @@ def process_one_post(
                 log.info('[Bot]: Post link %s for user %s added in queue', message.text, message.chat.id)
             else:
                 log.info('[Bot]: Post %s for user %s already in queue or processed', data['post_id'], message.chat.id)
-                response_message = telegram.send_styled_message(
-                    chat_id=message.chat.id,
-                    messages_template={
-                        'alias': 'post_already_downloaded',
-                        'kwargs': {'post_id': data['post_id']}
-                    }
-                )
-                database.keep_message(response_message.message_id, response_message.chat.id)
     else:
         telegram.send_styled_message(
             chat_id=message.chat.id,
@@ -424,40 +418,57 @@ def status_message_updater() -> None:
     """
     log.info('[Bot]: Starting thread for status message updater...')
     while True:
-        time.sleep(STATUSES_MESSAGE_FREQUENCY)
-        if database.users_list():
-            for user in database.users_list():
-                last_status_message = database.get_current_message_id(message_type='status_message', chat_id=user[1])
-                statuses_message = get_message_statuses(user_id=user[0])
-                # if message already sended and expiring (because bot can edit message only first 48 hours)
-                # automatic renew message every 23 hours
-                if last_status_message and last_status_message[1] < datetime.now() - timedelta(hours=23):
-                    _ = bot.delete_message(
-                        chat_id=user[1],
-                        message_id=last_status_message[0]
-                    )
-                    response_message = telegram.send_styled_message(
-                        chat_id=user[1],
-                        messages_template={
-                            'alias': 'statuses_message',
-                            'kwargs': statuses_message
-                        }
-                    )
-                    database.keep_message(message_id=response_message.message_id, chat_id=response_message.chat.id, message_type='status_message')
-                    log.info('[Bot]: Message with type `status_message` for user %s has been renewed', user[0])
-                elif statuses_message is not None:
-                    _ = bot.edit_message_text(
-                        chat_id=user[1],
-                        message_id=last_status_message[0],
-                        text=messages.render_template(
-                            template_alias='statuses_message',
-                            processed=statuses_message['processed'],
-                            queue=statuses_message['queue']
+        try:
+            time.sleep(STATUSES_MESSAGE_FREQUENCY)
+            if database.users_list():
+                for user in database.users_list():
+                    last_status_message = database.get_considered_message(message_type='status_message', chat_id=user[1])
+                    statuses_message = get_message_statuses(user_id=user[0])
+                    diff_between_messages_content = False
+
+                    # check difference between messages content
+                    if last_status_message[3] not in base64.b64encode(str(statuses_message).encode('utf-8')):
+                        diff_between_messages_content = True
+                    
+                    # if message already sended and expiring (because bot can edit message only first 48 hours)
+                    # automatic renew message every 23 hours
+                    if last_status_message and last_status_message[2] < datetime.now() - timedelta(hours=23):
+                        _ = bot.delete_message(
+                            chat_id=user[1],
+                            message_id=last_status_message[0]
                         )
-                    )
-                    log.info('[Bot]: Message with type `status_message` for user %s has been updated', user[0])
-                else:
-                    log.warning('[Bot]: Message with type `status_message` for user %s not found', user[0])
+                        response_message = telegram.send_styled_message(
+                            chat_id=user[1],
+                            messages_template={
+                                'alias': 'statuses_message',
+                                'kwargs': statuses_message
+                            }
+                        )
+                        database.keep_message(
+                            message_id=response_message.message_id,
+                            chat_id=response_message.chat.id,
+                            message_type='status_message',
+                            message_content=statuses_message
+                        )
+                        log.info('[Bot]: Message with type `status_message` for user %s has been renewed', user[0])
+                    elif statuses_message is not None and diff_between_messages_content:
+                        _ = bot.edit_message_text(
+                            chat_id=user[1],
+                            message_id=last_status_message[0],
+                            text=messages.render_template(
+                                template_alias='statuses_message',
+                                processed=statuses_message['processed'],
+                                queue=statuses_message['queue']
+                            )
+                        )
+                        log.info('[Bot]: Message with type `status_message` for user %s has been updated', user[0])
+                    elif not diff_between_messages_content:
+                        log.info('[Bot]: Message with type `status_message` for user %s is actual, skip', user[0])
+                    else:
+                        log.warning('[Bot]: Message with type `status_message` for user %s not found', user[0])
+        # pylint: disable=broad-exception-caught
+        except Exception as exception:
+            log.error('[Status-message-updater-thread-1] %s', exception)
 
 
 def queue_handler() -> None:
@@ -533,10 +544,10 @@ def main():
         None
     """
     # Thread for processing queue
-    thread_queue_handler = threading.Thread(target=queue_handler, args=())
+    thread_queue_handler = threading.Thread(target=queue_handler, args=(), name="Thread-queue-handler-1")
     thread_queue_handler.start()
     # Thread for update status message
-    thread_status_message = threading.Thread(target=status_message_updater, args=())
+    thread_status_message = threading.Thread(target=status_message_updater, args=(), name="Thread-status-message-updater-1")
     thread_status_message.start()
     # Run bot
     telegram.launch_bot()
