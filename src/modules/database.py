@@ -398,7 +398,8 @@ class DatabaseClient:
             To insert a new row into the 'users' table with the columns 'name' and 'age' and the values 'John' and 30:
             _insert('users', 'name, age', "'John', 30")
         """
-        self.cursor.execute(f"INSERT INTO {table_name} ({columns}) VALUES ({values})")
+        sql_query = f"INSERT INTO {table_name} ({columns}) VALUES (%s)"
+        self.cursor.execute(sql_query, (values,))
         self.database_connection.commit()
 
     # pylint: disable=too-many-arguments
@@ -869,7 +870,6 @@ class DatabaseClient:
             '12345 kept' or '12345 updated'
         """
         message_content_base64 = base64.b64encode(str(message_content).encode('utf-8'))
-        log.warning(message_content_base64)
         check_exist_message_type = self._select(
             table_name='messages',
             columns='id, message_id',
@@ -914,11 +914,8 @@ class DatabaseClient:
             >>> add_user('12345')
             '12345 added'
         """
-        if user_id in self._select(
-            table_name='users',
-            columns='user_id',
-            condition=f"user_id = '{user_id}'"
-        ):
+        exist_user = self._select(table_name='users', columns='user_id', condition=f"user_id = '{user_id}'") 
+        if user_id in exist_user[0]:
             result = f"{user_id} already exists"
         else:
             self._insert(
