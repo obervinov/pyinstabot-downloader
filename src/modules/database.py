@@ -957,7 +957,7 @@ class DatabaseClient:
         chat_id: str = None
     ) -> str:
         """
-        Get 
+        Get a message with specified type and chat ID from the messages table in the database.
 
         Args:
             message_type (str): The type of the message.
