@@ -869,6 +869,7 @@ class DatabaseClient:
             '12345 kept' or '12345 updated'
         """
         message_content_base64 = base64.b64encode(str(message_content).encode('utf-8'))
+        log.warning(message_content_base64)
         check_exist_message_type = self._select(
             table_name='messages',
             columns='id, message_id',
