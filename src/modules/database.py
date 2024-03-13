@@ -852,7 +852,7 @@ class DatabaseClient:
         )
         processed = self._select(
             table_name='processed',
-            columns=("id",)
+            columns=("id"),
             condition=f"post_id = '{post_id}' AND user_id = '{user_id}'",
             limit=1
         )
