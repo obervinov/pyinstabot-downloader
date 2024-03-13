@@ -214,11 +214,11 @@ class DatabaseClient:
                     table_name=table_name,
                     columns=columns,
                     values=(
-                        f"'{lock['name']}', "
-                        f"'{lock['behavior']}', "
-                        f"'{lock['description']}', "
-                        f"'{lock['caused_by']}', "
-                        f"'{lock['tip']}'"
+                        f"{lock['name']}",
+                        f"{lock['behavior']}",
+                        f"{lock['description']}",
+                        f"{lock['caused_by']}",
+                        f"{lock['tip']}",
                     )
                 )
             else:
@@ -377,7 +377,7 @@ class DatabaseClient:
         self,
         table_name: str = None,
         columns: str = None,
-        values: str = None
+        values: tuple = None
     ) -> None:
         """
         Inserts a new row into the specified table with the given columns and values.
@@ -385,7 +385,7 @@ class DatabaseClient:
         Args:
             table_name (str): The name of the table to insert the row into.
             columns (str): A comma-separated string of column names to insert values into.
-            values (str): A comma-separated string of values to insert into the specified columns.
+            values (tuple): A tuple containing the values to insert into the table.
 
         Returns:
             None
@@ -566,16 +566,16 @@ class DatabaseClient:
                 'upload_status'
             ),
             values=(
-                f"'{data.get('user_id', None)}', "
-                f"'{data.get('post_id', None)}', "
-                f"'{data.get('post_url', None)}', "
-                f"'{data.get('post_owner', None)}', "
-                f"'{data.get('link_type', None)}', "
-                f"'{data.get('message_id', None)}', "
-                f"'{data.get('chat_id', None)}', "
-                f"'{data.get('scheduled_time', None)}',"
-                f"'{data.get('download_status', None)}', "
-                f"'{data.get('upload_status', None)}'"
+                f"{data.get('user_id', None)}",
+                f"{data.get('post_id', None)}",
+                f"{data.get('post_url', None)}",
+                f"{data.get('post_owner', None)}",
+                f"{data.get('link_type', None)}",
+                f"{data.get('message_id', None)}",
+                f"{data.get('chat_id', None)}",
+                f"{data.get('scheduled_time', None)}",
+                f"{data.get('download_status', None)}",
+                f"{data.get('upload_status', None)}",
             )
         )
         return f"{data.get('message_id', None)}: added to queue"
@@ -923,7 +923,7 @@ class DatabaseClient:
             self._insert(
                 table_name='users',
                 columns='chat_id, user_id',
-                values=f"'{chat_id}', '{user_id}'"
+                values=(f"{chat_id}", f"{user_id}",)
             )
             result = f"{user_id} added"
         return result
