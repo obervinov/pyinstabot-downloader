@@ -227,25 +227,51 @@ def update_status_message(
     """
     chat_id = user_id
     exist_status_message = database.get_considered_message(message_type='status_message', chat_id=chat_id)
-    if database.get_considered_message(message_type='status_message', chat_id=chat_id):
+    message_statuses = get_message_statuses(user_id=user_id)
+    diff_between_messages = False
+
+    # check difference between messages content
+    if exist_status_message and exist_status_message[3] not in base64.b64encode(str(message_statuses).encode('utf-8')):
+        diff_between_messages = True
+
+    # if message already sended and expiring (because bot can edit message only first 48 hours)
+    # automatic renew message every 23 hours
+    if exist_status_message and exist_status_message[2] < datetime.now() - timedelta(hours=23):
         _ = bot.delete_message(
             chat_id=chat_id,
             message_id=exist_status_message[0]
         )
-    status_message = telegram.send_styled_message(
-        chat_id=chat_id,
-        messages_template={
-            'alias': 'statuses_message',
-            'kwargs': get_message_statuses(user_id=user_id)
-        }
-    )
-    bot.pin_chat_message(status_message.chat.id, status_message.id)
-    database.keep_message(
-        message_id=status_message.id,
-        chat_id=status_message.chat.id,
-        message_type='status_message',
-        message_content=get_message_statuses(user_id=user_id)
-    )
+        status_message = telegram.send_styled_message(
+            chat_id=chat_id,
+            messages_template={
+                'alias': 'message_statuses',
+                'kwargs': message_statuses
+            }
+        )
+        bot.pin_chat_message(
+            chat_id=status_message.chat.id,
+            message_id=status_message.id
+        )
+        database.keep_message(
+            message_id=status_message.message_id,
+            chat_id=status_message.chat.id,
+            message_type='status_message',
+            message_content=message_statuses
+        )
+        log.info('[Bot]: Message with type `status_message` for user %s has been renewed', user_id)
+    elif message_statuses is not None and diff_between_messages:
+        _ = bot.edit_message_text(
+            chat_id=chat_id,
+            message_id=exist_status_message[0],
+            text=messages.render_template(
+                template_alias='message_statuses',
+                processed=message_statuses['processed'],
+                queue=message_statuses['queue']
+            )
+        )
+        log.info('[Bot]: Message with type `status_message` for user %s has been updated', user_id)
+    elif not diff_between_messages:
+        log.info('[Bot]: Message with type `status_message` for user %s is actual, skip', user_id)
 
 
 def get_message_statuses(
@@ -431,60 +457,10 @@ def status_message_updater() -> None:
             time.sleep(STATUSES_MESSAGE_FREQUENCY)
             if database.users_list():
                 for user in database.users_list():
-                    last_status_message = database.get_considered_message(message_type='status_message', chat_id=user[1])
-                    statuses_message = get_message_statuses(user_id=user[0])
-                    diff_between_messages_content = False
-
-                    # check difference between messages content
-                    if last_status_message and last_status_message[3] not in base64.b64encode(str(statuses_message).encode('utf-8')):
-                        diff_between_messages_content = True
-
-                    # if message already sended and expiring (because bot can edit message only first 48 hours)
-                    # automatic renew message every 23 hours
-                    if last_status_message and last_status_message[2] < datetime.now() - timedelta(hours=23):
-                        _ = bot.delete_message(
-                            chat_id=user[1],
-                            message_id=last_status_message[0]
-                        )
-                        response_message = telegram.send_styled_message(
-                            chat_id=user[1],
-                            messages_template={
-                                'alias': 'statuses_message',
-                                'kwargs': statuses_message
-                            }
-                        )
-                        database.keep_message(
-                            message_id=response_message.message_id,
-                            chat_id=response_message.chat.id,
-                            message_type='status_message',
-                            message_content=statuses_message
-                        )
-                        log.info('[Bot]: Message with type `status_message` for user %s has been renewed', user[0])
-                    elif statuses_message is not None and diff_between_messages_content:
-                        _ = bot.edit_message_text(
-                            chat_id=user[1],
-                            message_id=last_status_message[0],
-                            text=messages.render_template(
-                                template_alias='statuses_message',
-                                processed=statuses_message['processed'],
-                                queue=statuses_message['queue']
-                            )
-                        )
-                        log.info('[Bot]: Message with type `status_message` for user %s has been updated', user[0])
-                    elif not diff_between_messages_content:
-                        log.info('[Bot]: Message with type `status_message` for user %s is actual, skip', user[0])
-                    else:
-                        log.warning('[Bot]: Message with type `status_message` for user %s not found', user[0])
+                    update_status_message(user_id=user)
         # pylint: disable=broad-exception-caught
         except Exception as exception:
-            exception_context = {
-                'database.users_list': database.users_list(),
-                'last_status_message': last_status_message,
-                'statuses_message': statuses_message,
-                'diff_between_messages_content': diff_between_messages_content,
-                'exception': exception
-            }
-            log.error('[Status-message-updater-thread-1] exception context: %s', exception_context)
+            log.error('[Status-message-updater-thread-1] exception context: %s', exception)
 
 
 def queue_handler() -> None:

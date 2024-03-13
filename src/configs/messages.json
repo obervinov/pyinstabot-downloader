@@ -4,7 +4,7 @@
             "text": "Hi, <b>{0}</b>({1})! {2}\nAccess for your account - allowed {3}\nYou can receive content in various ways. <b>Just press the button:</b>",
             "args": ["username", "userid", ":raised_hand:", ":unlocked:"]
         },
-        "statuses_message": {
+        "message_statuses": {
             "text": "{0} <b>Your last activity:</b>\n\n{1} <b>processed</b> (last 10)\n{2}\n{3} <b>in queue</b>\n{4}",
             "args": [":bar_chart:", ":check_mark_button:", "processed", ":shopping_cart:", "queue"]
         },
