@@ -910,7 +910,7 @@ class DatabaseClient:
             >>> add_user('12345')
             '12345 added'
         """
-        exist_user = self._select(table_name='users', columns='user_id', condition=f"user_id = '{user_id}'") 
+        exist_user = self._select(table_name='users', columns='user_id', condition=f"user_id = '{user_id}'")
         if user_id in exist_user[0]:
             result = f"{user_id} already exists"
         else:
