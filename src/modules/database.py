@@ -400,11 +400,13 @@ class DatabaseClient:
             self.database_connection.commit()
         except psycopg2.Error as error:
             log.error(
-                '[class.%s] An error occurred while inserting a new row `%s` into the table %s: %s',
+                '[class.%s] An error occurred while inserting a new row into the table %s: %s\nColumns: %s\nValues: %s\nQuery: %s',
                 __class__.__name__,
-                values,
                 table_name,
-                error
+                error,
+                columns,
+                values,
+                sql_query,
             )
 
     # pylint: disable=too-many-arguments
