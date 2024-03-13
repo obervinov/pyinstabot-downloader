@@ -384,7 +384,7 @@ class DatabaseClient:
 
         Args:
             table_name (str): The name of the table to insert the row into.
-            columns (str): A string containing the names of the columns to insert the values into.
+            columns (tuple): A tuple containing the names of the columns to insert the values into.
             values (tuple): A tuple containing the values to insert into the table.
 
         Returns:
@@ -399,7 +399,7 @@ class DatabaseClient:
             )
         """
         try:
-            sql_query = f"INSERT INTO {table_name} ({columns}) VALUES (%s)"
+            sql_query = f"INSERT INTO {table_name} ({', '.join(columns)}) VALUES ({', '.join(['%s'] * len(columns))})"
             self.cursor.execute(sql_query, (values,))
             self.database_connection.commit()
         except psycopg2.Error as error:
