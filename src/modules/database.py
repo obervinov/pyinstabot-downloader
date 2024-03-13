@@ -405,7 +405,7 @@ class DatabaseClient:
             log.error(
                 '[class.%s] An error occurred while inserting a new row `%s` into the table %s: %s',
                 __class__.__name__,
-                sql_query,
+                values,
                 table_name,
                 error
             )
