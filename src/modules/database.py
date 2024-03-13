@@ -214,11 +214,11 @@ class DatabaseClient:
                     table_name=table_name,
                     columns=columns,
                     values=(
-                        f"{lock['name']}",
-                        f"{lock['behavior']}",
-                        f"{lock['description']}",
-                        f"{lock['caused_by']}",
-                        f"{lock['tip']}",
+                        lock['name'],
+                        lock['behavior'],
+                        lock['description'],
+                        lock['caused_by'],
+                        lock['tip'],
                     )
                 )
             else:
@@ -566,16 +566,16 @@ class DatabaseClient:
                 'upload_status'
             ),
             values=(
-                f"{data.get('user_id', None)}",
-                f"{data.get('post_id', None)}",
-                f"{data.get('post_url', None)}",
-                f"{data.get('post_owner', None)}",
-                f"{data.get('link_type', None)}",
-                f"{data.get('message_id', None)}",
-                f"{data.get('chat_id', None)}",
-                f"{data.get('scheduled_time', None)}",
-                f"{data.get('download_status', None)}",
-                f"{data.get('upload_status', None)}",
+                data.get('user_id', None),
+                data.get('post_id', None),
+                data.get('post_url', None),
+                data.get('post_owner', None),
+                data.get('link_type', None),
+                data.get('message_id', None),
+                data.get('chat_id', None),
+                data.get('scheduled_time', None),
+                data.get('download_status', None),
+                data.get('upload_status', None),
             )
         )
         return f"{data.get('message_id', None)}: added to queue"
@@ -655,16 +655,16 @@ class DatabaseClient:
                 table_name='processed',
                 columns='user_id, post_id, post_url, post_owner, link_type, message_id, chat_id, download_status, upload_status, state',
                 values=(
-                    f"'{processed_message[0][1]}', "
-                    f"'{processed_message[0][2]}', "
-                    f"'{processed_message[0][3]}', "
-                    f"'{processed_message[0][4]}', "
-                    f"'{processed_message[0][5]}', "
-                    f"'{processed_message[0][6]}', "
-                    f"'{processed_message[0][7]}', "
-                    f"'{kwargs.get('download_status', 'pending')}', "
-                    f"'{kwargs.get('upload_status', 'pending')}', "
-                    f"'{state}'"
+                    processed_message[0][1],
+                    processed_message[0][2],
+                    processed_message[0][3],
+                    processed_message[0][4],
+                    processed_message[0][5],
+                    processed_message[0][6],
+                    processed_message[0][7],
+                    kwargs.get('download_status', 'pending'),
+                    kwargs.get('upload_status', 'pending'),
+                    state
                 )
             )
             self._delete(
@@ -892,7 +892,7 @@ class DatabaseClient:
             self._insert(
                 table_name='messages',
                 columns='message_id, chat_id, message_type, message_content_base64, producer',
-                values=f"'{message_id}', '{chat_id}', '{message_type}', '{message_content_base64}', '{producer}'"
+                values=(message_id, chat_id, message_type, message_content_base64, producer)
             )
             response = f"{message_id} kept"
         return response
@@ -923,7 +923,7 @@ class DatabaseClient:
             self._insert(
                 table_name='users',
                 columns='chat_id, user_id',
-                values=(f"{chat_id}", f"{user_id}",)
+                values=(chat_id, user_id)
             )
             result = f"{user_id} added"
         return result
