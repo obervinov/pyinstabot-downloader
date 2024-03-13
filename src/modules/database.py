@@ -202,7 +202,7 @@ class DatabaseClient:
             }
         ]
         table_name = 'locks'
-        columns = 'id, name, behavior, description, caused_by, tip'
+        columns = 'name, behavior, description, caused_by, tip'
         for lock in locks:
             check_exist_lock = self._select(
                 table_name=table_name,
