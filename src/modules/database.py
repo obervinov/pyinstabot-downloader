@@ -397,9 +397,18 @@ class DatabaseClient:
             To insert a new row into the 'users' table with the columns 'name' and 'age' and the values 'John' and 30:
             _insert('users', 'name, age', "'John', 30")
         """
-        sql_query = f"INSERT INTO {table_name} ({columns}) VALUES (%s)"
-        self.cursor.execute(sql_query, (values,))
-        self.database_connection.commit()
+        try:
+            sql_query = f"INSERT INTO {table_name} ({columns}) VALUES (%s)"
+            self.cursor.execute(sql_query, (values,))
+            self.database_connection.commit()
+        except psycopg2.errors.SyntaxError as error:
+            log.error(
+                '[class.%s] An error occurred while inserting a new row `%s` into the table %s: %s',
+                __class__.__name__,
+                sql_query,
+                table_name,
+                error
+            )
 
     # pylint: disable=too-many-arguments
     def _select(
