@@ -402,7 +402,7 @@ class DatabaseClient:
             sql_query = f"INSERT INTO {table_name} ({', '.join(columns)}) VALUES ({', '.join(['%s'] * len(columns))})"
             self.cursor.execute(sql_query, (values,))
             self.database_connection.commit()
-        except psycopg2.Error as error:
+        except (psycopg2.Error, IndexError) as error:
             log.error(
                 '[class.%s] An error occurred while inserting a new row into the table %s: %s\nColumns: %s\nValues: %s\nQuery: %s',
                 __class__.__name__,
