@@ -400,7 +400,7 @@ class DatabaseClient:
         """
         try:
             sql_query = f"INSERT INTO {table_name} ({', '.join(columns)}) VALUES ({', '.join(['%s'] * len(columns))})"
-            self.cursor.execute(sql_query, (values,))
+            self.cursor.execute(sql_query, values)
             self.database_connection.commit()
         except (psycopg2.Error, IndexError) as error:
             log.error(
