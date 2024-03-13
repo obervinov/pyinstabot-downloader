@@ -123,7 +123,6 @@ class DatabaseClient:
                 'post_owner VARCHAR(255) NOT NULL, '
                 'link_type VARCHAR(255) NOT NULL DEFAULT \'post\', '
                 'message_id VARCHAR(255) NOT NULL, '
-                'response_message_id VARCHAR(255) NOT NULL, '
                 'chat_id VARCHAR(255) NOT NULL, '
                 'scheduled_time TIMESTAMP NOT NULL, '
                 'download_status VARCHAR(255) NOT NULL DEFAULT \'not started\', '
@@ -555,7 +554,6 @@ class DatabaseClient:
                 'post_owner, '
                 'link_type, '
                 'message_id, '
-                'response_message_id, '
                 'chat_id, '
                 'scheduled_time, '
                 'download_status, '
@@ -568,14 +566,12 @@ class DatabaseClient:
                 f"'{data.get('post_owner', None)}', "
                 f"'{data.get('link_type', None)}', "
                 f"'{data.get('message_id', None)}', "
-                f"'{data.get('response_message_id', None)}', "
                 f"'{data.get('chat_id', None)}', "
                 f"'{data.get('scheduled_time', None)}',"
                 f"'{data.get('download_status', None)}', "
                 f"'{data.get('upload_status', None)}'"
             )
         )
-
         return f"{data.get('message_id', None)}: added to queue"
 
     def get_message_from_queue(

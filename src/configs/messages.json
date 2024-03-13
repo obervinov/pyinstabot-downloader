@@ -6,7 +6,7 @@
         },
         "statuses_message": {
             "text": "{0} <b>Your last activity:</b>\n\n{1} <b>processed</b> (last 10)\n{2}\n{3} <b>in queue</b>\n{4}",
-            "args": [":bar_chart:",  ":hourglass:", "processed", ":hourglass_flowing_sand:", "queue"]
+            "args": [":bar_chart:", ":check_mark_button:", "processed", ":shopping_cart:", "queue"]
         },
         "reject_message": {
             "text": "Greetings to <b>{0}</b> ({1})! \nThis is a <b>private bot</b> and it looks like you don't have the necessary access rights {3}\nHave a nice day and bye!",
