@@ -401,7 +401,7 @@ class DatabaseClient:
             sql_query = f"INSERT INTO {table_name} ({columns}) VALUES (%s)"
             self.cursor.execute(sql_query, (values,))
             self.database_connection.commit()
-        except psycopg2.errors.SyntaxError as error:
+        except psycopg2.Error as error:
             log.error(
                 '[class.%s] An error occurred while inserting a new row `%s` into the table %s: %s',
                 __class__.__name__,
