@@ -187,7 +187,6 @@ class DatabaseClient:
         # Dictionary of locks for the table
         locks = [
             {
-                'id': 1,
                 'name': 'Unauthorized',
                 'behavior': 'block:downloader_class',
                 'description': 'Locks the post downloading functionality',
@@ -195,7 +194,6 @@ class DatabaseClient:
                 'tip': 'Instagram session expired, invalid credentials or account is blocked'
             },
             {
-                'id': 2,
                 'name': 'BadRequest',
                 'behavior': 'block:downloader_class:post_link',
                 'description': 'Locks the specified post downloading functionality',
@@ -216,7 +214,6 @@ class DatabaseClient:
                     table_name=table_name,
                     columns=columns,
                     values=(
-                        f"'{lock['id']}', "
                         f"'{lock['name']}', "
                         f"'{lock['behavior']}', "
                         f"'{lock['description']}', "
