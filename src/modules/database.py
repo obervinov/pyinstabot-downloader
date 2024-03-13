@@ -202,7 +202,7 @@ class DatabaseClient:
             }
         ]
         table_name = 'locks'
-        columns = 'name, behavior, description, caused_by, tip'
+        columns = ("name", "behavior", "description", "caused_by", "tip")
         for lock in locks:
             check_exist_lock = self._select(
                 table_name=table_name,
@@ -376,7 +376,7 @@ class DatabaseClient:
     def _insert(
         self,
         table_name: str = None,
-        columns: str = None,
+        columns: tuple = None,
         values: tuple = None
     ) -> None:
         """
@@ -384,15 +384,19 @@ class DatabaseClient:
 
         Args:
             table_name (str): The name of the table to insert the row into.
-            columns (str): A comma-separated string of column names to insert values into.
+            columns (str): A string containing the names of the columns to insert the values into.
             values (tuple): A tuple containing the values to insert into the table.
 
         Returns:
             None
 
         Examples:
-            To insert a new row into the 'users' table with the columns 'name' and 'age' and the values 'John' and 30:
-            _insert('users', 'name, age', "'John', 30")
+            # Inserting a new row into the 'users' table
+            db_client._insert(
+                table_name='users',
+                columns=('username', 'email'),
+                values=('john_doe', 'john_doe@example.com')
+            )
         """
         try:
             sql_query = f"INSERT INTO {table_name} ({columns}) VALUES (%s)"
@@ -413,7 +417,7 @@ class DatabaseClient:
     def _select(
         self,
         table_name: str = None,
-        columns: str = None,
+        columns: tuple = None,
         condition: str = None,
         order_by: str = None,
         limit: int = 1
@@ -423,9 +427,9 @@ class DatabaseClient:
 
         Args:
             table_name (str): The name of the table to select data from.
-            columns (str): The columns to select data from.
-            condition (str): The condition to filter the data by.
-            order_by (str): The column to order the data by.
+            columns (tuple): A tuple containing the names of the columns to select.
+            condition (str): The condition to use to select the data.
+            order_by (str): The column to use for ordering the data.
             limit (int): The maximum number of rows to return.
 
         Returns:
@@ -434,12 +438,10 @@ class DatabaseClient:
             None: If no data is found.
 
         Examples:
-            >>> db = Database()
-            >>> db._select("users", "username, email", "age > 18")
-            [('john_doe', 'john_doe@example.com'), ('jane_doe', 'jane_doe@example.com')]
+            >>> _select('users', ('id', 'username', 'email'), "username='john_doe'", "id", 1)
         """
         # base query
-        sql_query = f"SELECT {columns} FROM {table_name}"
+        sql_query = f"SELECT {', '.join(columns)} FROM {table_name}"
         if condition:
             sql_query += f" WHERE {condition}"
         if order_by:
@@ -556,16 +558,16 @@ class DatabaseClient:
         self._insert(
             table_name='queue',
             columns=(
-                'user_id, '
-                'post_id, '
-                'post_url, '
-                'post_owner, '
-                'link_type, '
-                'message_id, '
-                'chat_id, '
-                'scheduled_time, '
-                'download_status, '
-                'upload_status'
+                "user_id",
+                "post_id",
+                "post_url",
+                "post_owner",
+                "link_type",
+                "message_id",
+                "chat_id",
+                "scheduled_time",
+                "download_status",
+                "upload_status"
             ),
             values=(
                 data.get('user_id', None),
@@ -602,7 +604,7 @@ class DatabaseClient:
         """
         message = self._select(
             table_name='queue',
-            columns='*',
+            columns=("*"),
             condition=f"scheduled_time <= '{scheduled_time}' AND state IN ('waiting', 'processing')",
             limit=1
         )
@@ -649,13 +651,24 @@ class DatabaseClient:
         if state == 'processed':
             processed_message = self._select(
                 table_name='queue',
-                columns='*',
+                columns=("*"),
                 condition=f"post_id = '{post_id}'",
                 limit=1
             )
             self._insert(
                 table_name='processed',
-                columns='user_id, post_id, post_url, post_owner, link_type, message_id, chat_id, download_status, upload_status, state',
+                columns=(
+                    "user_id",
+                    "post_id",
+                    "post_url",
+                    "post_owner",
+                    "link_type",
+                    "message_id",
+                    "chat_id",
+                    "download_status",
+                    "upload_status",
+                    "state"
+                ),
                 values=(
                     processed_message[0][1],
                     processed_message[0][2],
@@ -706,7 +719,7 @@ class DatabaseClient:
         result = {}
         queue = self._select(
             table_name='queue',
-            columns='post_id, scheduled_time',
+            columns=("post_id", "scheduled_time"),
             condition=f"user_id = '{user_id}'",
             limit=100
         )
@@ -747,7 +760,7 @@ class DatabaseClient:
         result = {}
         processed = self._select(
             table_name='processed',
-            columns='post_id, timestamp, state',
+            columns=("post_id", "timestamp", "state"),
             condition=f"user_id = '{user_id}'",
             order_by='timestamp DESC',
             limit=10
@@ -833,13 +846,13 @@ class DatabaseClient:
         """
         queue = self._select(
             table_name='queue',
-            columns='id',
+            columns=("id",)
             condition=f"post_id = '{post_id}' AND user_id = '{user_id}'",
             limit=1
         )
         processed = self._select(
             table_name='processed',
-            columns='id',
+            columns=("id",)
             condition=f"post_id = '{post_id}' AND user_id = '{user_id}'",
             limit=1
         )
@@ -876,7 +889,7 @@ class DatabaseClient:
         message_content_base64 = base64.b64encode(str(message_content).encode('utf-8'))
         check_exist_message_type = self._select(
             table_name='messages',
-            columns='id, message_id',
+            columns=("id", "message_id"),
             condition=f"message_type = '{message_type}' AND chat_id = '{chat_id}'",
         )
         if check_exist_message_type:
@@ -893,7 +906,7 @@ class DatabaseClient:
         else:
             self._insert(
                 table_name='messages',
-                columns='message_id, chat_id, message_type, message_content_base64, producer',
+                columns=("message_id", "chat_id", "message_type", "message_content_base64", "producer"),
                 values=(message_id, chat_id, message_type, message_content_base64, producer)
             )
             response = f"{message_id} kept"
@@ -918,13 +931,13 @@ class DatabaseClient:
             >>> add_user('12345')
             '12345 added'
         """
-        exist_user = self._select(table_name='users', columns='user_id', condition=f"user_id = '{user_id}'")
+        exist_user = self._select(table_name='users', columns=("user_id"), condition=f"user_id = '{user_id}'")
         if user_id in exist_user[0]:
             result = f"{user_id} already exists"
         else:
             self._insert(
                 table_name='users',
-                columns='chat_id, user_id',
+                columns=("chat_id", "user_id"),
                 values=(chat_id, user_id)
             )
             result = f"{user_id} added"
@@ -949,7 +962,7 @@ class DatabaseClient:
         """
         users = self._select(
             table_name='users',
-            columns='user_id, chat_id',
+            columns=("user_id", "chat_id"),
         )
         return users if users else None
 
@@ -975,7 +988,7 @@ class DatabaseClient:
         """
         message = self._select(
             table_name='messages',
-            columns='message_id, chat_id, timestamp, message_content_base64',
+            columns=("message_id", "chat_id", "timestamp", "message_content_base64"),
             condition=f"message_type = '{message_type}' AND chat_id = '{chat_id}'",
             limit=1
         )
