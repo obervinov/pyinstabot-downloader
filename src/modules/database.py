@@ -846,7 +846,7 @@ class DatabaseClient:
         """
         queue = self._select(
             table_name='queue',
-            columns=("id",)
+            columns=("id"),
             condition=f"post_id = '{post_id}' AND user_id = '{user_id}'",
             limit=1
         )
