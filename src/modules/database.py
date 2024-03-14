@@ -441,7 +441,7 @@ class DatabaseClient:
             >>> _select('users', ('id', 'username', 'email'), "username='john_doe'", "id", 1)
         """
         # base query
-        sql_query = f"SELECT {', '.join(columns)} FROM {table_name}"
+        sql_query = f"SELECT {', '.join(map(str, columns))} FROM {table_name}"
         if condition:
             sql_query += f" WHERE {condition}"
         if order_by:
@@ -928,8 +928,10 @@ class DatabaseClient:
             str: A message indicating that the user was added to the users table or that the user already exists.
 
         Examples:
-            >>> add_user('12345')
+            >>> add_user(user_id='12345', chat_id='67890')
             '12345 added'
+                or
+            '12345 already exists'
         """
         exist_user = self._select(table_name='users', columns=("user_id"), condition=f"user_id = '{user_id}'")
         if user_id in exist_user[0]:
