@@ -202,7 +202,7 @@ class DatabaseClient:
             }
         ]
         table_name = 'locks'
-        columns = ("name", "behavior", "description", "caused_by", "tip")
+        columns = ("name", "behavior", "description", "caused_by", "tip",)
         for lock in locks:
             check_exist_lock = self._select(
                 table_name=table_name,
@@ -441,7 +441,7 @@ class DatabaseClient:
             >>> _select('users', ('id', 'username', 'email'), "username='john_doe'", "id", 1)
         """
         # base query
-        sql_query = f"SELECT {', '.join(map(str, columns))} FROM {table_name}"
+        sql_query = f"SELECT {', '.join(columns)} FROM {table_name}"
         if condition:
             sql_query += f" WHERE {condition}"
         if order_by:
@@ -604,7 +604,7 @@ class DatabaseClient:
         """
         message = self._select(
             table_name='queue',
-            columns=("*"),
+            columns=("*",),
             condition=f"scheduled_time <= '{scheduled_time}' AND state IN ('waiting', 'processing')",
             limit=1
         )
@@ -651,7 +651,7 @@ class DatabaseClient:
         if state == 'processed':
             processed_message = self._select(
                 table_name='queue',
-                columns=("*"),
+                columns=("*",),
                 condition=f"post_id = '{post_id}'",
                 limit=1
             )
@@ -846,13 +846,13 @@ class DatabaseClient:
         """
         queue = self._select(
             table_name='queue',
-            columns=("id"),
+            columns=("id",),
             condition=f"post_id = '{post_id}' AND user_id = '{user_id}'",
             limit=1
         )
         processed = self._select(
             table_name='processed',
-            columns=("id"),
+            columns=("id",),
             condition=f"post_id = '{post_id}' AND user_id = '{user_id}'",
             limit=1
         )
@@ -933,7 +933,7 @@ class DatabaseClient:
                 or
             '12345 already exists'
         """
-        exist_user = self._select(table_name='users', columns=("user_id"), condition=f"user_id = '{user_id}'")
+        exist_user = self._select(table_name='users', columns=("user_id",), condition=f"user_id = '{user_id}'")
         if user_id in exist_user[0]:
             result = f"{user_id} already exists"
         else:
@@ -990,7 +990,7 @@ class DatabaseClient:
         """
         message = self._select(
             table_name='messages',
-            columns=("message_id", "chat_id", "timestamp", "message_content_base64"),
+            columns=("message_id", "chat_id", "timestamp", "message_content_base64",),
             condition=f"message_type = '{message_type}' AND chat_id = '{chat_id}'",
             limit=1
         )
