@@ -228,11 +228,12 @@ def update_status_message(
     chat_id = user_id
     exist_status_message = database.get_considered_message(message_type='status_message', chat_id=chat_id)
     message_statuses = get_message_statuses(user_id=user_id)
-    diff_between_messages = False
+    log.warning("Chat ID: %s\nUser ID: %s\nExist status message: %s\nMessage statuses: %s", chat_id, user_id, exist_status_message, message_statuses)
+    diff_between_messages = True
 
     # check difference between messages content
-    if exist_status_message and exist_status_message[3] not in base64.b64encode(str(message_statuses).encode('utf-8')):
-        diff_between_messages = True
+    if exist_status_message and exist_status_message[3] in base64.b64encode(str(message_statuses).encode('utf-8')):
+        diff_between_messages = False
 
     # if message already sended and expiring (because bot can edit message only first 48 hours)
     # automatic renew message every 23 hours
