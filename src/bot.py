@@ -226,9 +226,10 @@ def update_status_message(
         None
     """
     chat_id = user_id
+    log.warning(chat_id)
+    log.warning(user_id)
     exist_status_message = database.get_considered_message(message_type='status_message', chat_id=chat_id)
     message_statuses = get_message_statuses(user_id=user_id)
-    log.warning("Chat ID: %s\nUser ID: %s\nExist status message: %s\nMessage statuses: %s", chat_id, user_id, exist_status_message, message_statuses)
     diff_between_messages = True
 
     # check difference between messages content
