@@ -226,8 +226,6 @@ def update_status_message(
         None
     """
     chat_id = user_id
-    log.warning(chat_id)
-    log.warning(user_id)
     exist_status_message = database.get_considered_message(message_type='status_message', chat_id=chat_id)
     message_statuses = get_message_statuses(user_id=user_id)
     diff_between_messages = True
@@ -459,7 +457,8 @@ def status_message_updater() -> None:
             time.sleep(STATUSES_MESSAGE_FREQUENCY)
             if database.users_list():
                 for user in database.users_list():
-                    update_status_message(user_id=user)
+                    user_id = user[0]
+                    update_status_message(user_id=user_id)
         # pylint: disable=broad-exception-caught
         except Exception as exception:
             log.error('[Status-message-updater-thread-1] exception context: %s', exception)
