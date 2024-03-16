@@ -12,6 +12,7 @@ from logger import log
 from messages import Messages
 from telegram import TelegramBot
 from users import Users
+from vault import VaultClient
 # pylint: disable=unused-import
 # flake8: noqa
 from configs.constants import (
