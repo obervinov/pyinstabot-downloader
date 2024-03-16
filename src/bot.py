@@ -15,6 +15,7 @@ from vault import VaultClient
 # from modules.downloader import Downloader
 # from modules.uploader import Uploader
 from modules.database import DatabaseClient
+from exceptions import FailedMessagesStatusUpdater
 # pylint: disable=unused-import
 # flake8: noqa
 from configs.constants import (
@@ -461,7 +462,14 @@ def status_message_updater() -> None:
                     update_status_message(user_id=user_id)
         # pylint: disable=broad-exception-caught
         except Exception as exception:
-            log.error('[Status-message-updater-thread-1] exception context: %s', exception)
+            exception_context = {
+                'call': threading.current_thread().name,
+                'message': 'Failed to update the message with the status of received messages ',
+                'users_list': database.users_list(),
+                'user': user,
+                'exception': exception
+            }
+            raise FailedMessagesStatusUpdater(exception_context)
 
 
 def queue_handler() -> None:
