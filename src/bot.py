@@ -7,6 +7,7 @@ import threading
 import time
 import base64
 from datetime import datetime, timedelta
+from modules.exceptions import FailedMessagesStatusUpdater
 from logger import log
 from telegram import TelegramBot
 from users import Users
@@ -15,7 +16,6 @@ from vault import VaultClient
 # from modules.downloader import Downloader
 # from modules.uploader import Uploader
 from modules.database import DatabaseClient
-from exceptions import FailedMessagesStatusUpdater
 # pylint: disable=unused-import
 # flake8: noqa
 from configs.constants import (
