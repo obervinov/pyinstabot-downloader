@@ -2,20 +2,16 @@
 This module contains the main code for the bot
 to work and contains the main logic linking the additional modules.
 """
+import base64
+from datetime import datetime, timedelta
 import re
 import threading
 import time
-import base64
-from datetime import datetime, timedelta
+
 from logger import log
+from messages import Messages
 from telegram import TelegramBot
 from users import Users
-from messages import Messages
-from modules.exceptions import FailedMessagesStatusUpdater
-from vault import VaultClient
-# from modules.downloader import Downloader
-# from modules.uploader import Uploader
-from modules.database import DatabaseClient
 # pylint: disable=unused-import
 # flake8: noqa
 from configs.constants import (
@@ -23,6 +19,11 @@ from configs.constants import (
     QUEUE_FREQUENCY, STATUSES_MESSAGE_FREQUENCY,
     TEMPORARY_DIR, STORAGE_TYPE, STORAGE_EXCLUDE_TYPE, INSTAGRAM_SESSION, INSTAGRAM_USERAGENT
 )
+from modules.database import DatabaseClient
+from modules.exceptions import FailedMessagesStatusUpdater
+# from modules.downloader import Downloader
+# from modules.uploader import Uploader
+
 
 
 # init instances
@@ -469,7 +470,7 @@ def status_message_updater() -> None:
                 'user': user,
                 'exception': exception
             }
-            raise FailedMessagesStatusUpdater(exception_context)
+            raise FailedMessagesStatusUpdater(exception_context) from exception
 
 
 def queue_handler() -> None:
