@@ -240,7 +240,7 @@ class DatabaseClient:
                 'timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, '
                 'message_type VARCHAR(255) NOT NULL , '
                 'producer VARCHAR(255) NOT NULL , '
-                'message_content_base64 TEXT NOT NULL'
+                'message_content_base64 VARCHAR(1000) NOT NULL'
             )
         )
         # Create a table to keep users in the database
