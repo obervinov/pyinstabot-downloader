@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 import re
 import threading
 import time
+import json
 
 from logger import log
 from messages import Messages
@@ -234,7 +235,7 @@ def update_status_message(
     diff_between_messages = True
     if exist_status_message:
         # check difference between messages content
-        if exist_status_message[3] in base64.b64encode(str(message_statuses).encode('utf-8')):
+        if exist_status_message[3] in base64.b64encode(json.dumps(message_statuses).encode('utf-8')):
             diff_between_messages = False
 
         # if message already sended and expiring (because bot can edit message only first 48 hours)
