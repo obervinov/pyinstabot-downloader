@@ -2,10 +2,11 @@
 import os
 import sys
 import importlib
-import hashlib
+import json
 from typing import Union
 import psycopg2
 from logger import log
+from .tools import get_hash
 
 
 class DatabaseClient:
@@ -108,151 +109,27 @@ class DatabaseClient:
             >>> db = Database()
             >>> db._prepare_db()
         """
-        # Create a table for the message queue
-        # Messages received by the bot are placed in this table for further processing
-        # at the specified time by a separate thread
-        log.info('[class.%s] Preparing database: table \'queue\'...', __class__.__name__)
-        self._create_table(
-            table_name='queue',
-            columns=(
-                'id SERIAL PRIMARY KEY, '
-                'user_id VARCHAR(255) NOT NULL, '
-                'post_id VARCHAR(255) NOT NULL, '
-                'post_url VARCHAR(255) NOT NULL, '
-                'post_owner VARCHAR(255) NOT NULL, '
-                'link_type VARCHAR(255) NOT NULL DEFAULT \'post\', '
-                'message_id VARCHAR(255) NOT NULL, '
-                'chat_id VARCHAR(255) NOT NULL, '
-                'scheduled_time TIMESTAMP NOT NULL, '
-                'download_status VARCHAR(255) NOT NULL DEFAULT \'not started\', '
-                'upload_status VARCHAR(255) NOT NULL DEFAULT \'not started\', '
-                'timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, '
-                'state VARCHAR(255) NOT NULL DEFAULT \'waiting\''
+        with open('configs/databases.json', encoding='UTF-8') as config_file:
+            database_init_configuration = json.load(config_file)
+
+        # Create database if does not exist
+        for table in database_init_configuration['Tables']:
+            log.info('[class.%s] Preparing database: table `%s`...', __class__.__name__, table['name'])
+            self._create_table(
+                table_name=table['name'],
+                columns="".join(f"{column}" for column in table['columns'])
             )
-        )
-        # Create a table for the message processed
-        # After processing from the queue, the record should be moved to this table
-        # and enriched with additional data
-        log.info('[class.%s] Preparing database: table \'processed\'...', __class__.__name__)
-        self._create_table(
-            table_name='processed',
-            columns=(
-                'id SERIAL PRIMARY KEY, '
-                'user_id VARCHAR(255) NOT NULL, '
-                'post_id VARCHAR(255) NOT NULL, '
-                'post_url VARCHAR(255) NOT NULL, '
-                'post_owner VARCHAR(255) NOT NULL, '
-                'link_type VARCHAR(255) NOT NULL DEFAULT \'post\', '
-                'message_id VARCHAR(255) NOT NULL, '
-                'chat_id VARCHAR(255) NOT NULL, '
-                'download_status VARCHAR(255) NOT NULL, '
-                'upload_status VARCHAR(255) NOT NULL, '
-                'timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, '
-                'state VARCHAR(255) NOT NULL DEFAULT \'processed\''
+            log.info('[class.%s] Preparing database: table `%s` has been created', __class__.__name__, table['name'])
+
+        # Data seeding
+        for data in database_init_configuration['DataSeeding']:
+            log.info('[class.%s] Preparing database: data seeding for table `%s`...', __class__.__name__, data['table'])
+            self._insert(
+                table_name=data['table'],
+                columns=tuple(data['data'].keys()),
+                values=tuple(data['data'].values())
             )
-        )
-        # Create a table for service migrations when updating the service
-        # The table stores the name of the migration and its version
-        log.info('[class.%s] Preparing database: table \'migrations\'...', __class__.__name__)
-        self._create_table(
-            table_name='migrations',
-            columns=(
-                'id SERIAL PRIMARY KEY, '
-                'name VARCHAR(255) NOT NULL,'
-                'version VARCHAR(255) NOT NULL, '
-                'timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP'
-            )
-        )
-        # Create a table for blocking exceptions (locks)
-        # This table will record the locks caused by various exceptions when the bot is running.
-        # These locks will block various bot functionality until manual intervention.
-        log.info('[class.%s] Preparing database: table \'locks\'...', __class__.__name__)
-        self._create_table(
-            table_name='locks',
-            columns=(
-                'id SERIAL PRIMARY KEY, '
-                'name VARCHAR(255) NOT NULL,'
-                'behavior VARCHAR(255) NOT NULL, '
-                'enabled BOOLEAN NOT NULL DEFAULT FALSE, '
-                'description VARCHAR(255) NOT NULL, '
-                'caused_by VARCHAR(255) NOT NULL, '
-                'tip VARCHAR(255) NOT NULL, '
-                'timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP'
-            )
-        )
-        # Add kind of locks to the table
-        # The table stores the name of the lock and its description
-        log.info('[class.%s] Preparing database: add system records to table \'locks\'...', __class__.__name__)
-        # Dictionary of locks for the table
-        locks = [
-            {
-                'name': 'Unauthorized',
-                'behavior': 'block:downloader_class',
-                'description': 'Locks the post downloading functionality',
-                'caused_by': '401:unauthorized',
-                'tip': 'Instagram session expired, invalid credentials or account is blocked'
-            },
-            {
-                'name': 'BadRequest',
-                'behavior': 'block:downloader_class:post_link',
-                'description': 'Locks the specified post downloading functionality',
-                'caused_by': '400:badrequest',
-                'tip': 'When trying to upload content, an error occurs with an invalid request'
-            }
-        ]
-        table_name = 'locks'
-        columns = ("name", "behavior", "description", "caused_by", "tip",)
-        for lock in locks:
-            check_exist_lock = self._select(
-                table_name=table_name,
-                columns=columns,
-                condition=f"name = '{lock['name']}'"
-            )
-            if not check_exist_lock:
-                self._insert(
-                    table_name=table_name,
-                    columns=columns,
-                    values=(
-                        lock['name'],
-                        lock['behavior'],
-                        lock['description'],
-                        lock['caused_by'],
-                        lock['tip'],
-                    )
-                )
-            else:
-                log.info(
-                    '[class.%s] The lock %s has already been added to the table %s and was skipped',
-                    __class__.__name__,
-                    lock['name'],
-                    table_name
-                )
-        # Create a table to keep track of the bot's messages
-        # The table stores the message ID and the chat ID
-        log.info('[class.%s] Preparing database: table \'messages\'...', __class__.__name__)
-        self._create_table(
-            table_name='messages',
-            columns=(
-                'id SERIAL PRIMARY KEY, '
-                'message_id VARCHAR(255) NOT NULL, '
-                'chat_id VARCHAR(255) NOT NULL, '
-                'timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, '
-                'message_type VARCHAR(255) NOT NULL , '
-                'producer VARCHAR(255) NOT NULL , '
-                'message_content_hash VARCHAR(64) NOT NULL'
-            )
-        )
-        # Create a table to keep users in the database
-        # The table stores the chat ID, the user ID
-        log.info('[class.%s] Preparing database: table \'users\'...', __class__.__name__)
-        self._create_table(
-            table_name='users',
-            columns=(
-                'id SERIAL PRIMARY KEY, '
-                'chat_id VARCHAR(255) NOT NULL, '
-                'user_id VARCHAR(255) NOT NULL'
-            )
-        )
+            log.info('[class.%s] Preparing database: data seeding for table `%s` has been completed', __class__.__name__, data['table'])
 
     def _migrations(self) -> None:
         """
@@ -885,7 +762,7 @@ class DatabaseClient:
             >>> keep_message('12345', '67890', 'bot', 'status_message', 'Hello, username\n...')
             '12345 kept' or '12345 updated'
         """
-        message_content_hash = self.get_hash(message_content)
+        message_content_hash = get_hash(message_content)
         check_exist_message_type = self._select(
             table_name='messages',
             columns=("id", "message_id"),
@@ -994,24 +871,3 @@ class DatabaseClient:
             limit=1
         )
         return message[0] if message else None
-
-    def get_hash(
-        self,
-        data: Union[str, dict] = None
-    ) -> str:
-        """
-        Get a hash of the data.
-
-        Args:
-            data (Union[str, dict]): The data to hash.
-
-        Returns:
-            str: A hash of the content.
-
-        Examples:
-            >>> get_hash('Hello, world!')
-            '2ef7bde608ce5404e97d5f042f95f89f1c232871d3d7'
-        """
-        hasher = hashlib.sha256()
-        hasher.update(data.encode('utf-8'))
-        return hasher.hexdigest()

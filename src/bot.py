@@ -6,7 +6,6 @@ from datetime import datetime, timedelta
 import re
 import threading
 import time
-import json
 
 from logger import log
 from messages import Messages
@@ -22,6 +21,7 @@ from configs.constants import (
 )
 from modules.database import DatabaseClient
 from modules.exceptions import FailedMessagesStatusUpdater
+from modules.tools import get_hash
 # from modules.downloader import Downloader
 # from modules.uploader import Uploader
 
@@ -235,7 +235,7 @@ def update_status_message(
         diff_between_messages = True
         if exist_status_message:
             # check difference between messages content
-            if exist_status_message[3] == database.get_hash(message_statuses):
+            if exist_status_message[3] == get_hash(message_statuses):
                 diff_between_messages = False
 
             # if message already sended and expiring (because bot can edit message only first 48 hours)
