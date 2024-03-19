@@ -3,7 +3,7 @@
 import os
 import sys
 import importlib
-import base64
+import hashlib
 from typing import Union
 import psycopg2
 from logger import log
@@ -240,7 +240,7 @@ class DatabaseClient:
                 'timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, '
                 'message_type VARCHAR(255) NOT NULL , '
                 'producer VARCHAR(255) NOT NULL , '
-                'message_content_base64 VARCHAR(10000) NOT NULL'
+                'message_content_hash VARCHAR(64) NOT NULL'
             )
         )
         # Create a table to keep users in the database
@@ -867,7 +867,7 @@ class DatabaseClient:
         chat_id: str = None,
         producer: str = 'bot',
         message_type: str = None,
-        message_content: str = None
+        message_content: Union[str, dict] = None
     ) -> str:
         """
         Add a message to the messages table in the database.
@@ -877,7 +877,7 @@ class DatabaseClient:
             chat_id (str): The ID of the chat.
             producer (str): The name of the producer of the message.
             message_type (str): The type of the message.
-            message_content (str): The content of the message.
+            message_content (Union[str, dict]): The content of the message.
 
         Returns:
             str: A message indicating that the message was added to the messages table.
@@ -886,7 +886,7 @@ class DatabaseClient:
             >>> keep_message('12345', '67890', 'bot', 'status_message', 'Hello, username\n...')
             '12345 kept' or '12345 updated'
         """
-        message_content_base64 = base64.b64encode(str(message_content).encode('utf-8'))
+        message_content_hash = self.get_hash(message_content)
         check_exist_message_type = self._select(
             table_name='messages',
             columns=("id", "message_id"),
@@ -896,7 +896,7 @@ class DatabaseClient:
             self._update(
                 table_name='messages',
                 values=(
-                    f"message_content_base64 = '{message_content_base64}', "
+                    f"message_content_hash = '{message_content_hash}', "
                     f"message_id = '{message_id}', "
                     f"timestamp = CURRENT_TIMESTAMP()"
                 ),
@@ -906,8 +906,8 @@ class DatabaseClient:
         else:
             self._insert(
                 table_name='messages',
-                columns=("message_id", "chat_id", "message_type", "message_content_base64", "producer"),
-                values=(message_id, chat_id, message_type, message_content_base64, producer)
+                columns=("message_id", "chat_id", "message_type", "message_content_hash", "producer"),
+                values=(message_id, chat_id, message_type, message_content_hash, producer)
             )
             response = f"{message_id} kept"
         return response
@@ -985,13 +985,34 @@ class DatabaseClient:
 
         Examples:
             >>> current_message_id(message_type='status_message', chat_id='12345')
-            # ('message_id', 'chat_id', 'timestamp', 'message_content_base64')
-            ('123456789', '12345', datetime.datetime(2023, 11, 14, 21, 14, 26, 680024), 'SGVsbG8sIHVzZXJuYW1lCg==')
+            # ('message_id', 'chat_id', 'timestamp', 'message_content_hash')
+            ('123456789', '12345', datetime.datetime(2023, 11, 14, 21, 14, 26, 680024), '2ef7bde608ce5404e97d5f042f95f89f1c232871d3d7')
         """
         message = self._select(
             table_name='messages',
-            columns=("message_id", "chat_id", "timestamp", "message_content_base64",),
+            columns=("message_id", "chat_id", "timestamp", "message_content_hash",),
             condition=f"message_type = '{message_type}' AND chat_id = '{chat_id}'",
             limit=1
         )
         return message[0] if message else None
+
+    def get_hash(
+        self,
+        data: Union[str, dict] = None
+    ) -> str:
+        """
+        Get a hash of the data.
+
+        Args:
+            data (Union[str, dict]): The data to hash.
+
+        Returns:
+            str: A hash of the content.
+
+        Examples:
+            >>> get_hash('Hello, world!')
+            '2ef7bde608ce5404e97d5f042f95f89f1c232871d3d7'
+        """
+        hasher = hashlib.sha256()
+        hasher.update(data.encode('utf-8'))
+        return hasher.hexdigest()

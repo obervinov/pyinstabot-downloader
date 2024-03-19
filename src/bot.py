@@ -2,7 +2,6 @@
 This module contains the main code for the bot
 to work and contains the main logic linking the additional modules.
 """
-import base64
 from datetime import datetime, timedelta
 import re
 import threading
@@ -236,7 +235,7 @@ def update_status_message(
         diff_between_messages = True
         if exist_status_message:
             # check difference between messages content
-            if exist_status_message[3] in base64.b64encode(json.dumps(message_statuses).encode('utf-8')):
+            if exist_status_message[3] == database.get_hash(message_statuses):
                 diff_between_messages = False
 
             # if message already sended and expiring (because bot can edit message only first 48 hours)
