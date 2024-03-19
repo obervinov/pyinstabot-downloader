@@ -109,7 +109,7 @@ class DatabaseClient:
             >>> db = Database()
             >>> db._prepare_db()
         """
-        with open('configs/databases.json', encoding='UTF-8') as config_file:
+        with open('../configs/databases.json', encoding='UTF-8') as config_file:
             database_init_configuration = json.load(config_file)
 
         # Create database if does not exist
