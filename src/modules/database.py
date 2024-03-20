@@ -1,6 +1,5 @@
 """This module contains a class for interacting with a PostgreSQL database using psycopg2."""
 import os
-import sys
 import importlib
 import json
 from typing import Union
