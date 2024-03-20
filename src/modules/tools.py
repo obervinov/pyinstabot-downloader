@@ -20,5 +20,7 @@ def get_hash(
         '2ef7bde608ce5404e97d5f042f95f89f1c232871d3d7'
     """
     hasher = hashlib.sha256()
+    if isinstance(data, dict):
+        data = str(data)
     hasher.update(data.encode('utf-8'))
     return hasher.hexdigest()
