@@ -109,7 +109,7 @@ class DatabaseClient:
             >>> db = Database()
             >>> db._prepare_db()
         """
-        configuration_path = os.path.abspath(os.path.join(os.getcwd(), '../configs/databases.json'))
+        configuration_path = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '../configs/databases.json'))
         with open(configuration_path, encoding='UTF-8') as config_file:
             database_init_configuration = json.load(config_file)
 
@@ -153,9 +153,7 @@ class DatabaseClient:
             '[class.%s] Reading database migrations...',
             __class__.__name__
         )
-        sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../migrations')))
         migrations_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../migrations'))
-
         for migration_file in os.listdir(migrations_dir):
             log.info(
                 '[class.%s] Executing migration: %s...',
