@@ -423,17 +423,18 @@ def process_one_post(
                 data['scheduled_time'] = datetime.now()
             else:
                 data['scheduled_time'] = time_to_process
-            log.debug(data['scheduled_time'])
+
             if database.check_message_uniqueness(data['post_id'], data['user_id']):
-                if mode == 'single':
-                    bot.delete_message(message.chat.id, message.id)
-                    if help_message is not None:
-                        bot.delete_message(message.chat.id, help_message.id)
                 _ = database.add_message_to_queue(data)
                 update_status_message(user_id=message.chat.id)
                 log.info('[Bot]: Post link %s for user %s added in queue', message.text, message.chat.id)
             else:
                 log.info('[Bot]: Post %s for user %s already in queue or processed', data['post_id'], message.chat.id)
+
+            if mode == 'single':
+                bot.delete_message(message.chat.id, message.id)
+                if help_message is not None:
+                    bot.delete_message(message.chat.id, help_message.id)
     else:
         telegram.send_styled_message(
             chat_id=message.chat.id,
