@@ -268,14 +268,13 @@ def update_status_message(
                     '[Bot]: Message with type `status_message` for user %s is outdated (old: %s, new: %s), updating...',
                     user_id, exist_status_message[3], get_hash(message_statuses)
                 )
-                editable_message = bot.edit_message_text(
+                editable_message = telegram.send_styled_message(
                     chat_id=chat_id,
-                    message_id=exist_status_message[0],
-                    text=messages.render_template(
-                        template_alias='message_statuses',
-                        processed=message_statuses['processed'],
-                        queue=message_statuses['queue']
-                    )
+                    messages_template={
+                        'alias': 'message_statuses',
+                        'kwargs': message_statuses
+                    },
+                    editable_message_id=exist_status_message[0]
                 )
                 database.keep_message(
                     message_id=editable_message.message_id,
@@ -432,9 +431,9 @@ def process_one_post(
                 log.info('[Bot]: Post %s for user %s already in queue or processed', data['post_id'], message.chat.id)
 
             if mode == 'single':
-                bot.delete_message(message.chat.id, message.id)
+                telegram.delete_message(message.chat.id, message.id)
                 if help_message is not None:
-                    bot.delete_message(message.chat.id, help_message.id)
+                    telegram.delete_message(message.chat.id, help_message.id)
     else:
         telegram.send_styled_message(
             chat_id=message.chat.id,
@@ -469,9 +468,9 @@ def process_list_posts(
                 help_message=help_message,
                 mode='list'
             )
-        bot.delete_message(message.chat.id, message.id)
+        telegram.delete_message(message.chat.id, message.id)
         if help_message is not None:
-            bot.delete_message(message.chat.id, help_message.id)
+            telegram.delete_message(message.chat.id, help_message.id)
     else:
         telegram.send_styled_message(
             chat_id=message.chat.id,

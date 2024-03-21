@@ -812,7 +812,7 @@ vault = {git = "https://github.com/obervinov/vault-package.git", tag = "v2.0.4"}
 type = "git"
 url = "https://github.com/obervinov/telegram-package.git"
 reference = "release/v1.2.0"
-resolved_reference = "30e8076ec29fc2db0fa7569634ce553be17f696b"
+resolved_reference = "42c8ae99d55db5a796999291a4c89d1c77f55f4f"
 
 [[package]]
 name = "tenacity"
