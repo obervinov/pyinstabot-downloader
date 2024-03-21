@@ -232,11 +232,11 @@ def update_status_message(
         chat_id = user_id
         exist_status_message = database.get_considered_message(message_type='status_message', chat_id=chat_id)
         message_statuses = get_message_statuses(user_id=user_id)
-        diff_between_messages = True
+        diff_between_messages = False
         if exist_status_message:
             # check difference between messages content
-            if exist_status_message[3] == get_hash(message_statuses):
-                diff_between_messages = False
+            if exist_status_message[3] != get_hash(message_statuses):
+                diff_between_messages = True
 
             # if message already sended and expiring (because bot can edit message only first 48 hours)
             # automatic renew message every 23 hours
@@ -329,7 +329,7 @@ def get_message_statuses(
     if queue_dict is not None:
         sorted_data = sorted(queue_dict[user_id], key=lambda x: x['scheduled_time'], reverse=False)
         for item in sorted_data:
-            queue_string = queue_string + f"+ <code>{item['post_id']}: {item['scheduled_time']}</code>\n"
+            queue_string = queue_string + f"+ <code>{item['post_id']}: will be started {item['scheduled_time']}</code>\n"
     else:
         queue_string = '<code>queue is empty</code>'
 
