@@ -406,7 +406,6 @@ def process_one_post(
     user = users_rl.user_access_check(message.chat.id, ROLES_MAP['Post'])
     if user.get('permissions', None) == users_rl.user_status_allow:
         data = post_link_message_parser(message)
-        log.debug(user)
         time_to_process = user.get('rate_limits', {}).get('end_time', None)
 
         if data:

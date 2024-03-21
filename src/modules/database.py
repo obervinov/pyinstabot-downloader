@@ -447,8 +447,8 @@ class DatabaseClient:
                 data.get('message_id', None),
                 data.get('chat_id', None),
                 data.get('scheduled_time', None),
-                data.get('download_status', None),
-                data.get('upload_status', None),
+                data.get('download_status', 'not started'),
+                data.get('upload_status', 'not started'),
             )
         )
         return f"{data.get('message_id', None)}: added to queue"
