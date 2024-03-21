@@ -268,7 +268,7 @@ def update_status_message(
                     '[Bot]: Message with type `status_message` for user %s is outdated (old: %s, new: %s), updating...',
                     user_id, exist_status_message[3], get_hash(message_statuses)
                 )
-                _ = bot.edit_message_text(
+                editable_message = bot.edit_message_text(
                     chat_id=chat_id,
                     message_id=exist_status_message[0],
                     text=messages.render_template(
@@ -278,8 +278,8 @@ def update_status_message(
                     )
                 )
                 database.keep_message(
-                    message_id=status_message.message_id,
-                    chat_id=status_message.chat.id,
+                    message_id=editable_message.message_id,
+                    chat_id=editable_message.chat.id,
                     message_type='status_message',
                     message_content=message_statuses
                 )
@@ -482,7 +482,8 @@ def process_list_posts(
 # END BLOCK PROCESSING FUNCTIONS ####################################################################################################
 
 
-def status_message_updater() -> None:
+# SPECIFIED THREADS ###############################################################################################################
+def status_message_updater_thread() -> None:
     """
     The handler for the status message.
 
@@ -512,7 +513,7 @@ def status_message_updater() -> None:
             raise FailedMessagesStatusUpdater(exception_context) from exception
 
 
-def queue_handler() -> None:
+def queue_handler_thread() -> None:
     """
     The handler for the queue of posts to be processed.
 
@@ -572,6 +573,7 @@ def queue_handler() -> None:
                         upload_status=upload_status
                     )
                     log.info('[Queue-thread-1] The URL of the post %s has been processed', post_id)
+# SPECIFIED THREADS ###############################################################################################################
 
 
 def main():
@@ -585,10 +587,10 @@ def main():
         None
     """
     # Thread for processing queue
-    thread_queue_handler = threading.Thread(target=queue_handler, args=(), name="Thread-queue-handler-1")
-    thread_queue_handler.start()
+    thread_queue_handler_thread = threading.Thread(target=queue_handler_thread, args=(), name="Thread-queue-handler-1")
+    thread_queue_handler_thread.start()
     # Thread for update status message
-    thread_status_message = threading.Thread(target=status_message_updater, args=(), name="Thread-status-message-updater-1")
+    thread_status_message = threading.Thread(target=status_message_updater_thread, args=(), name="Thread-status-message-updater-1")
     thread_status_message.start()
     # Run bot
     telegram.launch_bot()
