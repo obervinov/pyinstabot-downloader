@@ -264,6 +264,10 @@ def update_status_message(
                 )
                 log.info('[Bot]: Message with type `status_message` for user %s has been renewed', user_id)
             elif message_statuses is not None and diff_between_messages:
+                log.info(
+                    '[Bot]: Message with type `status_message` for user %s is outdated (old: %s, new: %s), updating...',
+                    user_id, exist_status_message[3], get_hash(message_statuses)
+                )
                 _ = bot.edit_message_text(
                     chat_id=chat_id,
                     message_id=exist_status_message[0],
