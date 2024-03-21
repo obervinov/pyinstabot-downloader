@@ -277,6 +277,12 @@ def update_status_message(
                         queue=message_statuses['queue']
                     )
                 )
+                database.keep_message(
+                    message_id=status_message.message_id,
+                    chat_id=status_message.chat.id,
+                    message_type='status_message',
+                    message_content=message_statuses
+                )
                 log.info('[Bot]: Message with type `status_message` for user %s has been updated', user_id)
             elif not diff_between_messages:
                 log.info('[Bot]: Message with type `status_message` for user %s is actual, skip', user_id)
