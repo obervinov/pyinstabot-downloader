@@ -767,7 +767,7 @@ class DatabaseClient:
                 values=(
                     f"message_content_hash = '{message_content_hash}', "
                     f"message_id = '{message_id}', "
-                    f"timestamp = CURRENT_TIMESTAMP()"
+                    f"timestamp = CURRENT_TIMESTAMP"
                 ),
                 condition=f"id = '{check_exist_message_type[0][0]}'"
             )
