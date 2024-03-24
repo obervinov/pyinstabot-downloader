@@ -43,7 +43,8 @@ STORAGE_EXCLUDE_TYPE = os.environ.get(
 # 'button_title': 'role'
 ROLES_MAP = {
     'Post': 'post',
-    'Posts List': 'posts_list'
+    'Posts List': 'posts_list',
+    'Locks': 'locks'
 }
 
 # Queue handler
