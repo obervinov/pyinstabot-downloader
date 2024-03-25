@@ -6,10 +6,10 @@ getting information about the account
 and saving the history of already downloaded messages in the vault.
 https://instaloader.github.io/module/instaloader.html
 """
-import os
 from typing import Union
 import instaloader
 from logger import log
+from .exceptions import WrongVaultInstance, FailedCreateDownloaderInstance, FailedAuthInstaloader
 
 
 class Downloader:
@@ -21,191 +21,109 @@ class Downloader:
 
     def __init__(
         self,
-        auth: dict = None,
-        settings: dict = None,
+        configuration: dict = None,
         vault: object = None
     ) -> None:
         """
         The method for create a new instagram api client instance.
 
         Args:
-            :param auth (dict): dictionary with authorization parameters.
+            :param configuration (dict): dictionary with configuration parameters for instagram api communication.
                 :param username (str): username for authentication in the instagram api.
                 :param password (str): password for authentication in the instagram api.
-                :param sessionfile (str): the path to the session file of the instagram.
-                :param anonymous (bool): access to open profiles without logging in to an account.
-                                         only for tests.
-            :param settings (dict): dictionary with settings instaloader parameters.
-                :param savepath (str): local directory for saving downloaded content.
-                :param useragent (str): user-agent header.
-            :param vault (object): instance of vault for recording or reading download history.
+                :param login-method (str): method for authentication in the instagram api. Can be: 'session', 'password', 'anonymous'.
+                :param session-file (str): the path to the session file of the instagram.
+                :param enabled (bool): enable or disable the downloader instance.
+                :param user-agent (str): user-agent header.
+            :param vault (object): instance of vault for reading configuration downloader-api.
 
         Returns:
             None
 
+        Attributes:
+            :attribute configuration (dict): dictionary with configuration parameters for instagram api communication.
+            :attribute instaloader (object): instance of the instaloader class for working
+
         Examples:
-            >>> DOWNLOADER_INSTANCE = Downloader(
-                    auth={
-                        'anonymous': true
-                    },
-                    settings={
-                        'savepath': TEMPORARY_DIR,
-                        'useragent': INSTAGRAM_USERAGENT
-                    },
-                    vault=VAULT_CLIENT
-                )
-            >>> DOWNLOADER_INSTANCE = Downloader(
-                    auth={
-                        'sessionfile': INSTAGRAM_SESSION
-                    },
-                    settings={
-                        'savepath': TEMPORARY_DIR,
-                        'useragent': INSTAGRAM_USERAGENT
-                    },
-                    vault=VAULT_CLIENT
-                )
-            >>> DOWNLOADER_INSTANCE = Downloader(
-                    auth={
-                        'username': INSTAGRAM_USERNAME,
-                        'password': INSTAGRAM_PASSWORD
-                    },
-                    settings={
-                        'savepath': TEMPORARY_DIR,
-                        'useragent': INSTAGRAM_USERAGENT
-                    },
-                    vault=VAULT_CLIENT
-                )
+            >>> configuration = {
+            ...     'username': 'my_username',
+            ...     'password': 'my_password',
+            ...     'login-method': 'session',
+            ...     'session-file': '/path/to/session/file',
+            ...     'enabled': True,
+            ...     'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'
+            ... }
+            >>> vault = Vault()
+            >>> downloader = Downloader(configuration, vault)
         """
-        self.auth = auth
-        self.settings = settings
-        self.vault = vault
-        self.instaloader = instaloader.Instaloader(
-            quiet=True,
-            user_agent=self.settings['useragent'],
-            dirname_pattern=f"{settings['savepath']}/{{profile}}",
-            filename_pattern='{profile}_{shortcode}_{filename}',
-            download_pictures=True,
-            download_videos=True,
-            download_video_thumbnails=True,
-            save_metadata=False,
-            compress_json=True,
-            post_metadata_txt_pattern=None,
-            storyitem_metadata_txt_pattern=None,
-            check_resume_bbd=True,
-            fatal_status_codes=[400, 401, 429, 500]
-        )
+        if not vault:
+            raise WrongVaultInstance("Wrong vault instance, you must pass the vault instance to the class argument.")
 
-        if self.auth.get('anonymous'):
-            auth_status = self._login(
-                method='anonymous'
-            )
-        elif os.path.exists(
-            self.auth.get('sessionfile')
-        ):
-            auth_status = self._login(
-                method='session'
-            )
+        if configuration:
+            self.configuration = configuration
+        elif not configuration:
+            configuration = vault.read_secret(path='configuration/downloader-api')
         else:
-            auth_status = self._login(
-                method='password'
+            raise FailedCreateDownloaderInstance(
+                "Failed to initialize the Downloader instance."
+                "Please check the configuration in class argument or the secret with the configuration in the Vault."
             )
-        log.info(
-            '[class.%s] downloader instance init with account %s: %s',
-            __class__.__name__,
-            self.auth['username'],
-            auth_status
-        )
 
-    def _login(
-        self,
-        method: str = None
-    ) -> Union[str, None]:
+        if configuration.get('enabled', False):
+            self.instaloader = instaloader.Instaloader(
+                quiet=True,
+                user_agent=self.configuration.get('user-agent', None),
+                dirname_pattern='tmp/{profile}',
+                filename_pattern='{profile}_{shortcode}_{filename}',
+                download_pictures=True,
+                download_videos=True,
+                download_video_thumbnails=True,
+                save_metadata=False,
+                compress_json=True,
+                post_metadata_txt_pattern=None,
+                storyitem_metadata_txt_pattern=None,
+                check_resume_bbd=True,
+                fatal_status_codes=self.configuration.get('fatal-status-codes', [])
+            )
+            auth_status = self._login()
+            log.info('[class.%s] Downloader instance init with account %s: %s', __class__.__name__, self.configuration['username'], auth_status)
+        else:
+            self.instaloader = None
+            log.warning('[class.%s] downloader instance is disabled', __class__.__name__)
+
+    def _login(self) -> Union[str, None]:
         """
         The method for authentication in instagram api.
 
         Args:
-            :param method (str): authentication method 'password', 'session' or 'anonymous'.
-
+            None
         Returns:
-            (str) success
+            (str) logged_in
                 or
             None
         """
-        if not self.auth.get('username') or not self.auth.get('anonymous'):
-            self.auth['username'] = self.vault.read_secret(
-                'configuration/instagram',
-                'username'
-            )
-
-        if method == 'session':
+        if self.configuration['login-method'] == 'session':
             self.instaloader.load_session_from_file(
-                self.auth['username'],
-                self.auth['sessionfile']
+                self.configuration['username'],
+                self.configuration['session-file']
             )
-            log.info(
-                '[class.%s] session file was load success',
-                __class__.__name__
-            )
-            return 'success'
+            log.info('[class.%s] session file %s was load success', __class__.__name__, self.configuration['session-file'])
+            return 'logged_in'
 
-        if method == 'password':
-            if not self.auth.get('password'):
-                self.auth['password'] = self.vault.read_secret(
-                    'configuration/instagram',
-                    'password'
-                )
+        if self.configuration['login-method'] == 'password':
             self.instaloader.login(
-                self.auth['username'],
-                self.auth['password']
+                self.configuration['username'],
+                self.configuration['password']
             )
-            self.instaloader.save_session_to_file(
-                self.auth['sessionfile']
-            )
-            log.info(
-                '[class.%s] login with password was successful. Save session in %s',
-                __class__.__name__,
-                self.auth['sessionfile']
-            )
-            return 'success'
+            self.instaloader.save_session_to_file(self.configuration['session-file'])
+            log.info('[class.%s] login with password was successful. Save session in %s', __class__.__name__, self.configuration['sessionfile'])
+            return 'logged_in'
 
-        if method == 'anonymous':
-            log.warning(
-                '[class.%s] initialization without logging into an account (anonymous)',
-                __class__.__name__
-            )
+        if self.configuration['login-method'] == 'anonymous':
+            log.warning('[class.%s] initialization without logging into an account (anonymous)', __class__.__name__)
             return None
 
-        return None
-
-    def get_posts(
-        self,
-        username: str = None
-    ) -> Union[list, None]:
-        """
-        The method for getting a list posts of instagram account.
-
-        Args:
-            :param username (str): instagram account profile name.
-
-        Returns:
-            (list) ['post_id_1', 'post_id_2', 'post_id_3']
-                or
-            None
-        """
-        posts_list = []
-        profile = instaloader.Profile.from_username(
-            self.instaloader.context,
-            username
-        )
-        log.info(
-            '[class.%s] the %s profile was read success',
-            __class__.__name__,
-            username
-        )
-        for post in profile.get_posts():
-            posts_list.append(post.shortcode)
-
-        return posts_list
+        raise FailedAuthInstaloader("Failed to authenticate the Instaloader instance. Please check the configuration in the Vault.")
 
     def get_post_content(
         self,
@@ -225,91 +143,26 @@ class Downloader:
                     'status': 'downloaded'
                 }
         """
-        post = instaloader.Post.from_shortcode(
-            self.instaloader.context,
-            shortcode
-        )
-        self.instaloader.download_post(post, '')
-        log.info(
-            '[class.%s] the contents of the %s have been successfully downloaded '
-            'to the temporary storage',
-            __class__.__name__,
-            shortcode
-        )
-        self.vault.write_secret(
-            f'history/{post.owner_username}',
-            shortcode,
-            "completed"
-        )
-        return {
-            'post': shortcode,
-            'owner': post.owner_username,
-            'type': post.typename,
-            'status': 'completed'
-        }
-
-    def get_download_info(
-        self,
-        account: str = None
-    ) -> Union[dict, None]:
-        """
-        The method for collecting all the necessary information
-        to download all posts from the specified account.
-        Checks the history of already uploaded posts
-        and provides information for cyclic downloading.
-
-        Args:
-            :param account (str): instagram account name to check the uploaded history.
-
-        Returns:
-            (dict) {
-                    "shortcodes_for_download": fresh_shortcodes,
-                    "shortcodes_total_count": len(account_shortcodes),
-                    "shortcodes_exist": len(history_shortcodes),
-                    "shortcodes_exist_count": len(history_shortcodes.keys())
-                }
-        """
-        log.info(
-            '[class.%s] excluding shortcodes that are already downloaded...',
-            __class__.__name__
-        )
-        # account_shortcodes - list of shortcodes received from instagram
-        account_shortcodes = self.get_posts(
-            username=account
-        )
-        # fresh_shortcodes - list of shortcodes that have not been downloaded yet
-        fresh_shortcodes = []
-        # history_shortcodes - dict of shortcodes that have already been previously uploaded
-        try:
-            history_shortcodes = self.vault.read_secret(
-                f'history/{account}'
+        if not self.configuration.get('enabled', False):
+            metadata = {
+                'post': shortcode,
+                'owner': 'undefined',
+                'type': 'fake',
+                'status': 'completed'
+            }
+            log.warning('[class.%s]: the downloader instance is disabled, will be returned not real values', __class__.__name__)
+        else:
+            log.info('[class.%s]: downloading the contents of the post %s...', __class__.__name__, shortcode)
+            post = instaloader.Post.from_shortcode(
+                self.instaloader.context,
+                shortcode
             )
-        # pylint: disable=W0718
-        # will be fixed after https://github.com/obervinov/vault-package/issues/31
-        except Exception as secret_not_found:
-            history_shortcodes = {}
-            log.warning(
-                '[class.%s] secret history/%s does not exist: %s',
-                __class__.__name__,
-                account,
-                secret_not_found
-            )
-        for shortcode in account_shortcodes:
-            if shortcode not in history_shortcodes.keys():
-                fresh_shortcodes.append(shortcode)
-        log.info(
-            '[class.%s] account metadata:\n'
-            'already downloaded shortcodes: %s\n'
-            'fresh shortcodes: %s\n'
-            'shortcodes for download: %s',
-            __class__.__name__,
-            history_shortcodes,
-            account_shortcodes,
-            fresh_shortcodes
-        )
-        return {
-            "shortcodes_for_download": fresh_shortcodes,
-            "shortcodes_total_count": len(account_shortcodes),
-            "shortcodes_exist": len(history_shortcodes),
-            "shortcodes_exist_count": len(history_shortcodes.keys())
-        }
+            self.instaloader.download_post(post, '')
+            log.info('[class.%s]: the contents of the %s have been successfully downloaded', __class__.__name__, shortcode)
+            metadata = {
+                'post': shortcode,
+                'owner': post.owner_username,
+                'type': post.typename,
+                'status': 'completed'
+            }
+        return metadata

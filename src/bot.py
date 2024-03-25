@@ -16,35 +16,34 @@ from vault import VaultClient
 # flake8: noqa
 from configs.constants import (
     PROJECT_ENVIRONMENT, TELEGRAM_BOT_NAME, ROLES_MAP,
-    QUEUE_FREQUENCY, STATUSES_MESSAGE_FREQUENCY,
-    TEMPORARY_DIR, STORAGE_TYPE, STORAGE_EXCLUDE_TYPE, INSTAGRAM_SESSION, INSTAGRAM_USERAGENT
+    QUEUE_FREQUENCY, STATUSES_MESSAGE_FREQUENCY
 )
 from modules.database import DatabaseClient
 from modules.exceptions import FailedMessagesStatusUpdater
 from modules.tools import get_hash
-# from modules.downloader import Downloader
+from modules.downloader import Downloader
 # from modules.uploader import Uploader
 
 
 
-# init instances
+# Vault client
 vault = VaultClient(name=TELEGRAM_BOT_NAME)
+# Telegram instance
 telegram = TelegramBot(vault=vault)
+# Telegram bot for decorators
 bot = telegram.telegram_bot
 # Users module with rate limits option
 users_rl = Users(vault=vault)
 # Users module without rate limits option
 users = Users(vault=vault, rate_limits=False)
-messages = Messages()
-# downloader = Downloader(
-#    auth={'sessionfile': INSTAGRAM_SESSION},
-#    settings={'savepath': TEMPORARY_DIR, 'useragent': INSTAGRAM_USERAGENT},
-#    vault=vault
-# )
+# Client for download content from supplier
+downloader = Downloader(vault=vault)
+
 # uploader = Uploader(
 #    storage={'type': STORAGE_TYPE, 'temporary': TEMPORARY_DIR, 'cloud_root_path': BOT_NAME, 'exclude_type': STORAGE_EXCLUDE_TYPE},
 #    vault=vault
 # )
+# Client for communication with the database
 database = DatabaseClient(vault=vault, environment=PROJECT_ENVIRONMENT)
 
 
@@ -460,8 +459,7 @@ def process_list_posts(
     """
     user = users.user_access_check(message.chat.id, ROLES_MAP['Posts List'])
     if user.get('permissions', None) == users.user_status_allow:
-        links = message.text.split('\n')
-        for link in links:
+        for link in message.text.split('\n'):
             message.text = link
             process_one_post(
                 message=message,
@@ -541,14 +539,13 @@ def queue_handler_thread() -> None:
                 )
                 # download the contents of an instagram post to a temporary folder
                 if download_status != 'completed':
-                    # download_status = downloader.get_post_content(
-                    #    shortcode=message[1]
-                    # )
-                    download_status = 'completed'
+                    download_metadata = downloader.get_post_content(
+                        shortcode=message[1]
+                    )
                     database.update_message_state_in_queue(
                         post_id=post_id,
                         state='processing download',
-                        download_status=download_status,
+                        download_status=download_metadata['status'],
                         upload_status=upload_status
                     )
                 # upload the received content to the destination storage

@@ -4,7 +4,7 @@ Migrates historical data from the Vault to the processed table in the database.
 https://github.com/obervinov/pyinstabot-downloader/issues/30
 """
 VERSION = '1.0'
-NAME = '0001_vault_data'
+NAME = '0001_vault_historical_data'
 
 
 def execute(obj):

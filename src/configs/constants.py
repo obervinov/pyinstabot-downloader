@@ -14,31 +14,6 @@ TELEGRAM_BOT_NAME = os.environ.get(
     'pyinstabot-downloader'
 )
 
-STORAGE_TYPE = os.environ.get(
-    'STORAGE_TYPE',
-    'mega'
-)
-
-TEMPORARY_DIR = os.environ.get(
-    'TEMPORARY_DIR',
-    'tmp/'
-)
-
-INSTAGRAM_SESSION = os.environ.get(
-    'INSTAGRAM_SESSION',
-    '.session'
-)
-
-INSTAGRAM_USERAGENT = os.environ.get(
-    'INSTAGRAM_USERAGENT',
-    None
-)
-
-STORAGE_EXCLUDE_TYPE = os.environ.get(
-    'STORAGE_EXCLUDE_TYPE',
-    '.txt'
-)
-
 # permissions roles and buttons mapping
 # 'button_title': 'role'
 ROLES_MAP = {
