@@ -1,3 +1,4 @@
+# pylint: disable=R0801
 """
 This module processes the content uploaded from Instagram
 and uploads the found media files (image, video) to the destination storage.

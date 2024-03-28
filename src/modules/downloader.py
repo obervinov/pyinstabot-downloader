@@ -1,3 +1,4 @@
+# pylint: disable=R0801
 """
 This module interacts with the instagram api and uploads content to a temporary local directory.
 Supports downloading the content of the post by link,

@@ -1,4 +1,3 @@
-# pylint: disable=R0801
 """
 A test for quick setup of the dev environment for testing the release.
 """

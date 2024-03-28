@@ -47,7 +47,7 @@ else:
     log.warning('[Bot]: Downloader API is disabled, using mock object')
     downloader = MagicMock()
     downloader.get_post_content.return_value = {
-        'post': '{}{}'.format('mock_', ''.join(random.choices(string.ascii_letters + string.digits, k=10))),
+        'post': f"mock_{''.join(random.choices(string.ascii_letters + string.digits, k=10))}",
         'owner': 'undefined',
         'type': 'fake',
         'status': 'completed'
