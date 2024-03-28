@@ -1,7 +1,7 @@
 # Pyinstabot-downloader
-[![Release](https://github.com/obervinov/pyinstabot-downloader/actions/workflows/release.yml/badge.svg)](https://github.com/obervinov/pyinstabot-downloader/actions/workflows/release.yml)
+[![Release](https://github.com/obervinov/pyinstabot-downloader/actions/workflows/release.yaml/badge.svg)](https://github.com/obervinov/pyinstabot-downloader/actions/workflows/release.yaml)
 [![CodeQL](https://github.com/obervinov/pyinstabot-downloader/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/obervinov/pyinstabot-downloader/actions/workflows/github-code-scanning/codeql)
-[![Test and Build image](https://github.com/obervinov/pyinstabot-downloader/actions/workflows/workflow.yml/badge.svg?branch=main&event=pull_request)](https://github.com/obervinov/pyinstabot-downloader/actions/workflows/workflow.yml)
+[![Test and Build image](https://github.com/obervinov/pyinstabot-downloader/actions/workflows/pr.yaml/badge.svg?branch=main&event=pull_request)](https://github.com/obervinov/pyinstabot-downloader/actions/workflows/pr.yaml)
 
 ![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/obervinov/pyinstabot-downloader?style=for-the-badge)
 ![GitHub last commit](https://img.shields.io/github/last-commit/obervinov/pyinstabot-downloader?style=for-the-badge)
@@ -88,6 +88,7 @@ Code dependencies
 ## <img src="https://github.com/obervinov/_templates/blob/v1.0.5/icons/build.png" width="25" title="build"> Environment variables
 | Variable  | Description | Default value |
 | ------------- | ------------- | ------------- |
+| `PROJECT_ENVIRONMENT` | The environment in which the project is running (`dev`, `prod`) | `dev` |
 | `LOGGER_LEVEL` | [The logging level of the logging module](https://docs.python.org/3/library/logging.html#logging-levels) | `INFO` |
 | `BOT_NAME` | The name of the bot, used to determine the unique mount point in the vault | `pyinstabot-downloader` |
 | `MESSAGES_CONFIG` | The path to the message template file | `src/configs/messages.json` |
@@ -133,23 +134,23 @@ If the target storage is a local file system, then any further steps to process 
 ```bash
 docker-compose -f docker-compose.dev.yml up vault-server -d
 pip3 install -r requirements.txt
-curl -L https://gist.githubusercontent.com/obervinov/9bd452fee681f0493da7fd0b2bfe1495/raw/bbc4aad0ed7be064e9876dde64ad8b26b185091b/setup_vault_server.py | python3 --url=http://localhost:8200 --name=pyinstabot-downloader --policy=vault/policy.hcl
+curl -L https://gist.githubusercontent.com/obervinov/9bd452fee681f0493da7fd0b2bfe1495/raw/bbc4aad0ed7be064e9876dde64ad8b26b185091b/setup_vault_server.py | python3 --url=http://localhost:8200 --name=pyinstabot-downloader --policy=vault/policy.release.hcl
 ```
 
 - instructions for configuring an existing vault server
 ```bash
 pip3 install -r requirements.txt
-curl -L https://gist.githubusercontent.com/obervinov/9bd452fee681f0493da7fd0b2bfe1495/raw/bbc4aad0ed7be064e9876dde64ad8b26b185091b/setup_vault_server.py | python3 --url=http://localhost:8200 --name=pyinstabot-downloader --policy=vault/policy.hcl --token=hvs.123456qwerty
+curl -L https://gist.githubusercontent.com/obervinov/9bd452fee681f0493da7fd0b2bfe1495/raw/bbc4aad0ed7be064e9876dde64ad8b26b185091b/setup_vault_server.py | python3 --url=http://localhost:8200 --name=pyinstabot-downloader --policy=vault/policy.release.hcl --token=hvs.123456qwerty
 ```
 
-`setup_vault_server.py` - This script performs a quick and convenient configuration of the vault-server for this bot project: `initial` initialization of vault-server,  `unseal` vault-server, creating an isolated `mount point`, loading `policy.hcl`, creating an `approle`.
+`setup_vault_server.py` - This script performs a quick and convenient configuration of the vault-server for this bot project: `initial` initialization of vault-server,  `unseal` vault-server, creating an isolated `mount point`, loading `policy.release.hcl`, creating an `approle`.
 
 All these actions can also be performed using the vault cli:
 ```bash
 vault operator init
 vault operator unseal
 vault secrets enable -path=pyinstabot-downloader kv-v2 
-vault policy write pyinstabot-downloader vault/policy.hcl
+vault policy write pyinstabot-downloader vault/policy.release.hcl
 vault auth enable -path=pyinstabot-downloader approle
 vault write auth/pyinstabot-downloader/role/pyinstabot-downloader \
     token_policies=["pyinstabot-downloader"] \
@@ -178,9 +179,9 @@ export VAULT_APPROLE_ID={change_me}
 export VAULT_APPROLE_SECRETID={change_me}
 export VAULT_ADDR={change_me}
 
-docker-compose -f docker-compose.dev.yml up -d
+docker compose -f docker-compose.dev.yml up -d
 # or
-docker-compose -f docker-compose.release.yml up -d
+docker compose -f docker-compose.release.yml up -d
 ```
 
 
