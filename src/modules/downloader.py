@@ -12,6 +12,7 @@ from logger import log
 from .exceptions import WrongVaultInstance, FailedCreateDownloaderInstance, FailedAuthInstaloader
 
 
+# pylint: disable=too-few-public-methods
 class Downloader:
     """
     The Instagram api instance is created by this class

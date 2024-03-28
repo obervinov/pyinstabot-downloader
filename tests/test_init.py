@@ -1,6 +1,7 @@
 """
 A test for quick setup of the dev environment for testing the release.
 """
+# pylint: disable=R0801
 import subprocess
 import pytest
 
