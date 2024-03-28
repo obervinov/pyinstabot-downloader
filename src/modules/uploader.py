@@ -124,7 +124,7 @@ class Uploader:
         log.info('[class.%s] preparing media files for transfer to the %s cloud...', __class__.__name__, self.configuration['storage-type'])
         for root, _, files in os.walk(f"{self.configuration['source-directory']}{sub_directory}"):
             for file in files:
-                if self.configuration.get('exclude-types', None) in file:
+                if file.split('.')[1] in self.configuration.get('exclude-types', None):
                     os.remove(os.path.join(root, file))
                 else:
                     transfers[file] = self.upload_to_cloud(
