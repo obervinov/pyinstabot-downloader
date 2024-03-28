@@ -6,9 +6,11 @@ from datetime import datetime, timedelta
 import re
 import threading
 import time
+import random
+import string
 
+from mock import MagicMock
 from logger import log
-from messages import Messages
 from telegram import TelegramBot
 from users import Users
 from vault import VaultClient
@@ -22,7 +24,7 @@ from modules.database import DatabaseClient
 from modules.exceptions import FailedMessagesStatusUpdater
 from modules.tools import get_hash
 from modules.downloader import Downloader
-# from modules.uploader import Uploader
+from modules.uploader import Uploader
 
 
 
@@ -36,13 +38,30 @@ bot = telegram.telegram_bot
 users_rl = Users(vault=vault)
 # Users module without rate limits option
 users = Users(vault=vault, rate_limits=False)
-# Client for download content from supplier
-downloader = Downloader(vault=vault)
 
-# uploader = Uploader(
-#    storage={'type': STORAGE_TYPE, 'temporary': TEMPORARY_DIR, 'cloud_root_path': BOT_NAME, 'exclude_type': STORAGE_EXCLUDE_TYPE},
-#    vault=vault
-# )
+# Client for download content from supplier
+# If API disabled, the mock object will be used
+if vault.read_secret(path='configuration/downloader-api').get('enabled', False):
+    downloader = Downloader(vault=vault)
+else:
+    log.warning('[Bot]: Downloader API is disabled, using mock object')
+    downloader = MagicMock()
+    downloader.get_post_content.return_value = {
+        'post': '{}{}'.format('mock_', ''.join(random.choices(string.ascii_letters + string.digits, k=10))),
+        'owner': 'undefined',
+        'type': 'fake',
+        'status': 'completed'
+    }
+
+# Client for upload content to the cloud storage
+# If API disabled, the mock object will be used
+if vault.read_secret(path='configuration/uploader-api').get('enabled', False):
+    uploader = Uploader(vault=vault)
+else:
+    log.warning('[Bot]: Uploader API is disabled, using mock object')
+    uploader = MagicMock()
+    uploader.run_transfers.return_value = 'completed'
+
 # Client for communication with the database
 database = DatabaseClient(vault=vault, environment=PROJECT_ENVIRONMENT)
 
@@ -531,6 +550,8 @@ def queue_handler_thread() -> None:
             download_status = message[9]
             upload_status = message[10]
             post_id = message[2]
+            owner_id = message[4]
+            short_code = message[1]
 
             if link_type == 'post':
                 log.info(
@@ -539,9 +560,7 @@ def queue_handler_thread() -> None:
                 )
                 # download the contents of an instagram post to a temporary folder
                 if download_status != 'completed':
-                    download_metadata = downloader.get_post_content(
-                        shortcode=message[1]
-                    )
+                    download_metadata = downloader.get_post_content(shortcode=short_code)
                     database.update_message_state_in_queue(
                         post_id=post_id,
                         state='processing download',
@@ -550,10 +569,7 @@ def queue_handler_thread() -> None:
                     )
                 # upload the received content to the destination storage
                 if upload_status != 'completed':
-                    # upload_status = uploader.start_upload(
-                    #    sub_dir_name=d_response['owner']
-                    # )
-                    upload_status = 'completed'
+                    upload_status = uploader.run_transfers(sub_directory=owner_id)
                     database.update_message_state_in_queue(
                         post_id=post_id,
                         state='processing upload',

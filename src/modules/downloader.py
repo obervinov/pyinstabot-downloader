@@ -69,27 +69,23 @@ class Downloader:
                 "Please check the configuration in class argument or the secret with the configuration in the Vault."
             )
 
-        if configuration.get('enabled', False):
-            self.instaloader = instaloader.Instaloader(
-                quiet=True,
-                user_agent=self.configuration.get('user-agent', None),
-                dirname_pattern='tmp/{profile}',
-                filename_pattern='{profile}_{shortcode}_{filename}',
-                download_pictures=True,
-                download_videos=True,
-                download_video_thumbnails=True,
-                save_metadata=False,
-                compress_json=True,
-                post_metadata_txt_pattern=None,
-                storyitem_metadata_txt_pattern=None,
-                check_resume_bbd=True,
-                fatal_status_codes=self.configuration.get('fatal-status-codes', [])
-            )
-            auth_status = self._login()
-            log.info('[class.%s] Downloader instance init with account %s: %s', __class__.__name__, self.configuration['username'], auth_status)
-        else:
-            self.instaloader = None
-            log.warning('[class.%s] downloader instance is disabled', __class__.__name__)
+        self.instaloader = instaloader.Instaloader(
+            quiet=True,
+            user_agent=self.configuration.get('user-agent', None),
+            dirname_pattern='tmp/{profile}',
+            filename_pattern='{profile}_{shortcode}_{filename}',
+            download_pictures=True,
+            download_videos=True,
+            download_video_thumbnails=True,
+            save_metadata=False,
+            compress_json=True,
+            post_metadata_txt_pattern=None,
+            storyitem_metadata_txt_pattern=None,
+            check_resume_bbd=True,
+            fatal_status_codes=self.configuration.get('fatal-status-codes', [])
+        )
+        auth_status = self._login()
+        log.info('[class.%s] Downloader instance init with account %s: %s', __class__.__name__, self.configuration['username'], auth_status)
 
     def _login(self) -> Union[str, None]:
         """
@@ -143,26 +139,17 @@ class Downloader:
                     'status': 'downloaded'
                 }
         """
-        if not self.configuration.get('enabled', False):
-            metadata = {
-                'post': shortcode,
-                'owner': 'undefined',
-                'type': 'fake',
-                'status': 'completed'
-            }
-            log.warning('[class.%s]: the downloader instance is disabled, will be returned not real values', __class__.__name__)
-        else:
-            log.info('[class.%s]: downloading the contents of the post %s...', __class__.__name__, shortcode)
-            post = instaloader.Post.from_shortcode(
-                self.instaloader.context,
-                shortcode
-            )
-            self.instaloader.download_post(post, '')
-            log.info('[class.%s]: the contents of the %s have been successfully downloaded', __class__.__name__, shortcode)
-            metadata = {
-                'post': shortcode,
-                'owner': post.owner_username,
-                'type': post.typename,
-                'status': 'completed'
-            }
+        log.info('[class.%s]: downloading the contents of the post %s...', __class__.__name__, shortcode)
+        post = instaloader.Post.from_shortcode(
+            self.instaloader.context,
+            shortcode
+        )
+        self.instaloader.download_post(post, '')
+        log.info('[class.%s]: the contents of the %s have been successfully downloaded', __class__.__name__, shortcode)
+        metadata = {
+            'post': shortcode,
+            'owner': post.owner_username,
+            'type': post.typename,
+            'status': 'completed'
+        }
         return metadata
