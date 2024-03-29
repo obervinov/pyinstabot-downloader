@@ -259,10 +259,13 @@ def update_status_message(
             # if message already sended and expiring (because bot can edit message only first 48 hours)
             # automatic renew message every 23 hours
             if exist_status_message[2] < datetime.now() - timedelta(hours=23):
-                _ = bot.delete_message(
-                    chat_id=chat_id,
-                    message_id=exist_status_message[0]
-                )
+                if exist_status_message[2] < datetime.now() - timedelta(hours=48):
+                    log.warning('[Bot]: Message with type `status_message` for user %s old more than 48 hours, can not delete them', user_id)
+                else:
+                    _ = bot.delete_message(
+                        chat_id=chat_id,
+                        message_id=exist_status_message[0]
+                    )
                 status_message = telegram.send_styled_message(
                     chat_id=chat_id,
                     messages_template={
