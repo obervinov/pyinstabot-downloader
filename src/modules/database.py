@@ -1,5 +1,6 @@
 """This module contains a class for interacting with a PostgreSQL database using psycopg2."""
 import os
+import sys
 import importlib
 import json
 from typing import Union
@@ -148,31 +149,20 @@ class DatabaseClient:
             >>> db = Database()
             >>> db._migrations()
         """
-        log.info(
-            '[class.%s] Reading database migrations...',
-            __class__.__name__
-        )
+        log.info('[class.%s] Reading database migrations...', __class__.__name__)
         migrations_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../migrations'))
+        sys.path.append(migrations_dir)
         for migration_file in os.listdir(migrations_dir):
-            log.info(
-                '[class.%s] Executing migration: %s...',
-                __class__.__name__,
-                migration_file
-            )
+            log.info('[class.%s] Executing migration: %s...', __class__.__name__, migration_file)
             if migration_file.endswith('.py'):
                 migration_module_name = migration_file[:-3]
-
                 if not self._is_migration_executed(migration_module_name):
                     migration_module = importlib.import_module(migration_module_name)
                     migration_module.execute(self)
                     version = getattr(migration_module, 'VERSION', migration_module_name)
                     self._mark_migration_as_executed(migration_module_name, version)
                 else:
-                    log.info(
-                        '[class.%s] the %s migration has already been executed and was skipped',
-                        __class__.__name__,
-                        migration_module_name
-                    )
+                    log.info('[class.%s] the %s migration has already been executed and was skipped', __class__.__name__, migration_module_name)
 
     def _is_migration_executed(
         self,
