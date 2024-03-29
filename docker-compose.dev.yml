@@ -51,14 +51,11 @@ services:
         restart: always
         environment:
             - PROJECT_ENVIRONMENT=dev
-            - BOT_NAME=pyinstabot-downloader
+            - TELEGRAM_BOT_NAME=pyinstabot-downloader
             - VAULT_APPROLE_ID=${VAULT_APPROLE_ID}
             - VAULT_APPROLE_SECRETID=${VAULT_APPROLE_SECRETID}
             - VAULT_ADDR=${VAULT_ADDR}
             - LOGGER_LEVEL=INFO
-            - STORAGE_TYPE=mega
-            - INSTAGRAM_SESSION=${INSTAGRAM_SESSION}
-            - STORAGE_EXCLUDE_TYPE=.txt
             - MESSAGES_CONFIG=configs/messages.json
         volumes:
             - ../.config/instaloader:/home/python/.config/instaloader
