@@ -74,6 +74,7 @@ class Downloader:
         self.instaloader = instaloader.Instaloader(
             quiet=True,
             user_agent=self.configuration.get('user-agent', None),
+            iphone_support=self.configuration.get('iphone-support', None),
             dirname_pattern='tmp/{profile}',
             filename_pattern='{profile}_{shortcode}_{filename}',
             download_pictures=True,
