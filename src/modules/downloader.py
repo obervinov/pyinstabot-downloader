@@ -75,7 +75,7 @@ class Downloader:
             quiet=True,
             user_agent=self.configuration.get('user-agent', None),
             iphone_support=self.configuration.get('iphone-support', None),
-            dirname_pattern='tmp/{profile}',
+            dirname_pattern='data/{profile}',
             filename_pattern='{profile}_{shortcode}_{filename}',
             download_pictures=True,
             download_videos=True,

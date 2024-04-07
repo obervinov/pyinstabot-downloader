@@ -273,10 +273,6 @@ def update_status_message(
                         'kwargs': message_statuses
                     }
                 )
-                bot.pin_chat_message(
-                    chat_id=status_message.chat.id,
-                    message_id=status_message.id
-                )
                 database.keep_message(
                     message_id=status_message.message_id,
                     chat_id=status_message.chat.id,
