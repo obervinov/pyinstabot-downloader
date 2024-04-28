@@ -571,7 +571,6 @@ def queue_handler_thread() -> None:
                         state='processing upload',
                         download_status=download_status,
                         upload_status=upload_status
-                        # upload_status=u_response['status']
                     )
                 # mark item in queue as processed
                 if download_status == 'completed' and upload_status == 'completed':
