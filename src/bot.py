@@ -553,10 +553,7 @@ def queue_handler_thread() -> None:
             short_code = message[1]
 
             if link_type == 'post':
-                log.info(
-                    '[Queue-thread-1] Starting handler for post url %s...',
-                    message[3]
-                )
+                log.info('[Queue-thread-1] Starting handler for post url %s...', message[3])
                 # download the contents of an instagram post to a temporary folder
                 if download_status != 'completed':
                     download_metadata = downloader.get_post_content(shortcode=short_code)

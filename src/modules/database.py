@@ -482,7 +482,10 @@ class DatabaseClient:
         Args:
             post_id (str): The ID of the post.
             state (str): The new state of the message.
-            **kwargs: Additional keyword arguments.
+
+        Keyword Args:
+            download_status (str): The status of the post downloading process.
+            upload_status (str): The status of the post uploading process.
 
         Parameters:
             table_name (str): The name of the table to update.
@@ -501,11 +504,22 @@ class DatabaseClient:
                 )
             '456: processed'
         """
-        self._update(
-            table_name='queue',
-            values=f"state = '{state}'",
-            condition=f"post_id = '{post_id}'"
-        )
+        if kwargs.get('download_status') and kwargs.get('upload_status'):
+            self._update(
+                table_name='queue',
+                values=(
+                    f"state = '{state}', "
+                    f"download_status = '{kwargs.get('download_status')}', "
+                    f"upload_status = '{kwargs.get('upload_status')}'"
+                ),
+                condition=f"post_id = '{post_id}'"
+            )
+        else:
+            self._update(
+                table_name='queue',
+                values=f"state = '{state}'",
+                condition=f"post_id = '{post_id}'"
+            )
 
         if state == 'processed':
             processed_message = self._select(
