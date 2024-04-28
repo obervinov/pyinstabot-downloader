@@ -559,7 +559,7 @@ def queue_handler_thread() -> None:
                     download_metadata = downloader.get_post_content(shortcode=short_code)
                     database.update_message_state_in_queue(
                         post_id=post_id,
-                        state='processing download',
+                        state='processing',
                         download_status=download_metadata['status'],
                         upload_status=upload_status
                     )
@@ -568,7 +568,7 @@ def queue_handler_thread() -> None:
                     upload_status = uploader.run_transfers(sub_directory=owner_id)
                     database.update_message_state_in_queue(
                         post_id=post_id,
-                        state='processing upload',
+                        state='processing',
                         download_status=download_status,
                         upload_status=upload_status
                     )
