@@ -509,7 +509,7 @@ def status_message_updater_thread() -> None:
     Returns:
         None
     """
-    log.info('[Bot]: Starting thread for status message updater...')
+    log.info('[Message-updater-thread]: Starting thread for status message updater...')
     while True:
         try:
             time.sleep(STATUSES_MESSAGE_FREQUENCY)
@@ -539,7 +539,7 @@ def queue_handler_thread() -> None:
     Returns:
         None
     """
-    log.info('[Bot]: Starting thread for queue handler...')
+    log.info('[Queue-handler-thread]: Starting thread for queue handler...')
     while True:
         time.sleep(QUEUE_FREQUENCY)
         message = database.get_message_from_queue(datetime.now())
@@ -553,7 +553,7 @@ def queue_handler_thread() -> None:
             short_code = message[1]
 
             if link_type == 'post':
-                log.info('[Queue-thread-1] Starting handler for post url %s...', message[3])
+                log.info('[Queue-handler-thread] Starting handler for post url %s...', message[3])
                 # download the contents of an instagram post to a temporary folder
                 if download_status != 'completed':
                     download_metadata = downloader.get_post_content(shortcode=short_code)
@@ -580,11 +580,11 @@ def queue_handler_thread() -> None:
                         download_status=download_status,
                         upload_status=upload_status
                     )
-                    log.info('[Queue-thread-1] The URL of the post %s has been processed', post_id)
+                    log.info('[Queue-handler-thread] The URL of the post %s has been processed', post_id)
                 else:
-                    log.warning('[Queue-thread-1] The URL of the post %s has not been processed:\n%s', post_id, message)
+                    log.warning('[Queue-handler-thread] The URL of the post %s has not been processed:\n%s', post_id, message)
         else:
-            log.info("[Queue-thread-1] no messages in the queue for processing")
+            log.info("[Queue-handler-thread] no messages in the queue for processing")
 # SPECIFIED THREADS ###############################################################################################################
 
 
@@ -599,10 +599,10 @@ def main():
         None
     """
     # Thread for processing queue
-    thread_queue_handler_thread = threading.Thread(target=queue_handler_thread, args=(), name="Thread-queue-handler-1")
+    thread_queue_handler_thread = threading.Thread(target=queue_handler_thread, args=(), name="Thread-queue-handler")
     thread_queue_handler_thread.start()
     # Thread for update status message
-    thread_status_message = threading.Thread(target=status_message_updater_thread, args=(), name="Thread-status-message-updater-1")
+    thread_status_message = threading.Thread(target=status_message_updater_thread, args=(), name="Thread-message-updater")
     thread_status_message.start()
     # Run bot
     telegram.launch_bot()
