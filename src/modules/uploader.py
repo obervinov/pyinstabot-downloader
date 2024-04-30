@@ -101,7 +101,7 @@ class Uploader:
         log.info('[class.%s] checking incomplete transfers in the temporary directory...', __class__.__name__)
         for _, artifacts, _ in os.walk(self.configuration['source-directory']):
             for artifact in artifacts:
-                log.warning('[class.%s] an unloaded artifact was found %s', __class__.__name__, artifact)
+                log.warning('[class.%s] an unloaded artifact was found: %s', __class__.__name__, artifact)
                 self.run_transfers(sub_directory=os.path.join(artifact))
 
     def run_transfers(
@@ -166,11 +166,12 @@ class Uploader:
 
         if self.configuration['storage-type'] == 'mega':
             directory = f"{self.configuration['destination-directory']}/{destination}"
-            log.info('[class.%s] trying found mega folder %s', __class__.__name__, directory)
+            log.info('[class.%s] trying found mega folder %s...', __class__.__name__, directory)
             mega_folder = self.storage.find(directory, exclude_deleted=True)
             if not mega_folder:
-                mega_folder = self.storage.create_folder(directory)
-                log.info('[class.%s] mega folder not found. Created new folder %s', __class__.__name__, mega_folder)
+                self.storage.create_folder(directory)
+                mega_folder = self.storage.find(directory, exclude_deleted=True)
+                log.info('[class.%s] mega folder not found, created new folder %s', __class__.__name__, mega_folder)
             log.info('[class.%s] mega folder %s was found', __class__.__name__, mega_folder)
             response = self.storage.upload(filename=source, dest=mega_folder[0])
             result = "uploaded"
