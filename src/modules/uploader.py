@@ -107,7 +107,7 @@ class Uploader:
     def run_transfers(
         self,
         sub_directory: str = None
-    ) -> dict:
+    ) -> str:
         """
         External entrypoint method for uploading media files to the target cloud storage.
 
@@ -132,7 +132,7 @@ class Uploader:
                         source=os.path.join(root, file),
                         destination=self.configuration['destination-directory']
                     )
-                    if transfers[file] == 'completed':
+                    if transfers[file] == 'uploaded':
                         os.remove(os.path.join(root, file))
                         result = 'completed'
                     else:
