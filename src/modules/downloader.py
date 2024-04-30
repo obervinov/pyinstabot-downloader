@@ -140,7 +140,7 @@ class Downloader:
                     'post': shortcode,
                     'owner': post.owner_username,
                     'type': post.typename,
-                    'status': 'downloaded'
+                    'status': 'completed'
                 }
         """
         log.info('[class.%s]: downloading the contents of the post %s...', __class__.__name__, shortcode)

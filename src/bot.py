@@ -561,10 +561,11 @@ def queue_handler_thread() -> None:
                 if download_status != 'completed':
                     download_metadata = downloader.get_post_content(shortcode=post_id)
                     owner_id = download_metadata['owner']
+                    download_status = download_metadata['status']
                     database.update_message_state_in_queue(
                         post_id=post_id,
                         state='processing',
-                        download_status=download_metadata['status'],
+                        download_status=download_status,
                         upload_status=upload_status,
                         post_owner=owner_id
                     )
@@ -575,7 +576,8 @@ def queue_handler_thread() -> None:
                         post_id=post_id,
                         state='processing',
                         download_status=download_status,
-                        upload_status=upload_status
+                        upload_status=upload_status,
+                        post_owner=owner_id
                     )
                 # mark item in queue as processed
                 if download_status == 'completed' and upload_status == 'completed':
@@ -583,11 +585,12 @@ def queue_handler_thread() -> None:
                         post_id=post_id,
                         state='processed',
                         download_status=download_status,
-                        upload_status=upload_status
+                        upload_status=upload_status,
+                        post_owner=owner_id
                     )
                     log.info('[Queue-handler-thread] The URL of the post %s has been processed', post_id)
                 else:
-                    log.warning('[Queue-handler-thread] The URL of the post %s has not been processed:\n%s', post_id, message)
+                    log.warning('[Queue-handler-thread] The URL of the post %s has not been processed:\n%s', post_id, download_status, upload_status)
         else:
             log.info("[Queue-handler-thread] no messages in the queue for processing")
 # SPECIFIED THREADS ###############################################################################################################
