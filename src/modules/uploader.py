@@ -130,7 +130,7 @@ class Uploader:
                 else:
                     transfers[file] = self.upload_to_cloud(
                         source=os.path.join(root, file),
-                        destination=self.configuration['destination-directory']
+                        destination=root.split('/')[1]
                     )
                     if transfers[file] == 'uploaded':
                         os.remove(os.path.join(root, file))
@@ -162,7 +162,7 @@ class Uploader:
                 or
             None
         """
-        log.info('[class.%s] starting upload file %s to %s//:%s', __class__.__name__, source, self.configuration['storage-type'], destination)
+        log.info('[class.%s] starting upload file %s to %s://%s', __class__.__name__, source, self.configuration['storage-type'], destination)
 
         if self.configuration['storage-type'] == 'mega':
             directory = f"{self.configuration['destination-directory']}/{destination}"
