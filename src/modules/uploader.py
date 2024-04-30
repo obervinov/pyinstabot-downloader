@@ -125,7 +125,7 @@ class Uploader:
         log.info('[class.%s] preparing media files for transfer to the %s cloud...', __class__.__name__, self.configuration['storage-type'])
         for root, _, files in os.walk(f"{self.configuration['source-directory']}{sub_directory}"):
             for file in files:
-                if file.split('.')[1] in self.configuration.get('exclude-types', None):
+                if file.split('.')[-1] in self.configuration.get('exclude-types', None):
                     os.remove(os.path.join(root, file))
                 else:
                     transfers[file] = self.upload_to_cloud(
@@ -137,11 +137,6 @@ class Uploader:
                         result = 'completed'
                     else:
                         result = 'not_completed'
-
-        # Removed empty directories
-        if len(os.listdir(f"{self.configuration['source-directory']}{sub_directory}")) == 0:
-            os.rmdir(f"{self.configuration['source-directory']}{sub_directory}")
-
         log.info('[class.%s] All transfers list: %s', __class__.__name__, transfers)
         return result
 
