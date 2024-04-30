@@ -166,19 +166,14 @@ class Uploader:
 
         if self.configuration['storage-type'] == 'mega':
             directory = f"{self.configuration['destination-directory']}/{destination}"
-            # try:
+            log.info('[class.%s] trying found mega folder %s', __class__.__name__, directory)
             mega_folder = self.storage.find(directory, exclude_deleted=True)
             if not mega_folder:
-                self.storage.create_folder(directory)
-                mega_folder = self.storage.find(directory, exclude_deleted=True)
+                mega_folder = self.storage.create_folder(directory)
+                log.info('[class.%s] mega folder not found. Created new folder %s', __class__.__name__, mega_folder)
             log.info('[class.%s] mega folder %s was found', __class__.__name__, mega_folder)
             response = self.storage.upload(filename=source, dest=mega_folder[0])
             result = "uploaded"
-            # pylint: disable=W0718
-            # because the mega library does not contain exceptions
-            # except Exception as mega_exception:
-            #     log.error('[class.%s] error when uploading via the mega api: %s\nTrying again...', __class__.__name__, mega_exception)
-            #     self.upload_to_cloud(source=source, destination=destination)
 
         if self.configuration['storage-type'] == 'dropbox':
             with open(source, 'rb') as file_transfer:
