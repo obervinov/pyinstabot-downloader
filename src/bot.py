@@ -560,11 +560,13 @@ def queue_handler_thread() -> None:
                 # download the contents of an instagram post to a temporary folder
                 if download_status != 'completed':
                     download_metadata = downloader.get_post_content(shortcode=post_id)
+                    owner_id = download_metadata['owner']
                     database.update_message_state_in_queue(
                         post_id=post_id,
                         state='processing',
                         download_status=download_metadata['status'],
-                        upload_status=upload_status
+                        upload_status=upload_status,
+                        post_owner=owner_id
                     )
                 # upload the received content to the destination storage
                 if upload_status != 'completed':

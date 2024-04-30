@@ -486,6 +486,7 @@ class DatabaseClient:
         Keyword Args:
             download_status (str): The status of the post downloading process.
             upload_status (str): The status of the post uploading process.
+            post_owner (str): The ID of the post owner.
 
         Parameters:
             table_name (str): The name of the table to update.
@@ -500,34 +501,24 @@ class DatabaseClient:
                     post_id='123',
                     state='processed',
                     download_status='completed',
-                    upload_status='completed'
+                    upload_status='completed',
+                    post_owner='username123'
                 )
             '456: processed'
         """
-        if kwargs.get('download_status') and kwargs.get('upload_status'):
-            self._update(
-                table_name='queue',
-                values=(
-                    f"state = '{state}', "
-                    f"download_status = '{kwargs.get('download_status')}', "
-                    f"upload_status = '{kwargs.get('upload_status')}'"
-                ),
-                condition=f"post_id = '{post_id}'"
-            )
-        else:
-            self._update(
-                table_name='queue',
-                values=f"state = '{state}'",
-                condition=f"post_id = '{post_id}'"
-            )
+        values = f"state = '{state}'"
+
+        if kwargs.get('post_owner'):
+            values += f", post_owner = '{kwargs.get('post_owner')}'"
+        if kwargs.get('download_status'):
+            values += f", download_status = '{kwargs.get('download_status')}'"
+        if kwargs.get('upload_status'):
+            values += f", upload_status = '{kwargs.get('upload_status')}'"
+
+        self._update(table_name='queue', values=values, condition=f"post_id = '{post_id}'")
 
         if state == 'processed':
-            processed_message = self._select(
-                table_name='queue',
-                columns=("*",),
-                condition=f"post_id = '{post_id}'",
-                limit=1
-            )
+            processed_message = self._select(table_name='queue', columns=("*",), condition=f"post_id = '{post_id}'", limit=1)
             self._insert(
                 table_name='processed',
                 columns=(
@@ -555,10 +546,7 @@ class DatabaseClient:
                     state
                 )
             )
-            self._delete(
-                table_name='queue',
-                condition=f"post_id = '{post_id}'"
-            )
+            self._delete(table_name='queue', condition=f"post_id = '{post_id}'")
             response = f"{processed_message[0][6]}: processed"
         else:
             response = f"{post_id}: state updated"
