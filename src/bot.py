@@ -43,7 +43,7 @@ users = Users(vault=vault, rate_limits=False)
 # If API disabled, the mock object will be used
 downloader_api_enabled = vault.read_secret(path='configuration/downloader-api').get('enabled', False)
 if downloader_api_enabled == 'True':
-    log.info('[Bot]: Downloader API is enabled: %s', downloader_api_enabled)
+    log.info('[Bot]: Downloader API enabled is %s', downloader_api_enabled)
     downloader = Downloader(vault=vault)
 else:
     log.warning('[Bot]: Downloader API is disabled, using mock object, because enabled flag is %s', downloader_api_enabled)
@@ -59,7 +59,7 @@ else:
 # If API disabled, the mock object will be used
 uploader_api_enabled = vault.read_secret(path='configuration/uploader-api').get('enabled', False)
 if uploader_api_enabled == 'True':
-    log.info('[Bot]: Uploader API is enabled: %s', uploader_api_enabled)
+    log.info('[Bot]: Uploader API enabled is %s', uploader_api_enabled)
     uploader = Uploader(vault=vault)
 else:
     log.warning('[Bot]: Uploader API is disabled, using mock object, because enabled flag is %s', uploader_api_enabled)
@@ -554,13 +554,12 @@ def queue_handler_thread() -> None:
             upload_status = message[10]
             post_id = message[2]
             owner_id = message[4]
-            short_code = message[1]
 
             if link_type == 'post':
                 log.info('[Queue-handler-thread] Starting handler for post url %s...', message[3])
                 # download the contents of an instagram post to a temporary folder
                 if download_status != 'completed':
-                    download_metadata = downloader.get_post_content(shortcode=short_code)
+                    download_metadata = downloader.get_post_content(shortcode=post_id)
                     database.update_message_state_in_queue(
                         post_id=post_id,
                         state='processing',
