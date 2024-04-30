@@ -590,7 +590,7 @@ def queue_handler_thread() -> None:
                     )
                     log.info('[Queue-handler-thread] The URL of the post %s has been processed', post_id)
                 else:
-                    log.warning('[Queue-handler-thread] The URL of the post %s has not been processed:\n%s', post_id, download_status, upload_status)
+                    log.warning('[Queue-handler-thread] The URL of the post %s has not been processed:%s-%s', post_id, download_status, upload_status)
         else:
             log.info("[Queue-handler-thread] no messages in the queue for processing")
 # SPECIFIED THREADS ###############################################################################################################
