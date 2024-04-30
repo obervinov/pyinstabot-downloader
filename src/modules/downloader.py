@@ -70,7 +70,7 @@ class Downloader:
                 "Failed to initialize the Downloader instance."
                 "Please check the configuration in class argument or the secret with the configuration in the Vault."
             )
-
+        log.info('[class.%s] Try to create a new instance of the Downloader class', __class__.__name__)
         self.instaloader = instaloader.Instaloader(
             quiet=True,
             user_agent=self.configuration.get('user-agent', None),

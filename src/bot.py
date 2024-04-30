@@ -42,7 +42,7 @@ users = Users(vault=vault, rate_limits=False)
 # Client for download content from supplier
 # If API disabled, the mock object will be used
 downloader_api_enabled = bool(vault.read_secret(path='configuration/downloader-api').get('enabled', False))
-if downloader_api_enabled:
+if downloader_api_enabled is True:
     downloader = Downloader(vault=vault)
 else:
     log.warning('[Bot]: Downloader API is disabled, using mock object, because enabled flag is %s', downloader_api_enabled)
@@ -57,7 +57,7 @@ else:
 # Client for upload content to the cloud storage
 # If API disabled, the mock object will be used
 uploader_api_enabled = bool(vault.read_secret(path='configuration/uploader-api').get('enabled', False))
-if uploader_api_enabled:
+if uploader_api_enabled is True:
     uploader = Uploader(vault=vault)
 else:
     log.warning('[Bot]: Uploader API is disabled, using mock object, because enabled flag is %s', uploader_api_enabled)
