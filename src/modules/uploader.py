@@ -170,6 +170,8 @@ class Uploader:
             mega_folder = self.storage.find(directory, exclude_deleted=True)
             if not mega_folder:
                 self.storage.create_folder(directory)
+                mega_folder = self.storage.find(directory, exclude_deleted=True)
+            log.info('[class.%s] mega folder %s was found', __class__.__name__, mega_folder)
             response = self.storage.upload(filename=source, dest=mega_folder[0])
             result = "uploaded"
             # pylint: disable=W0718
