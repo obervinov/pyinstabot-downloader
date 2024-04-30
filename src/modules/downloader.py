@@ -8,6 +8,7 @@ and saving the history of already downloaded messages in the vault.
 https://instaloader.github.io/module/instaloader.html
 """
 from typing import Union
+from ast import literal_eval
 import instaloader
 from logger import log
 from .exceptions import WrongVaultInstance, FailedCreateDownloaderInstance, FailedAuthInstaloader
@@ -85,7 +86,7 @@ class Downloader:
             post_metadata_txt_pattern=None,
             storyitem_metadata_txt_pattern=None,
             check_resume_bbd=True,
-            fatal_status_codes=self.configuration.get('fatal-status-codes', [])
+            fatal_status_codes=literal_eval(self.configuration.get('fatal-status-codes', '[]'))
         )
         auth_status = self._login()
         log.info('[class.%s] Downloader instance init with account %s: %s', __class__.__name__, self.configuration['username'], auth_status)
