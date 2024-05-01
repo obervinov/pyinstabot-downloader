@@ -391,7 +391,7 @@ def post_link_message_parser(message: telegram.telegram_types.Message = None) ->
     data = {}
     if re.match(r'^https://www.instagram.com/(p|reel)/.*', message.text):
         post_id = message.text.split('/')[4]
-        if len(post_id) == 11 and re.match(r'^[a-zA-Z0-9_]+$', post_id):
+        if len(post_id) == 11 and re.match(r'^[a-zA-Z0-9_-]+$', post_id):
             data['user_id'] = message.chat.id
             data['post_url'] = message.text
             data['post_id'] = post_id

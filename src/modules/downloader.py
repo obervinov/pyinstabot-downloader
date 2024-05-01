@@ -149,7 +149,7 @@ class Downloader:
             shortcode
         )
         self.instaloader.download_post(post, '')
-        log.info('[class.%s]: the contents of the %s have been successfully downloaded', __class__.__name__, shortcode)
+        log.info('[class.%s]: the contents of the post %s have been successfully downloaded', __class__.__name__, shortcode)
         metadata = {
             'post': shortcode,
             'owner': post.owner_username,
