@@ -613,7 +613,12 @@ def main():
     thread_status_message = threading.Thread(target=status_message_updater_thread, args=(), name="Thread-message-updater")
     thread_status_message.start()
     # Run bot
-    telegram.launch_bot()
+    while True:
+        try:
+            telegram.launch_bot()
+        except telegram.exceptions.FailedToCreateInstance as telegram_api_exception:
+            log.error('[Bot]: main thread failed, restart thread: %s', telegram_api_exception)
+            time.sleep(5)
 
 
 if __name__ == "__main__":
