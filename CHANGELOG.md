@@ -11,8 +11,8 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 #### 📚 Documentation
 * [Update documentation release/v2.1.0](https://github.com/obervinov/pyinstabot-downloader/issues/26)
 #### 💥 Breaking Changes
-* Add PostgreSQL support to the bot stack (instead of Vault). All bot data except `configurations` and `user data` is now stored in the database.
-* Remove outdated method for processing full account data per link of user profile.
+* Add `PostgreSQL` support to the bot stack (instead of `Vault`). All bot data except `configurations` and `user data` is now stored in the database.
+* Remove outdated method for processing full account data per link of `user profile`.
 * 
 #### 🚀 Features
 * [Change the structure of the secret configurations in Vault](https://github.com/obervinov/pyinstabot-downloader/issues/54)

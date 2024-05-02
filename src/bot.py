@@ -449,7 +449,7 @@ def process_one_post(
                 update_status_message(user_id=message.chat.id)
                 log.info('[Bot]: Post link %s for user %s added in queue', message.text, message.chat.id)
             else:
-                log.info('[Bot]: Post %s for user %s already in queue or processed', data['post_id'], message.chat.id)
+                log.info('[Bot]: Post %s for user %s already in queue or processed, skip', data['post_id'], message.chat.id)
 
             if mode == 'single':
                 telegram.delete_message(message.chat.id, message.id)
@@ -616,7 +616,8 @@ def main():
     while True:
         try:
             telegram.launch_bot()
-        except telegram.exceptions.FailedToCreateInstance as telegram_api_exception:
+        # pylint: disable=broad-except
+        except Exception as telegram_api_exception:
             log.error('[Bot]: main thread failed, restart thread: %s', telegram_api_exception)
             time.sleep(5)
 
