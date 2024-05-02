@@ -22,43 +22,49 @@ def execute(obj):
     columns = 'user_id, post_id, post_url, post_owner, link_type, message_id, chat_id, download_status, upload_status, state'
 
     # information about owners
-    owners = obj.vault.list_secrets(path='history/')
-    owners_counter = len(owners)
-    print(f"Founded {owners_counter} owners in history")
+    try:
+        owners = obj.vault.list_secrets(path='history/')
+        owners_counter = len(owners)
+        print(f"Founded {owners_counter} owners in history")
 
-    # reade history form Vault
-    for owner in owners:
-        # information about owner posts
-        posts = obj.vault.read_secret(path=f"history/{owner}")
-        posts_counter = len(posts)
-        print(f"{NAME}: Founded {posts_counter} posts in history/{owner}")
+        # reade history form Vault
+        for owner in owners:
+            # information about owner posts
+            posts = obj.vault.read_secret(path=f"history/{owner}")
+            posts_counter = len(posts)
+            print(f"{NAME}: Founded {posts_counter} posts in history/{owner}")
 
-        for post in posts:
-            user_id = next(iter(obj.vault.read_secret(path='configuration/users').keys()))
-            post_id = post
-            post_url = f"https://www.instagram.com/p/{post}"
-            post_owner = owner
-            link_type = 'post'
-            message_id = 'unknown'
-            chat_id = next(iter(obj.vault.read_secret(path='configuration/users').keys()))
-            download_status = 'completed'
-            upload_status = 'completed'
-            state = 'processed'
+            for post in posts:
+                user_id = next(iter(obj.vault.read_secret(path='configuration/users').keys()))
+                post_id = post
+                post_url = f"https://www.instagram.com/p/{post}"
+                post_owner = owner
+                link_type = 'post'
+                message_id = 'unknown'
+                chat_id = next(iter(obj.vault.read_secret(path='configuration/users').keys()))
+                download_status = 'completed'
+                upload_status = 'completed'
+                state = 'processed'
 
-            values = (
-                f"'{user_id}', "
-                f"'{post_id}', "
-                f"'{post_url}', "
-                f"'{post_owner}', "
-                f"'{link_type}', "
-                f"'{message_id}', "
-                f"'{chat_id}', "
-                f"'{download_status}', "
-                f"'{upload_status}', "
-                f"'{state}'"
-            )
+                values = (
+                    f"'{user_id}', "
+                    f"'{post_id}', "
+                    f"'{post_url}', "
+                    f"'{post_owner}', "
+                    f"'{link_type}', "
+                    f"'{message_id}', "
+                    f"'{chat_id}', "
+                    f"'{download_status}', "
+                    f"'{upload_status}', "
+                    f"'{state}'"
+                )
 
-            print(f"{NAME}: Migrating {post_id} from history/{owner}")
-            obj.cursor.execute(f"INSERT INTO {table_name} ({columns}) VALUES ({values})")
-            obj.database_connection.commit()
-            print(f"{NAME}: Post {post_id} from history/{owner} has been added to processed table")
+                print(f"{NAME}: Migrating {post_id} from history/{owner}")
+                obj.cursor.execute(f"INSERT INTO {table_name} ({columns}) VALUES ({values})")
+                obj.database_connection.commit()
+                print(f"{NAME}: Post {post_id} from history/{owner} has been added to processed table")
+    # Will be fixed after the issue https://github.com/obervinov/vault-package/issues/46 is resolved
+    # pylint: disable=broad-exception-caught
+    except Exception as migration_error:
+        print(f"{NAME}: Migration cannot be completed due to an error: {migration_error}")
+        print(f"{NAME}: Perhaps the history is empty or the Vault secrets path does not exist")
