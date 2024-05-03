@@ -106,7 +106,7 @@ class Downloader:
         if self.configuration['login-method'] == 'session':
             if self.configuration.get('session-base64', None):
                 with open(self.configuration['session-file'], 'r', encoding='utf-8') as file:
-                    file.write(base64.b64decode(self.configuration['session-base64']))
+                    file.write(base64.b64decode(self.configuration['session-base64']).decode('utf-8'))
             self.instaloader.load_session_from_file(
                 self.configuration['username'],
                 self.configuration['session-file']
