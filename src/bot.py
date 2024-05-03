@@ -11,7 +11,8 @@ import string
 
 from mock import MagicMock
 from logger import log
-from telegram import TelegramBot, exceptions
+from telegram import TelegramBot
+from telegram import exceptions as TelegramExceptions
 from users import Users
 from vault import VaultClient
 # pylint: disable=unused-import
@@ -616,7 +617,7 @@ def main():
     while True:
         try:
             telegram.launch_bot()
-        except exceptions.FailedToCreateInstance as telegram_api_exception:
+        except TelegramExceptions.FailedToCreateInstance as telegram_api_exception:
             log.error('[Bot]: main thread failed, restart thread: %s', telegram_api_exception)
             time.sleep(5)
 

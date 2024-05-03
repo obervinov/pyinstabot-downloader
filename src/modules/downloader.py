@@ -9,6 +9,7 @@ https://instaloader.github.io/module/instaloader.html
 """
 from typing import Union
 from ast import literal_eval
+import base64
 import instaloader
 from logger import log
 from .exceptions import WrongVaultInstance, FailedCreateDownloaderInstance, FailedAuthInstaloader
@@ -103,6 +104,9 @@ class Downloader:
             None
         """
         if self.configuration['login-method'] == 'session':
+            if self.configuration.get('session-base64', None):
+                with open(self.configuration['session-file'], 'r', encoding='utf-8') as file:
+                    file.write(base64.b64decode(self.configuration['session-base64']))
             self.instaloader.load_session_from_file(
                 self.configuration['username'],
                 self.configuration['session-file']
