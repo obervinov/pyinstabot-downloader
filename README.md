@@ -28,11 +28,11 @@ This project is a telegram bot that allows you to create backups of content from
 
 **Preview of the bot in action:**
 <p align="center">
-  <img src="doc/preview-main.png" width="650" title="preview-main">
+  <img src="doc/preview-main.png" width="600" title="preview-main">
 </p>
 <p align="center">
-  <img src="doc/preview-one-post.gif" width="600" alt="preview-one-post" style="display:inline-block;">
-  <img src="doc/preview-list-posts.gif" width="600" alt="preview-list-posts" style="display:inline-block;">
+  <img src="doc/preview-one-post.gif" width="650" alt="preview-one-post" style="display:inline-block;">
+  <img src="doc/preview-list-posts.gif" width="650" alt="preview-list-posts" style="display:inline-block;">
 </p>
 
 
