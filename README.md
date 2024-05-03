@@ -21,18 +21,18 @@
 ## <img src="https://github.com/obervinov/_templates/blob/v1.2.0/icons/book.png" width="25" title="about"> About this project
 This project is a telegram bot that allows you to create backups of content from your Instagram profile to Dropbox or Mega clouds, as well as in the local file system.
 
-Main functions:
-- a backup copy of a specific post by link
-- a backup copy of list of posts by links
-- the ability to backup to the `mega` or `dropbox` cloud
+**Main functions:**
+- a backup copy of a `specific post` by link
+- a backup copy of `list of posts` by links
+- the ability to backup to the `Mega` or `Dropbox` clouds
 
-Preview of the bot in action:
+**Preview of the bot in action:**
 <p align="center">
-  <img src="doc/preview-main.png" width="730" title="preview-main">
+  <img src="doc/preview-main.png" width="650" title="preview-main">
 </p>
 <p align="center">
-  <img src="doc/preview-one-post.gif" width="440" alt="preview-one-post" style="display:inline-block;">
-  <img src="doc/preview-list-posts.gif" width="460" alt="preview-list-posts" style="display:inline-block;">
+  <img src="doc/preview-one-post.gif" width="600" alt="preview-one-post" style="display:inline-block;">
+  <img src="doc/preview-list-posts.gif" width="600" alt="preview-list-posts" style="display:inline-block;">
 </p>
 
 
