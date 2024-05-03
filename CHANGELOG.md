@@ -10,6 +10,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 * [GitHub Actions: delete redundant jobs in the main branch b to make workflow more logical](https://github.com/obervinov/pyinstabot-downloader/issues/23)
 #### 📚 Documentation
 * [Update documentation release/v2.1.0](https://github.com/obervinov/pyinstabot-downloader/issues/26)
+* Update repository issues template
 #### 💥 Breaking Changes
 * Add `PostgreSQL` support to the bot stack (instead of `Vault`). All bot data except `configurations` and `user data` is now stored in the database.
 * Remove outdated method for processing full account data per link of `user profile`.

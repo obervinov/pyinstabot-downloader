@@ -12,80 +12,45 @@
 [![License](https://img.shields.io/badge/license-MIT-green.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
 
 
-## <img src="https://github.com/obervinov/_templates/blob/v1.0.5/icons/github-actions.png" width="25" title="github-actions"> GitHub Actions
+## <img src="https://github.com/obervinov/_templates/blob/v1.2.0/icons/github-actions.png" width="25" title="github-actions"> GitHub Actions
 | Name  | Version |
 | ------------------------ | ----------- |
 | GitHub Actions Templates | [v1.2.0](https://github.com/obervinov/_templates/tree/v1.2.0) |
 
 
-## <img src="https://github.com/obervinov/_templates/blob/v1.0.5/icons/book.png" width="25" title="about"> About this project
+## <img src="https://github.com/obervinov/_templates/blob/v1.2.0/icons/book.png" width="25" title="about"> About this project
 This project is a telegram bot that allows you to create backups of content from your Instagram profile to Dropbox or Mega clouds, as well as in the local file system.
 
 Main functions:
-- a backup copy of all posts from the profile
 - a backup copy of a specific post by link
-- the ability to backup to the mega or dropbox cloud
+- a backup copy of list of posts by links
+- the ability to backup to the `mega` or `dropbox` cloud
 
-Review:
+Preview of the bot in action:
 <p align="center">
-  <img src="doc/bot-preview.gif" width="730" title="bot-preview-gif">
+  <img src="doc/preview-main.png" width="730" title="preview-main">
 </p>
 <p align="center">
-  <img src="doc/bot-preview-post.png" width="440" alt="bot-preview-post" style="display:inline-block;">
-  <img src="doc/bot-preview-account.png" width="460" alt="bot-preview-account" style="display:inline-block;">
+  <img src="doc/preview-one-post.gif" width="440" alt="preview-one-post" style="display:inline-block;">
+  <img src="doc/preview-list-posts.gif" width="460" alt="preview-list-posts" style="display:inline-block;">
 </p>
 
 
-## <img src="https://github.com/obervinov/_templates/blob/v1.0.5/icons/requirements.png" width="25" title="diagram"> Project architecture
+## <img src="https://github.com/obervinov/_templates/blob/v1.2.0/icons/requirements.png" width="25" title="diagram"> Project architecture
 Code logic
 ![Diagram](doc/diagram-logic.png)
 
 Code dependencies
 ![Diagram](doc/diagram-code.png)
 
-## <img src="https://github.com/obervinov/_templates/blob/v1.0.5/icons/requirements.png" width="25" title="stack"> Repository map
-```sh
-.
-├── CHANGELOG.md
-├── Dockerfile
-├── LICENSE
-├── Pipfile
-├── README.md
-├── SECURITY.md
-├── doc
-│   ├── bot-preview-account.png
-│   ├── bot-preview-post.png
-│   ├── bot-preview.gif
-│   ├── diagram-code.png
-│   ├── diagram-logic.png
-│   └── pyinstabot-downloader.drawio
-├── docker-compose.dev.yml
-├── docker-compose.prerelease.yml
-├── docker-compose.release.yml
-├── requirements.txt
-├── src
-│   ├── bot.py
-│   ├── configs
-│   │   └── messages.json
-│   ├── constants.py
-│   └── modules
-│       ├── __init__.py
-│       ├── downloader.py
-│       └── uploader.py
-└── vault
-    └── policy.hcl
-
-6 directories, 23 files
-```
-
-## <img src="https://github.com/obervinov/_templates/blob/v1.0.5/icons/requirements.png" width="25" title="requirements"> Requirements
-- <img src="https://github.com/obervinov/_templates/blob/v1.0.5/icons/vault.png" width="15" title="vault"> Vault server - [a storage of secrets for bot with kv v2 engine](https://developer.hashicorp.com/vault/docs/secrets/kv/kv-v2)
-- <img src="https://github.com/obervinov/_templates/blob/v1.0.5/icons/dropbox.ico" width="15" title="dropbox"> Dropbox [api token](https://dropbox.tech/developers/generate-an-access-token-for-your-own-account)</img> or <img src="https://github.com/obervinov/_templates/blob/v1.0.5/icons/mega.png" width="15" title="mega"> Mega.nz [account](https://mega.nz)</img>
-- <img src="https://github.com/obervinov/_templates/blob/v1.0.5/icons/telegram.png" width="15" title="telegram"> Telegram bot api token - [instructions for creating bot and getting a token of api](https://learn.microsoft.com/en-us/azure/bot-service/bot-service-channel-connect-telegram?view=azure-bot-service-4.0)
-- <img src="https://github.com/obervinov/_templates/blob/v1.0.5/icons/instagram.png" width="15" title="instagram"> Instagram username/password - [login and password from the instagram account, it is advisable to create a new account](https://www.instagram.com/accounts/emailsignup/)
+## <img src="https://github.com/obervinov/_templates/blob/v1.2.0/icons/requirements.png" width="25" title="requirements"> Requirements
+- <img src="https://github.com/obervinov/_templates/blob/v1.2.0/icons/vault.png" width="15" title="vault"> Vault server - [a storage of secrets for bot with kv v2 engine](https://developer.hashicorp.com/vault/docs/secrets/kv/kv-v2)
+- <img src="https://github.com/obervinov/_templates/blob/v1.2.0/icons/dropbox.ico" width="15" title="dropbox"> Dropbox [api token](https://dropbox.tech/developers/generate-an-access-token-for-your-own-account)</img> or <img src="https://github.com/obervinov/_templates/blob/v1.2.0/icons/mega.png" width="15" title="mega"> Mega.nz [account](https://mega.nz)</img>
+- <img src="https://github.com/obervinov/_templates/blob/v1.2.0/icons/telegram.png" width="15" title="telegram"> Telegram bot api token - [instructions for creating bot and getting a token of api](https://learn.microsoft.com/en-us/azure/bot-service/bot-service-channel-connect-telegram?view=azure-bot-service-4.0)
+- <img src="https://github.com/obervinov/_templates/blob/v1.2.0/icons/instagram.png" width="15" title="instagram"> Instagram username/password - [login and password from the instagram account, it is advisable to create a new account](https://www.instagram.com/accounts/emailsignup/)
 
 
-## <img src="https://github.com/obervinov/_templates/blob/v1.0.5/icons/build.png" width="25" title="build"> Environment variables
+## <img src="https://github.com/obervinov/_templates/blob/v1.2.0/icons/build.png" width="25" title="build"> Environment variables
 | Variable  | Description | Default value |
 | ------------- | ------------- | ------------- |
 | `PROJECT_ENVIRONMENT` | The environment in which the project is running (`dev`, `prod`) | `dev` |
@@ -102,18 +67,18 @@ Code dependencies
 | `VAULT_APPROLE_SECRETID`  | [Approle secret id created during vault setup](https://developer.hashicorp.com/vault/docs/auth/approle) | `None` |
 
 
-## <img src="https://github.com/obervinov/_templates/blob/v1.0.5/icons/config.png" width="25" title="config"> Prepare
+## <img src="https://github.com/obervinov/_templates/blob/v1.2.0/icons/config.png" width="25" title="config"> Prepare
 ### Target storage of the content
-#### <img src="https://github.com/obervinov/_templates/blob/v1.0.5/icons/dropbox.ico" width="18" title="dropbox"> If dropbox is going to be used as the target storage, you need to:
+#### <img src="https://github.com/obervinov/_templates/blob/v1.2.0/icons/dropbox.ico" width="18" title="dropbox"> If dropbox is going to be used as the target storage, you need to:
 - [Create a dropbox account](https://www.dropbox.com/register)
 - Generate an application token according to the instructions [here](https://dropbox.tech/developers/generate-an-access-token-for-your-own-account) and [here](https://developers.dropbox.com/ru-ru/oauth-guide)
 - [More documentation](https://www.dropbox.com/developers/documentation/python#overview)
 
-#### <img src="https://github.com/obervinov/_templates/blob/v1.0.5/icons/mega.png" width="18" title="mega"> If mega is going to be used as the target storage, you need to:
+#### <img src="https://github.com/obervinov/_templates/blob/v1.2.0/icons/mega.png" width="18" title="mega"> If mega is going to be used as the target storage, you need to:
 - [Create a mega account](https://mega.nz/register)
 - Don't turn on 2fa (because the module mega.py can't work with 2fa https://github.com/odwyersoftware/mega.py/issues/19)
 
-#### <img src="https://github.com/obervinov/_templates/blob/v1.0.5/icons/file.png" width="18" title="file"> If the local file system will be used as the target storage:
+#### <img src="https://github.com/obervinov/_templates/blob/v1.2.0/icons/file.png" width="18" title="file"> If the local file system will be used as the target storage:
 - Set to environment variable `TEMPORARY_DIR` the desired local path for saving content (ex. `/opt/backup/instagram`)
 
 Such a strange variable name comes from the logic of the bot. The `TEMPORARY_DIR` variable is used as an intermediate buffer between the stage of downloading content from Instagram and then uploading it to the target storage.
@@ -123,7 +88,7 @@ If the target storage is dropbox or mega, then files from the temporary director
 If the target storage is a local file system, then any further steps to process the files will be unnecessary. The process just immediately uploads the content from Instagram to the target directory (temporary directory), after which nothing happens to the files.
 
 ### Storing project configuration and project history
-<img src="https://github.com/obervinov/_templates/blob/v1.0.5/icons/vault.png" width="15" title="vault"> All persistent project data is stored in **Vault**:
+<img src="https://github.com/obervinov/_templates/blob/v1.2.0/icons/vault.png" width="15" title="vault"> All persistent project data is stored in **Vault**:
 - stores project configuration parameters
 - keeps the history of already uploaded posts from instagram
 - stores information about user authorization events
@@ -173,7 +138,7 @@ vault kv put pyinstabot-downloader/configuration/instagram username={username} p
 vault kv put pyinstabot-downloader/configuration/mega username={username} password={password}
 ```
 
-## <img src="https://github.com/obervinov/_templates/blob/v1.0.5/icons/docker.png" width="25" title="docker"> How to run with docker-compose
+## <img src="https://github.com/obervinov/_templates/blob/v1.2.0/icons/docker.png" width="25" title="docker"> How to run with docker-compose
 ```sh
 export VAULT_APPROLE_ID={change_me}
 export VAULT_APPROLE_SECRETID={change_me}
@@ -185,7 +150,7 @@ docker compose -f docker-compose.release.yml up -d
 ```
 
 
-## <img src="https://github.com/obervinov/_templates/blob/v1.0.5/icons/stack2.png" width="25" title="stack2"> How to run a bot locally without a docker
+## <img src="https://github.com/obervinov/_templates/blob/v1.2.0/icons/stack2.png" width="25" title="stack2"> How to run a bot locally without a docker
 **You need an already running and configured vault to use the approle and kv v2 engine**
 ```sh
 pip3 install -r requirements.txt
