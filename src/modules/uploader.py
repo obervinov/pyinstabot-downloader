@@ -99,11 +99,11 @@ class Uploader:
             None
         """
         log.info('[class.%s] checking incomplete transfers in the temporary directory...', __class__.__name__)
-        for _, dirs, files in os.walk(self.configuration['source-directory']):
+        for root, dirs, files in os.walk(self.configuration['source-directory']):
             if files:
                 for artifact in dirs:
                     log.warning('[class.%s] an unloaded artifact was found: %s', __class__.__name__, artifact)
-                    self.run_transfers(sub_directory=os.path.join(dirs))
+                    self.run_transfers(sub_directory=os.path.join(root, artifact))
 
     def run_transfers(
         self,
