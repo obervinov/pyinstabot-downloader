@@ -514,7 +514,7 @@ def status_message_updater_thread() -> None:
     Returns:
         None
     """
-    log.info('[Message-updater-thread]: Starting thread for status message updater...')
+    log.info('[Message-updater-thread]: Started thread for status message updater')
     while True:
         try:
             time.sleep(STATUSES_MESSAGE_FREQUENCY)
@@ -544,10 +544,10 @@ def queue_handler_thread() -> None:
     Returns:
         None
     """
-    log.info('[Queue-handler-thread]: Starting thread for queue handler...')
+    log.info('[Queue-handler-thread]: Started thread for queue handler')
+    database.verify_users_queue()
     while True:
         time.sleep(QUEUE_FREQUENCY)
-        database.verify_users_queue()
         message = database.get_message_from_queue(datetime.now())
 
         if message is not None:

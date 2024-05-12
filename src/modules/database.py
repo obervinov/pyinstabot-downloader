@@ -535,6 +535,7 @@ class DatabaseClient:
         Examples:
             >>> verify_users_queue()
         """
+        log.info("[class.%s]: verifying the queue for all users", __class__.__name__)
         users = self.users_list()
         for user in users:
             user_id = user[0]
@@ -548,7 +549,7 @@ class DatabaseClient:
             )
 
             for message in full_queue:
-                if message[1] < datetime.now():
+                if message[1] < datetime.now() - timedelta(minutes=10):
                     need_reschedule = True
                     log.warning("[class.%s]: found a message in the queue that was not processed in time for user %s", __class__.__name__, user_id)
 
@@ -564,22 +565,23 @@ class DatabaseClient:
                 for message in full_queue:
                     minutes_lag = (datetime.now() - message[1]) / 60
                     if not new_schedule_time:
-                        new_schedule_time = message[1] + timedelta(minutes=minutes_lag)
+                        new_schedule_time = message[1] + minutes_lag
                         self._update(
                             table_name='queue',
                             values=f"scheduled_time = '{new_schedule_time}'",
                             condition=f"id = '{message[0]}'"
                         )
                     else:
-                        minutes_diff = (message[1] + timedelta(minutes=minutes_lag) - new_schedule_time) / 60
+                        minutes_diff = (message[1] + minutes_lag - new_schedule_time) / 60
                         # Add the difference in minutes between the current message and the previous message to the lag
                         minutes_skew = minutes_diff + minutes_lag
-                        new_schedule_time = message[1] + timedelta(minutes=minutes_skew)
+                        new_schedule_time = message[1] + minutes_skew
                         self._update(
                             table_name='queue',
                             values=f"scheduled_time = '{new_schedule_time}'",
                             condition=f"id = '{message[0]}'"
                         )
+        log.info("[class.%s]: queue verification completed", __class__.__name__)
 
     def get_user_queue(
         self,
