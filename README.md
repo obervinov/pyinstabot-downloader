@@ -12,12 +12,6 @@
 [![License](https://img.shields.io/badge/license-MIT-green.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
 
 
-## <img src="https://github.com/obervinov/_templates/blob/v1.2.0/icons/github-actions.png" width="25" title="github-actions"> GitHub Actions
-| Name  | Version |
-| ------------------------ | ----------- |
-| GitHub Actions Templates | [v1.2.0](https://github.com/obervinov/_templates/tree/v1.2.0) |
-
-
 ## <img src="https://github.com/obervinov/_templates/blob/v1.2.0/icons/book.png" width="25" title="about"> About this project
 This project is a telegram bot that allows you to create backups of content from your Instagram profile to Dropbox or Mega clouds, as well as in the local file system.
 <p align="center">
@@ -31,8 +25,8 @@ This project is a telegram bot that allows you to create backups of content from
 
 **Preview of the bot in action:**
 <p align="center">
-  <img src="doc/preview-one-post.gif" width="680" alt="preview-one-post" style="display:inline-block;">
-  <img src="doc/preview-list-posts.gif" width="680" alt="preview-list-posts" style="display:inline-block;">
+  <img src="doc/preview-one-post.gif" width="700" alt="preview-one-post" style="display:inline-block;">
+  <img src="doc/preview-list-posts.gif" width="700" alt="preview-list-posts" style="display:inline-block;">
 </p>
 
 
@@ -48,6 +42,7 @@ Code dependencies
 - <img src="https://github.com/obervinov/_templates/blob/v1.2.0/icons/dropbox.ico" width="15" title="dropbox"> Dropbox [api token](https://dropbox.tech/developers/generate-an-access-token-for-your-own-account)</img> or <img src="https://github.com/obervinov/_templates/blob/v1.2.0/icons/mega.png" width="15" title="mega"> Mega.nz [account](https://mega.nz)</img>
 - <img src="https://github.com/obervinov/_templates/blob/v1.2.0/icons/telegram.png" width="15" title="telegram"> Telegram bot api token - [instructions for creating bot and getting a token of api](https://learn.microsoft.com/en-us/azure/bot-service/bot-service-channel-connect-telegram?view=azure-bot-service-4.0)
 - <img src="https://github.com/obervinov/_templates/blob/v1.2.0/icons/instagram.png" width="15" title="instagram"> Instagram username/password - [login and password from the instagram account, it is advisable to create a new account](https://www.instagram.com/accounts/emailsignup/)
+- <img src="https://github.com/obervinov/_templates/blob/v1.2.0/icons/postgres.png" width="15" title="postgresql"> Postgresql - [a storage of project persistent data](https://www.postgresql.org/download/)
 
 
 ## <img src="https://github.com/obervinov/_templates/blob/v1.2.0/icons/build.png" width="25" title="build"> Environment variables
@@ -57,11 +52,6 @@ Code dependencies
 | `LOGGER_LEVEL` | [The logging level of the logging module](https://docs.python.org/3/library/logging.html#logging-levels) | `INFO` |
 | `BOT_NAME` | The name of the bot, used to determine the unique mount point in the vault | `pyinstabot-downloader` |
 | `MESSAGES_CONFIG` | The path to the message template file | `src/configs/messages.json` |
-| `STORAGE_TYPE` | Type of target storage for saving uploaded content from instagram (`dropbox`, `mega` or `local`) | `mega` |
-| `STORAGE_EXCLUDE_TYPE`| Types of files that you want to exclude from uploading to the cloud | `.txt` |
-| `TEMPORARY_DIR` | Temporary directory for saving uploaded content from instagram | `tmp/` |
-| `INSTAGRAM_SESSION` | The path for storing the file with the instagram session | `.session` |
-| `INSTAGRAM_USERAGENT`  | [User Agent to use for HTTP requests. Per default, Instaloader pretends being Chrome/92 on Linux](https://instaloader.github.io/cli-options.html#cmdoption-user-agent) | `None` |
 | `VAULT_ADDR`  | The address at which the vault server will be available to the bot | `None` |
 | `VAULT_APPROLE_ID` | [Approle id created during vault setup](https://developer.hashicorp.com/vault/docs/auth/approle) | `None` |
 | `VAULT_APPROLE_SECRETID`  | [Approle secret id created during vault setup](https://developer.hashicorp.com/vault/docs/auth/approle) | `None` |
@@ -166,3 +156,8 @@ export STORAGE_EXCLUDE_TYPE=".txt"
 
 python3 src/bot.py
 ```
+
+## <img src="https://github.com/obervinov/_templates/blob/v1.2.0/icons/github-actions.png" width="25" title="github-actions"> GitHub Actions
+| Name  | Version |
+| ------------------------ | ----------- |
+| GitHub Actions Templates | [v1.2.0](https://github.com/obervinov/_templates/tree/v1.2.0) |

@@ -4,6 +4,7 @@ import sys
 import importlib
 import json
 from typing import Union
+from datetime import datetime, timedelta
 import psycopg2
 from logger import log
 from .tools import get_hash
@@ -26,10 +27,8 @@ class DatabaseClient:
 
     Example:
         To create a new instance of the DatabaseClient class, you can use the following code:
-
         >>> from modules.database import DatabaseClient
         >>> from modules.vault import VaultClient
-
         >>> vault = VaultClient()
         >>> db_client = DatabaseClient(vault=vault)
     """
@@ -65,19 +64,10 @@ class DatabaseClient:
             >>> db = Database(vault)
         """
         if environment:
-            db_configuration = vault.read_secret(
-                path=f"configuration/database-{environment}"
-            )
+            db_configuration = vault.read_secret(path=f"configuration/database-{environment}")
         else:
-            db_configuration = vault.read_secret(
-                path='configuration/database'
-            )
-        log.info(
-            '[class.%s] Initializing database connection to %s:%s',
-            __class__.__name__,
-            db_configuration['host'],
-            db_configuration['port']
-        )
+            db_configuration = vault.read_secret(path='configuration/database')
+        log.info('[class.%s]: Initializing database connection to %s:%s', __class__.__name__, db_configuration['host'], db_configuration['port'])
 
         self.database_connection = psycopg2.connect(
             host=db_configuration['host'],
@@ -182,9 +172,7 @@ class DatabaseClient:
             >>> db._is_migration_executed('create_users_table')
             True
         """
-        self.cursor.execute(
-            f"SELECT id FROM migrations WHERE name = '{migration_name}'"
-        )
+        self.cursor.execute(f"SELECT id FROM migrations WHERE name = '{migration_name}'")
         return self.cursor.fetchone() is not None
 
     def _mark_migration_as_executed(
@@ -204,9 +192,7 @@ class DatabaseClient:
         Examples:
             >>> _mark_migration_as_executed('create_users_table')
         """
-        self.cursor.execute(
-            f"INSERT INTO migrations (name, version) VALUES ('{migration_name}', '{version}')"
-        )
+        self.cursor.execute(f"INSERT INTO migrations (name, version) VALUES ('{migration_name}', '{version}')")
         self.database_connection.commit()
 
     def _create_table(
@@ -263,23 +249,15 @@ class DatabaseClient:
             self.database_connection.commit()
         except (psycopg2.Error, IndexError) as error:
             log.error(
-                '[class.%s] An error occurred while inserting a new row into the table %s: %s\nColumns: %s\nValues: %s\nQuery: %s',
-                __class__.__name__,
-                table_name,
-                error,
-                columns,
-                values,
-                sql_query,
+                '[class.%s] an error occurred while inserting a row into the table %s: %s\nColumns: %s\nValues: %s\nQuery: %s',
+                __class__.__name__, table_name, error, columns, values, sql_query
             )
 
-    # pylint: disable=too-many-arguments
     def _select(
         self,
         table_name: str = None,
         columns: tuple = None,
-        condition: str = None,
-        order_by: str = None,
-        limit: int = 1
+        **kwargs
     ) -> Union[list, None]:
         """
         Selects data from a table in the database based on the given condition.
@@ -287,6 +265,8 @@ class DatabaseClient:
         Args:
             table_name (str): The name of the table to select data from.
             columns (tuple): A tuple containing the names of the columns to select.
+
+        Keyword Args:
             condition (str): The condition to use to select the data.
             order_by (str): The column to use for ordering the data.
             limit (int): The maximum number of rows to return.
@@ -297,15 +277,17 @@ class DatabaseClient:
             None: If no data is found.
 
         Examples:
-            >>> _select('users', ('id', 'username', 'email'), "username='john_doe'", "id", 1)
+            >>> _select(table_name='users', columns=('username', 'email'), condition="id=1")
+            [('john_doe', 'john_doe@exmaple.com')]
         """
         # base query
         sql_query = f"SELECT {', '.join(columns)} FROM {table_name}"
-        if condition:
-            sql_query += f" WHERE {condition}"
-        if order_by:
-            sql_query += f" ORDER BY {order_by}"
-        sql_query += f" LIMIT {limit}"
+        if kwargs.get('condition', None):
+            sql_query += f" WHERE {kwargs.get('condition')}"
+        if kwargs.get('order_by', None):
+            sql_query += f" ORDER BY {kwargs.get('order_by')}"
+        if kwargs.get('limit', None):
+            sql_query += f" LIMIT {kwargs.get('limit')}"
         self.cursor.execute(sql_query)
         return self.cursor.fetchall()
 
@@ -354,24 +336,6 @@ class DatabaseClient:
         """
         self.cursor.execute(f"DELETE FROM {table_name} WHERE {condition}")
         self.database_connection.commit()
-
-    def _close(self) -> None:
-        """
-        Close the database connection.
-
-        Args:
-            None
-
-        Parameters:
-            None
-
-        Returns:
-            None
-
-        Examples:
-            _close()
-        """
-        self.database_connection.close()
 
     def add_message_to_queue(
         self,
@@ -467,7 +431,6 @@ class DatabaseClient:
             condition=f"scheduled_time <= '{scheduled_time}' AND state IN ('waiting', 'processing')",
             limit=1
         )
-
         return message[0] if message else None
 
     def update_message_state_in_queue(
@@ -518,7 +481,12 @@ class DatabaseClient:
         self._update(table_name='queue', values=values, condition=f"post_id = '{post_id}'")
 
         if state == 'processed':
-            processed_message = self._select(table_name='queue', columns=("*",), condition=f"post_id = '{post_id}'", limit=1)
+            processed_message = self._select(
+                table_name='queue',
+                columns=("*",),
+                condition=f"post_id = '{post_id}'",
+                limit=1
+            )
             self._insert(
                 table_name='processed',
                 columns=(
@@ -553,6 +521,66 @@ class DatabaseClient:
 
         return response
 
+    def verify_users_queue(self) -> None:
+        """
+        Verify the queue for all users and reschedule messages if necessary.
+        If the message is not processed in time (for example, the bot was down), reschedule the message in the queue.
+
+        Args:
+            None
+
+        Returns:
+            None
+
+        Examples:
+            >>> verify_users_queue()
+        """
+        users = self.users_list()
+        for user in users:
+            user_id = user[0]
+            need_reschedule = False
+            full_queue = self._select(
+                table_name='queue',
+                columns=("id", "scheduled_time"),
+                condition=f"user_id = '{user_id}'",
+                order_by='scheduled_time ASC',
+                limit=1000
+            )
+
+            for message in full_queue:
+                if message[1] < datetime.now():
+                    need_reschedule = True
+                    log.warning("[class.%s]: found a message in the queue that was not processed in time for user %s", __class__.__name__, user_id)
+
+            if need_reschedule:
+                log.warning("[class.%s]: rescheduling messages in the queue for user %s", __class__.__name__, user_id)
+                # The lag between the current time and the scheduled time of the message
+                minutes_lag = None
+                # The difference in minutes between the current message and the previous message
+                minutes_diff = None
+                # The new scheduled time for the message after rescheduling
+                new_schedule_time = None
+                # Reschedule the all messages in the queue
+                for message in full_queue:
+                    minutes_lag = (datetime.now() - message[1]) / 60
+                    if not new_schedule_time:
+                        new_schedule_time = message[1] + timedelta(minutes=minutes_lag)
+                        self._update(
+                            table_name='queue',
+                            values=f"scheduled_time = '{new_schedule_time}'",
+                            condition=f"id = '{message[0]}'"
+                        )
+                    else:
+                        minutes_diff = (message[1] + timedelta(minutes=minutes_lag) - new_schedule_time) / 60
+                        # Add the difference in minutes between the current message and the previous message to the lag
+                        minutes_skew = minutes_diff + minutes_lag
+                        new_schedule_time = message[1] + timedelta(minutes=minutes_skew)
+                        self._update(
+                            table_name='queue',
+                            values=f"scheduled_time = '{new_schedule_time}'",
+                            condition=f"id = '{message[0]}'"
+                        )
+
     def get_user_queue(
         self,
         user_id: str = None
@@ -582,7 +610,7 @@ class DatabaseClient:
             table_name='queue',
             columns=("post_id", "scheduled_time"),
             condition=f"user_id = '{user_id}'",
-            limit=100
+            limit=1000
         )
         for message in queue:
             if user_id not in result:
@@ -658,7 +686,6 @@ class DatabaseClient:
             values='enabled = TRUE',
             condition=f"name = '{lock_name}'"
         )
-
         return f"{lock_name}: locked"
 
     def revalues_lock(
@@ -683,7 +710,6 @@ class DatabaseClient:
             values='enabled = FALSE',
             condition=f"name = '{lock_name}'"
         )
-
         return f"{lock_name}: unlocked"
 
     def check_message_uniqueness(
@@ -726,9 +752,9 @@ class DatabaseClient:
         self,
         message_id: str = None,
         chat_id: str = None,
-        producer: str = 'bot',
         message_type: str = None,
-        message_content: Union[str, dict] = None
+        message_content: Union[str, dict] = None,
+        **kwargs
     ) -> str:
         """
         Add a message to the messages table in the database.
@@ -736,9 +762,11 @@ class DatabaseClient:
         Args:
             message_id (str): The ID of the message.
             chat_id (str): The ID of the chat.
-            producer (str): The name of the producer of the message.
             message_type (str): The type of the message.
             message_content (Union[str, dict]): The content of the message.
+
+        Keyword Args:
+            producer (str): The name of the producer of the message.
 
         Returns:
             str: A message indicating that the message was added to the messages table.
@@ -747,6 +775,11 @@ class DatabaseClient:
             >>> keep_message('12345', '67890', 'bot', 'status_message', 'Hello, username\n...')
             '12345 kept' or '12345 updated'
         """
+        if kwargs.get('producer', None):
+            producer = kwargs.get('producer')
+        else:
+            producer = 'bot'
+
         message_content_hash = get_hash(message_content)
         check_exist_message_type = self._select(
             table_name='messages',
@@ -806,9 +839,7 @@ class DatabaseClient:
             result = f"{user_id} added"
         return result
 
-    def users_list(
-        self
-    ) -> list:
+    def users_list(self) -> list:
         """
         Get a list of all users in the database.
 
@@ -826,6 +857,7 @@ class DatabaseClient:
         users = self._select(
             table_name='users',
             columns=("user_id", "chat_id"),
+            limit=1000
         )
         return users if users else None
 
