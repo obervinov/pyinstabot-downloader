@@ -552,6 +552,7 @@ class DatabaseClient:
                 if message[1] < datetime.now() - timedelta(minutes=10):
                     need_reschedule = True
                     log.warning("[class.%s]: found a message in the queue that was not processed in time for user %s", __class__.__name__, user_id)
+                    break
 
             if need_reschedule:
                 log.warning("[class.%s]: rescheduling messages in the queue for user %s", __class__.__name__, user_id)
@@ -581,6 +582,7 @@ class DatabaseClient:
                             values=f"scheduled_time = '{new_schedule_time}'",
                             condition=f"id = '{message[0]}'"
                         )
+                    log.info("[class.%s]: rescheduled message %s: %s -> %s", __class__.__name__, message[0], message[1], new_schedule_time)
         log.info("[class.%s]: queue verification completed", __class__.__name__)
 
     def get_user_queue(
