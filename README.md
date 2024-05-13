@@ -18,12 +18,12 @@ This project is a telegram bot that allows you to create backups of content from
   <img src="doc/preview-main.png" width="600" title="preview-main">
 </p>
 
-**Main functions:**
+**Main functions**
 - a backup copy of a `specific post` by link
 - a backup copy of `list of posts` by links
 - the ability to backup to the `Mega` or `Dropbox` clouds
 
-**Preview of the bot in action:**
+**Preview of the bot in action**
 <p align="center">
   <img src="doc/preview-one-post.gif" width="700" alt="preview-one-post" style="display:inline-block;">
   <img src="doc/preview-list-posts.gif" width="700" alt="preview-list-posts" style="display:inline-block;">
@@ -71,16 +71,16 @@ This project is a telegram bot that allows you to create backups of content from
 
 
 ### Bot configuration source and supported parameters
-<img src="https://github.com/obervinov/_templates/blob/v1.2.0/icons/vault.png" width="15" title="vault"> All bot configuration, except for the part of the configuration that configures the connection to `Vault` and external modules, is stored in the `Vault Secrets`:
-- database connection parameters
-  `configuration/database-prod` or `configuration/database-dev` or `configuration/database` (it depends on the `PROJECT_ENVIRONMENT` variable)
+<img src="https://github.com/obervinov/_templates/blob/v1.2.0/icons/vault.png" width="15" title="vault"> All bot configuration is stored in the `Vault Secrets`</br>
+_except for the part of the configuration that configures the connection to `Vault` and external modules_</br>
+- `configuration/database-<env>`: database connection parameters (depends on the environment variable)
   ```json
   {
     "database": "pyinstabot-downloader",
     "host": "postgresql.example.com",
     "password": "qwerty123",
     "port": "5432",
-    "user": "python"
+    "user": "user1"
   }
   ```
 - keeps the history of already uploaded posts from instagram
