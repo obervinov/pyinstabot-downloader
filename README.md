@@ -31,11 +31,11 @@ This project is a telegram bot that allows you to create backups of content from
 
 
 ## <img src="https://github.com/obervinov/_templates/blob/v1.2.0/icons/requirements.png" width="25" title="diagram"> Project architecture
-Code logic
-![Diagram](doc/diagram-logic.png)
+Describe flow
+![Diagram](doc/diagram-flow.png)
 
-Code dependencies
-![Diagram](doc/diagram-code.png)
+Code structure
+![Diagram](doc/diagram-structure.png)
 
 ## <img src="https://github.com/obervinov/_templates/blob/v1.2.0/icons/requirements.png" width="25" title="requirements"> Requirements
 - <img src="https://github.com/obervinov/_templates/blob/v1.2.0/icons/vault.png" width="15" title="vault"> Vault server - [a storage of secrets for bot with kv v2 engine](https://developer.hashicorp.com/vault/docs/secrets/kv/kv-v2)
