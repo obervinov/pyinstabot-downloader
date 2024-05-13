@@ -31,15 +31,15 @@ This project is a telegram bot that allows you to create backups of content from
 
 
 ## <img src="https://github.com/obervinov/_templates/blob/v1.2.0/icons/requirements.png" width="25" title="diagram"> Project architecture
-Describe flow
+**Users flow**
 ![Diagram](doc/diagram-flow.png)
 
-Code structure
+**Code structure**
 ![Diagram](doc/diagram-structure.png)
 
 ## <img src="https://github.com/obervinov/_templates/blob/v1.2.0/icons/requirements.png" width="25" title="requirements"> Requirements
 - <img src="https://github.com/obervinov/_templates/blob/v1.2.0/icons/vault.png" width="15" title="vault"> Vault server - [a storage of secrets for bot with kv v2 engine](https://developer.hashicorp.com/vault/docs/secrets/kv/kv-v2)
-- <img src="https://github.com/obervinov/_templates/blob/v1.2.0/icons/dropbox.ico" width="15" title="dropbox"> Dropbox [api token](https://dropbox.tech/developers/generate-an-access-token-for-your-own-account)</img> or <img src="https://github.com/obervinov/_templates/blob/v1.2.0/icons/mega.png" width="15" title="mega"> Mega.nz [account](https://mega.nz)</img>
+- <img src="https://github.com/obervinov/_templates/blob/v1.2.0/icons/dropbox.ico" width="15" title="dropbox"> Dropbox [api token](https://dropbox.tech/developers/generate-an-access-token-for-your-own-account)</img> or  <img src="https://github.com/obervinov/_templates/blob/v1.2.0/icons/mega.png" width="15" title="mega"> Mega.nz [account](https://mega.nz)</img>
 - <img src="https://github.com/obervinov/_templates/blob/v1.2.0/icons/telegram.png" width="15" title="telegram"> Telegram bot api token - [instructions for creating bot and getting a token of api](https://learn.microsoft.com/en-us/azure/bot-service/bot-service-channel-connect-telegram?view=azure-bot-service-4.0)
 - <img src="https://github.com/obervinov/_templates/blob/v1.2.0/icons/instagram.png" width="15" title="instagram"> Instagram username/password - [login and password from the instagram account, it is advisable to create a new account](https://www.instagram.com/accounts/emailsignup/)
 - <img src="https://github.com/obervinov/_templates/blob/v1.2.0/icons/postgres.png" width="15" title="postgresql"> Postgresql - [a storage of project persistent data](https://www.postgresql.org/download/)
@@ -66,20 +66,23 @@ Code structure
 
 #### <img src="https://github.com/obervinov/_templates/blob/v1.2.0/icons/mega.png" width="18" title="mega"> If mega is going to be used as the target storage, you need to:
 - [Create a mega account](https://mega.nz/register)
-- Don't turn on 2fa (because the module mega.py can't work with 2fa https://github.com/odwyersoftware/mega.py/issues/19)
+- Don't turn on `2fa`, because the library `mega.py` [can't work with 2fa](https://github.com/odwyersoftware/mega.py/issues/19) (it'll probably be fixed in https://github.com/obervinov/pyinstabot-downloader/issues/36)
 
-#### <img src="https://github.com/obervinov/_templates/blob/v1.2.0/icons/file.png" width="18" title="file"> If the local file system will be used as the target storage:
-- Set to environment variable `TEMPORARY_DIR` the desired local path for saving content (ex. `/opt/backup/instagram`)
 
-Such a strange variable name comes from the logic of the bot. The `TEMPORARY_DIR` variable is used as an intermediate buffer between the stage of downloading content from Instagram and then uploading it to the target storage.
 
-If the target storage is dropbox or mega, then files from the temporary directory are simply deleted after successful upload to the cloud.
-
-If the target storage is a local file system, then any further steps to process the files will be unnecessary. The process just immediately uploads the content from Instagram to the target directory (temporary directory), after which nothing happens to the files.
-
-### Storing project configuration and project history
-<img src="https://github.com/obervinov/_templates/blob/v1.2.0/icons/vault.png" width="15" title="vault"> All persistent project data is stored in **Vault**:
-- stores project configuration parameters
+### Bot configuration source and supported parameters
+<img src="https://github.com/obervinov/_templates/blob/v1.2.0/icons/vault.png" width="15" title="vault"> All bot configuration, except for the part of the configuration that configures the connection to `Vault` and external modules, is stored in the `Vault Secrets`:
+- database connection parameters
+  `configuration/database-prod` or `configuration/database-dev` or `configuration/database` (it depends on the `PROJECT_ENVIRONMENT` variable)
+  ```json
+  {
+    "database": "pyinstabot-downloader",
+    "host": "postgresql.example.com",
+    "password": "qwerty123",
+    "port": "5432",
+    "user": "python"
+  }
+  ```
 - keeps the history of already uploaded posts from instagram
 - stores information about user authorization events
 - stores attributes and user rights
