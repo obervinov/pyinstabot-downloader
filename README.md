@@ -16,11 +16,11 @@
 - [Project architecture](#-project-architecture)
 - [Requirements](#-requirements)
 - [Environment variables](#-environment-variables)
-- [Prepare](#-prepare)
+- [Prepare and configure environment](#-prepare-and-configure-environment)
   - [Target storage of the content](#target-storage-of-the-content)
   - [Bot configuration source and supported parameters](#bot-configuration-source-and-supported-parameters)
-  - [You can use an existing vault-server or launch a new one using docker-compose:](#you-can-use-an-existing-vault-server-or-launch-a-new-one-using-docker-compose)
-- [How to run with docker-compose](#-how-to-run-with-docker-compose)
+  - [Bot persistent data storage](#bot-persistent-data-storage)
+- [How to run project](#-how-to-run-project)
 
 
 ## <img src="https://github.com/obervinov/_templates/blob/v1.2.2/icons/book.png" width="25" title="about"> About this project
@@ -47,6 +47,7 @@ This project is a telegram bot that allows you to create backups of content from
 
 **Code structure**
 ![Diagram](doc/diagram-structure.png)
+</br>
 
 ## <img src="https://github.com/obervinov/_templates/blob/v1.2.2/icons/requirements.png" width="25" title="requirements"> Requirements
 - <img src="https://github.com/obervinov/_templates/blob/v1.2.2/icons/vault.png" width="15" title="vault"> Vault server - [a storage of secrets for bot with kv v2 engine](https://developer.hashicorp.com/vault/docs/secrets/kv/kv-v2)
@@ -54,7 +55,7 @@ This project is a telegram bot that allows you to create backups of content from
 - <img src="https://github.com/obervinov/_templates/blob/v1.2.2/icons/telegram.png" width="15" title="telegram"> Telegram bot api token - [instructions for creating bot and getting a token of api](https://learn.microsoft.com/en-us/azure/bot-service/bot-service-channel-connect-telegram?view=azure-bot-service-4.0)
 - <img src="https://github.com/obervinov/_templates/blob/v1.2.2/icons/instagram.png" width="15" title="instagram"> Instagram username/password - [login and password from the instagram account, it is advisable to create a new account](https://www.instagram.com/accounts/emailsignup/)
 - <img src="https://github.com/obervinov/_templates/blob/v1.2.2/icons/postgres.png" width="15" title="postgresql"> Postgresql - [a storage of project persistent data](https://www.postgresql.org/download/)
-
+</br>
 
 ## <img src="https://github.com/obervinov/_templates/blob/v1.2.2/icons/build.png" width="25" title="build"> Environment variables
 | Variable  | Description | Default value |
@@ -66,9 +67,10 @@ This project is a telegram bot that allows you to create backups of content from
 | `VAULT_ADDR`  | The address at which the vault server will be available to the bot | `None` |
 | `VAULT_APPROLE_ID` | [Approle id created during vault setup](https://developer.hashicorp.com/vault/docs/auth/approle) | `None` |
 | `VAULT_APPROLE_SECRETID`  | [Approle secret id created during vault setup](https://developer.hashicorp.com/vault/docs/auth/approle) | `None` |
+</br>
 
+## <img src="https://github.com/obervinov/_templates/blob/v1.2.2/icons/config.png" width="25" title="config"> Prepare and configure environment
 
-## <img src="https://github.com/obervinov/_templates/blob/v1.2.2/icons/config.png" width="25" title="config"> Prepare
 ### Target storage of the content
 #### <img src="https://github.com/obervinov/_templates/blob/v1.2.2/icons/dropbox.ico" width="18" title="dropbox"> If dropbox is going to be used as the target storage, you need to
 - [Create a dropbox account](https://www.dropbox.com/register)
@@ -78,8 +80,7 @@ This project is a telegram bot that allows you to create backups of content from
 #### <img src="https://github.com/obervinov/_templates/blob/v1.2.2/icons/mega.png" width="18" title="mega"> If mega is going to be used as the target storage, you need to
 - [Create a mega account](https://mega.nz/register)
 - Don't turn on `2fa`, because the library `mega.py` [can't work with 2fa](https://github.com/odwyersoftware/mega.py/issues/19) (it'll probably be fixed in https://github.com/obervinov/pyinstabot-downloader/issues/36)
-
-
+</br>
 
 ### Bot configuration source and supported parameters
 <img src="https://github.com/obervinov/_templates/blob/v1.2.2/icons/vault.png" width="15" title="vault"> All bot configuration is stored in the `Vault Secrets`</br>
@@ -190,19 +191,34 @@ vault write auth/pyinstabot-downloader/role/pyinstabot-downloader \
     mount_point="pyinstabot-downloader" \
     secret_id_ttl=0
 ```
+</br>
 
 ### Bot persistent data storage
 <img src="https://github.com/obervinov/_templates/blob/v1.2.2/icons/postgres.png" width="15" title="postgres"> Persistent data storage is implemented using `Postgresql`</br>
-... about database and tables
+You can familiarize yourself with the
+- data structure, tables and assignment of tables [here](src/configs/databases.json)
+- migrations [here](src/migrations/)
 
+The database structure is created automatically when the bot starts. Bot checks the database structure and creates missing tables if necessary.
+After checking the database structure, the bot executes the migrations in the order of their numbering.</br>
+Required only database owner rights in `Vault` for the bot to create tables and execute migrations.
 
-## <img src="https://github.com/obervinov/_templates/blob/v1.2.2/icons/docker.png" width="25" title="docker"> How to run with docker-compose
+**What data is stored in tables:**
+- user request queue
+- history of processed user requests 
+- information about users activity (requests and contacts)
+- completed migrations
+- messages sent by the bot (to update them)
+</br>
+
+## <img src="https://github.com/obervinov/_templates/blob/v1.2.2/icons/docker.png" width="25" title="docker"> How to run project
 ```sh
 export VAULT_APPROLE_ID={change_me}
 export VAULT_APPROLE_SECRETID={change_me}
 export VAULT_ADDR={change_me}
 docker compose -f docker-compose.yml up -d
 ```
+</br>
 
 ## <img src="https://github.com/obervinov/_templates/blob/v1.2.2/icons/github-actions.png" width="25" title="github-actions"> GitHub Actions
 | Name  | Version |

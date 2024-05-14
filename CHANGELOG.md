@@ -14,7 +14,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 #### 💥 Breaking Changes
 * Add `PostgreSQL` support to the bot stack (instead of `Vault`). All bot data except `configurations` and `user data` is now stored in the database.
 * Remove outdated method for processing full account data per link of `user profile`.
-* 
+* Move all configuration of components form `environment variables` to the `Vault`.
 #### 🚀 Features
 * [Change the structure of the secret configurations in Vault](https://github.com/obervinov/pyinstabot-downloader/issues/54)
 * [A new concept for processing input messages](https://github.com/obervinov/pyinstabot-downloader/issues/32)
@@ -23,6 +23,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 * [Extend users attributes and add automatic rate limit control](https://github.com/obervinov/pyinstabot-downloader/issues/14)
 * [Add the method for processing multiline messages](https://github.com/obervinov/pyinstabot-downloader/issues/20)
 * [Rollback to old environment variable names PB_VAULT_APPROLE_ID PB_VAULT_APPROLE_SECRETID](https://github.com/obervinov/pyinstabot-downloader/issues/27)
+* [Move parameter `session` to the vault configuration](https://github.com/obervinov/pyinstabot-downloader/issues/24)
 
 
 ## v2.0.0 - 2023-09-16
