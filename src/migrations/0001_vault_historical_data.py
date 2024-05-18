@@ -63,6 +63,7 @@ def execute(obj):
                 obj.cursor.execute(f"INSERT INTO {table_name} ({columns}) VALUES ({values})")
                 obj.database_connection.commit()
                 print(f"{NAME}: Post {post_id} from history/{owner} has been added to processed table")
+        print(f"{NAME}: Migration has been completed")
     # Will be fixed after the issue https://github.com/obervinov/vault-package/issues/46 is resolved
     # pylint: disable=broad-exception-caught
     except Exception as migration_error:

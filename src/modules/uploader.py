@@ -99,11 +99,17 @@ class Uploader:
             None
         """
         log.info('[class.%s] checking incomplete transfers in the temporary directory...', __class__.__name__)
-        for root, dirs, files in os.walk(self.configuration['source-directory']):
-            if files:
-                for artifact in dirs:
-                    log.warning('[class.%s] an unloaded artifact was found: %s', __class__.__name__, artifact)
-                    self.run_transfers(sub_directory=os.path.join(root, artifact))
+        for root, dirs, _ in os.walk(self.configuration['source-directory']):
+            for dir_name in dirs:
+                sub_directory = os.path.join(root, dir_name)
+                # Check if the sub-directory contains files
+                sub_files = [f for f in os.listdir(sub_directory) if os.path.isfile(os.path.join(sub_directory, f))]
+                if sub_files:
+                    log.warning('[class.%s] an unloaded artifact was found: %s', __class__.__name__, sub_directory)
+                    self.run_transfers(sub_directory=sub_directory)
+                else:
+                    log.info('[class.%s] remove of an empty directory %s', __class__.__name__, sub_directory)
+                    os.rmdir(sub_directory)
 
     def run_transfers(
         self,
@@ -159,6 +165,8 @@ class Uploader:
             None
         """
         log.info('[class.%s] starting upload file %s to %s://%s', __class__.__name__, source, self.configuration['storage-type'], destination)
+        response = None
+        result = None
 
         if self.configuration['storage-type'] == 'mega':
             directory = f"{self.configuration['destination-directory']}/{destination}"

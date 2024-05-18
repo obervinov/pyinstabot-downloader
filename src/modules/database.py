@@ -105,22 +105,20 @@ class DatabaseClient:
 
         # Create database if does not exist
         for table in database_init_configuration['Tables']:
-            log.info('[class.%s] Preparing database: table `%s`...', __class__.__name__, table['name'])
             self._create_table(
                 table_name=table['name'],
                 columns="".join(f"{column}" for column in table['columns'])
             )
-            log.info('[class.%s] Preparing database: table `%s` has been created', __class__.__name__, table['name'])
+            log.info('[class.%s] Prepare database: create table `%s` if does not exist', __class__.__name__, table['name'])
 
         # Data seeding
         for data in database_init_configuration['DataSeeding']:
-            log.info('[class.%s] Preparing database: data seeding for table `%s`...', __class__.__name__, data['table'])
             self._insert(
                 table_name=data['table'],
                 columns=tuple(data['data'].keys()),
                 values=tuple(data['data'].values())
             )
-            log.info('[class.%s] Preparing database: data seeding for table `%s` has been completed', __class__.__name__, data['table'])
+            log.info('[class.%s] Prepare database: data seeding has been added to the `%s` table', __class__.__name__, data['table'])
 
     def _migrations(self) -> None:
         """
@@ -139,20 +137,20 @@ class DatabaseClient:
             >>> db = Database()
             >>> db._migrations()
         """
-        log.info('[class.%s] Reading database migrations...', __class__.__name__)
+        log.info('[class.%s] Migrations: Preparing to execute database migrations...', __class__.__name__)
         migrations_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../migrations'))
         sys.path.append(migrations_dir)
         for migration_file in os.listdir(migrations_dir):
-            log.info('[class.%s] Executing migration: %s...', __class__.__name__, migration_file)
             if migration_file.endswith('.py'):
                 migration_module_name = migration_file[:-3]
                 if not self._is_migration_executed(migration_module_name):
+                    log.info('[class.%s] Migrations: executing the %s migration...', __class__.__name__, migration_module_name)
                     migration_module = importlib.import_module(migration_module_name)
                     migration_module.execute(self)
                     version = getattr(migration_module, 'VERSION', migration_module_name)
                     self._mark_migration_as_executed(migration_module_name, version)
                 else:
-                    log.info('[class.%s] the %s migration has already been executed and was skipped', __class__.__name__, migration_module_name)
+                    log.info('[class.%s] Migrations: the %s has already been executed and was skipped', __class__.__name__, migration_module_name)
 
     def _is_migration_executed(
         self,
@@ -535,7 +533,7 @@ class DatabaseClient:
         Examples:
             >>> verify_users_queue()
         """
-        log.info("[class.%s]: verifying the queue for all users", __class__.__name__)
+        log.info("[class.%s]: verifying the queue for all users...", __class__.__name__)
         users = self.users_list()
         for user in users:
             user_id = user[0]
