@@ -28,7 +28,7 @@ path "pyinstabot-downloader/data/configuration/*" {
   capabilities = ["read", "list"]
 }
 
-# Allowed read and write of bot data
+# Allowed read and write of bot data (!!!deprecated after https://github.com/obervinov/users-package/issues/41!!!)
 path "pyinstabot-downloader/data/data/*" {
   capabilities = ["read", "list", "create", "update"]
 }

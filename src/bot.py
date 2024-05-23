@@ -15,18 +15,12 @@ from telegram import TelegramBot
 from telegram import exceptions as TelegramExceptions
 from users import Users
 from vault import VaultClient
-# pylint: disable=unused-import
-# flake8: noqa
-from configs.constants import (
-    PROJECT_ENVIRONMENT, TELEGRAM_BOT_NAME, ROLES_MAP,
-    QUEUE_FREQUENCY, STATUSES_MESSAGE_FREQUENCY
-)
+from configs.constants import (PROJECT_ENVIRONMENT, TELEGRAM_BOT_NAME, ROLES_MAP, QUEUE_FREQUENCY, STATUSES_MESSAGE_FREQUENCY)
 from modules.database import DatabaseClient
 from modules.exceptions import FailedMessagesStatusUpdater
 from modules.tools import get_hash
 from modules.downloader import Downloader
 from modules.uploader import Uploader
-
 
 
 # Vault client
@@ -44,10 +38,10 @@ users = Users(vault=vault, rate_limits=False)
 # If API disabled, the mock object will be used
 downloader_api_enabled = vault.read_secret(path='configuration/downloader-api').get('enabled', False)
 if downloader_api_enabled == 'True':
-    log.info('[Bot]: Downloader API enabled is %s', downloader_api_enabled)
+    log.info('[Bot]: downloader API is enabled: %s', downloader_api_enabled)
     downloader = Downloader(vault=vault)
 else:
-    log.warning('[Bot]: Downloader API is disabled, using mock object, because enabled flag is %s', downloader_api_enabled)
+    log.warning('[Bot]: downloader API is disabled, using mock object, because enabled flag is %s', downloader_api_enabled)
     downloader = MagicMock()
     downloader.get_post_content.return_value = {
         'post': f"mock_{''.join(random.choices(string.ascii_letters + string.digits, k=10))}",
@@ -60,10 +54,10 @@ else:
 # If API disabled, the mock object will be used
 uploader_api_enabled = vault.read_secret(path='configuration/uploader-api').get('enabled', False)
 if uploader_api_enabled == 'True':
-    log.info('[Bot]: Uploader API enabled is %s', uploader_api_enabled)
+    log.info('[Bot]: uploader API is enabled: %s', uploader_api_enabled)
     uploader = Uploader(vault=vault)
 else:
-    log.warning('[Bot]: Uploader API is disabled, using mock object, because enabled flag is %s', uploader_api_enabled)
+    log.warning('[Bot]: uploader API is disabled, using mock object, because enabled flag is %s', uploader_api_enabled)
     uploader = MagicMock()
     uploader.run_transfers.return_value = 'completed'
 
@@ -239,9 +233,7 @@ def button_posts_list(call: telegram.callback_query = None) -> None:
 
 
 # START BLOCK ADDITIONAL FUNCTIONS ######################################################################################################
-def update_status_message(
-    user_id: str = None
-) -> None:
+def update_status_message(user_id: str = None) -> None:
     """
     Updates the status message for the user.
 
@@ -254,7 +246,7 @@ def update_status_message(
     try:
         chat_id = user_id
         exist_status_message = database.get_considered_message(message_type='status_message', chat_id=chat_id)
-        message_statuses = get_message_statuses(user_id=user_id)
+        message_statuses = get_user_messages(user_id=user_id)
         diff_between_messages = False
         if exist_status_message:
             # check difference between messages content
@@ -265,7 +257,7 @@ def update_status_message(
             # automatic renew message every 23 hours
             if exist_status_message[2] < datetime.now() - timedelta(hours=23):
                 if exist_status_message[2] < datetime.now() - timedelta(hours=48):
-                    log.warning('[Bot]: Message with type `status_message` for user %s old more than 48 hours, can not delete them', user_id)
+                    log.warning('[Bot]: `status_message` for user %s old more than 48 hours, can not delete them', user_id)
                 else:
                     _ = bot.delete_message(
                         chat_id=chat_id,
@@ -278,16 +270,17 @@ def update_status_message(
                         'kwargs': message_statuses
                     }
                 )
+                bot.pin_chat_message(status_message.chat.id, status_message.id)
                 database.keep_message(
                     message_id=status_message.message_id,
                     chat_id=status_message.chat.id,
                     message_type='status_message',
                     message_content=message_statuses
                 )
-                log.info('[Bot]: Message with type `status_message` for user %s has been renewed', user_id)
+                log.info('[Bot]: `status_message` for user %s has been renewed', user_id)
             elif message_statuses is not None and diff_between_messages:
                 log.info(
-                    '[Bot]: Message with type `status_message` for user %s is outdated (old: %s, new: %s), updating...',
+                    '[Bot]: `status_message` for user %s is outdated, updating %s -> %s...',
                     user_id, exist_status_message[3], get_hash(message_statuses)
                 )
                 editable_message = telegram.send_styled_message(
@@ -304,9 +297,9 @@ def update_status_message(
                     message_type='status_message',
                     message_content=message_statuses
                 )
-                log.info('[Bot]: Message with type `status_message` for user %s has been updated', user_id)
+                log.info('[Bot]: `status_message` for user %s has been updated', user_id)
             elif not diff_between_messages:
-                log.info('[Bot]: Message with type `status_message` for user %s is actual, skip', user_id)
+                log.info('[Bot]: `status_message` for user %s is actual', user_id)
         else:
             status_message = telegram.send_styled_message(
                 chat_id=chat_id,
@@ -325,7 +318,7 @@ def update_status_message(
                 message_type='status_message',
                 message_content=message_statuses
             )
-            log.info('[Bot]: Message with type `status_message` for user %s has been created', user_id)
+            log.info('[Bot]: `status_message` for user %s has been created', user_id)
     except TypeError as exception:
         exception_context = {
             'message': f"Failed to update the message with the status of received messages for user {user_id}",
@@ -337,9 +330,7 @@ def update_status_message(
         log.error(exception_context)
 
 
-def get_message_statuses(
-    user_id: str = None
-) -> dict:
+def get_user_messages(user_id: str = None) -> dict:
     """
     Returns the queue and processed posts for the user.
 
@@ -350,8 +341,8 @@ def get_message_statuses(
         dict: The queue and processed posts for the user.
 
     Examples:
-        >>> get_message_statuses(user_id='1234567890')
-        {'queue': '<code>queue is empty</code>', 'processed': '<code>no processed posts</code>'}
+        >>> get_user_messages(user_id='1234567890')
+        {'queue': '<code>queue is empty</code>', 'processed': '<code>processed is empty</code>'}
     """
     queue_dict = database.get_user_queue(user_id=user_id)
     processed_dict = database.get_user_processed(user_id=user_id)
@@ -370,12 +361,12 @@ def get_message_statuses(
         for item in sorted_data:
             processed_string = processed_string + f"* <code>{item['post_id']}: {item['state']} at {item['timestamp']}</code>\n"
     else:
-        processed_string = '<code>no processed posts</code>'
+        processed_string = '<code>processed is empty</code>'
 
     return {'queue': queue_string, 'processed': processed_string}
 
 
-def post_link_message_parser(message: telegram.telegram_types.Message = None) -> dict:
+def message_parser(message: telegram.telegram_types.Message = None) -> dict:
     """
     Parses the message containing the Instagram post link and returns the data.
 
@@ -384,10 +375,6 @@ def post_link_message_parser(message: telegram.telegram_types.Message = None) ->
 
     Returns:
         dict: The data containing the user id, post url, post id, post owner, link type, message id, and chat id.
-
-    Raises:
-        InvalidPostId: The post id is invalid.
-        InvalidPostLink: The post link is invalid.
     """
     data = {}
     if re.match(r'^https://www.instagram.com/(p|reel)/.*', message.text):
@@ -401,13 +388,13 @@ def post_link_message_parser(message: telegram.telegram_types.Message = None) ->
             data['message_id'] = message.id
             data['chat_id'] = message.chat.id
         else:
-            log.error('[Bot]: Post id %s from user %s is wrong', post_id, message.chat.id)
+            log.error('[Bot]: post id %s from user %s is wrong', post_id, message.chat.id)
             telegram.send_styled_message(
                 chat_id=message.chat.id,
                 messages_template={'alias': 'url_error'}
             )
     else:
-        log.error('[Bot]: Post link %s from user %s is incorrect', message.text, message.chat.id)
+        log.error('[Bot]: post link %s from user %s is incorrect', message.text, message.chat.id)
         telegram.send_styled_message(
             chat_id=message.chat.id,
             messages_template={'alias': 'url_error'}
@@ -436,26 +423,28 @@ def process_one_post(
     # Check permissions
     user = users_rl.user_access_check(message.chat.id, ROLES_MAP['Post'])
     if user.get('permissions', None) == users_rl.user_status_allow:
-        data = post_link_message_parser(message)
-        time_to_process = user.get('rate_limits', {}).get('end_time', None)
+        data = message_parser(message)
+        rate_limit = user.get('rate_limits', {}).get('end_time', None)
 
-        if data:
-            if time_to_process is None:
-                data['scheduled_time'] = datetime.now()
-            else:
-                data['scheduled_time'] = time_to_process
+        # Define time to process the message in queue
+        if rate_limit:
+            data['scheduled_time'] = rate_limit
+        else:
+            data['scheduled_time'] = datetime.now()
 
-            if database.check_message_uniqueness(data['post_id'], data['user_id']):
-                _ = database.add_message_to_queue(data)
-                update_status_message(user_id=message.chat.id)
-                log.info('[Bot]: Post link %s for user %s added in queue', message.text, message.chat.id)
-            else:
-                log.info('[Bot]: Post %s for user %s already in queue or processed, skip', data['post_id'], message.chat.id)
+        # Check if the message is unique
+        if database.check_message_uniqueness(data['post_id'], data['user_id']):
+            _ = database.add_message_to_queue(data)
+            update_status_message(user_id=message.chat.id)
+            log.info('[Bot]: post %s from user %s has been added to the queue', message.text, message.chat.id)
+        else:
+            log.info('[Bot]: post %s from user %s already in queue or processed', data['post_id'], message.chat.id)
 
-            if mode == 'single':
-                telegram.delete_message(message.chat.id, message.id)
-                if help_message is not None:
-                    telegram.delete_message(message.chat.id, help_message.id)
+        # If it is not a list of posts - delete users message
+        if mode == 'single':
+            telegram.delete_message(message.chat.id, message.id)
+            if help_message is not None:
+                telegram.delete_message(message.chat.id, help_message.id)
     else:
         telegram.send_styled_message(
             chat_id=message.chat.id,
@@ -506,7 +495,7 @@ def process_list_posts(
 # SPECIFIED THREADS ###############################################################################################################
 def status_message_updater_thread() -> None:
     """
-    The handler for the status message.
+    Handler thread for monitoring and timely updating of the widget with the status of messages sent by the user.
 
     Args:
         None
@@ -514,12 +503,12 @@ def status_message_updater_thread() -> None:
     Returns:
         None
     """
-    log.info('[Message-updater-thread]: Started thread for status message updater')
+    log.info('[Message-updater-thread]: started thread for `status_message` updater')
     while True:
         try:
             time.sleep(STATUSES_MESSAGE_FREQUENCY)
-            if database.users_list():
-                for user in database.users_list():
+            if database.get_users():
+                for user in database.get_users():
                     user_id = user[0]
                     update_status_message(user_id=user_id)
         # pylint: disable=broad-exception-caught
@@ -527,7 +516,7 @@ def status_message_updater_thread() -> None:
             exception_context = {
                 'call': threading.current_thread().name,
                 'message': 'Failed to update the message with the status of received messages ',
-                'users_list': database.users_list(),
+                'users': database.get_users(),
                 'user': user,
                 'exception': exception
             }
@@ -536,7 +525,7 @@ def status_message_updater_thread() -> None:
 
 def queue_handler_thread() -> None:
     """
-    The handler for the queue of posts to be processed.
+    Handler thread to process messages from the queue at the specified time.
 
     Args:
         None
@@ -544,57 +533,60 @@ def queue_handler_thread() -> None:
     Returns:
         None
     """
-    log.info('[Queue-handler-thread]: Started thread for queue handler')
+    log.info('[Queue-handler-thread]: started thread for queue handler')
+    # Verify scheduled timestamps in the users queue for cases when bot was down
     database.verify_users_queue()
+
     while True:
         time.sleep(QUEUE_FREQUENCY)
         message = database.get_message_from_queue(datetime.now())
 
         if message is not None:
-            link_type = message[5]
             download_status = message[9]
             upload_status = message[10]
             post_id = message[2]
             owner_id = message[4]
 
-            if link_type == 'post':
-                log.info('[Queue-handler-thread] Starting handler for post url %s...', message[3])
-                # download the contents of an instagram post to a temporary folder
-                if download_status != 'completed':
-                    download_metadata = downloader.get_post_content(shortcode=post_id)
-                    owner_id = download_metadata['owner']
-                    download_status = download_metadata['status']
-                    database.update_message_state_in_queue(
-                        post_id=post_id,
-                        state='processing',
-                        download_status=download_status,
-                        upload_status=upload_status,
-                        post_owner=owner_id
-                    )
-                # upload the received content to the destination storage
-                if upload_status != 'completed':
-                    upload_status = uploader.run_transfers(sub_directory=owner_id)
-                    database.update_message_state_in_queue(
-                        post_id=post_id,
-                        state='processing',
-                        download_status=download_status,
-                        upload_status=upload_status,
-                        post_owner=owner_id
-                    )
-                # mark item in queue as processed
-                if download_status == 'completed' and upload_status == 'completed':
-                    database.update_message_state_in_queue(
-                        post_id=post_id,
-                        state='processed',
-                        download_status=download_status,
-                        upload_status=upload_status,
-                        post_owner=owner_id
-                    )
-                    log.info('[Queue-handler-thread] The URL of the post %s has been processed', post_id)
-                else:
-                    log.warning('[Queue-handler-thread] The URL of the post %s has not been processed:%s-%s', post_id, download_status, upload_status)
+            log.info('[Queue-handler-thread] starting handler for post url %s...', message[3])
+            # download the contents of an instagram post to a temporary folder
+            if download_status != 'completed':
+                download_metadata = downloader.get_post_content(shortcode=post_id)
+                owner_id = download_metadata['owner']
+                download_status = download_metadata['status']
+                database.update_message_state_in_queue(
+                    post_id=post_id,
+                    state='processing',
+                    download_status=download_status,
+                    upload_status=upload_status,
+                    post_owner=owner_id
+                )
+            # upload the received content to the destination storage
+            if upload_status != 'completed':
+                upload_status = uploader.run_transfers(sub_directory=owner_id)
+                database.update_message_state_in_queue(
+                    post_id=post_id,
+                    state='processing',
+                    download_status=download_status,
+                    upload_status=upload_status,
+                    post_owner=owner_id
+                )
+            # mark item in queue as processed
+            if download_status == 'completed' and upload_status == 'completed':
+                database.update_message_state_in_queue(
+                    post_id=post_id,
+                    state='processed',
+                    download_status=download_status,
+                    upload_status=upload_status,
+                    post_owner=owner_id
+                )
+                log.info('[Queue-handler-thread] the post %s has been processed successfully', post_id)
+            else:
+                log.warning(
+                    '[Queue-handler-thread] the post %s has not been processed yet (download: %s, uploader: %s)',
+                    post_id, download_status, upload_status
+                )
         else:
-            log.info("[Queue-handler-thread] no messages in the queue for processing")
+            log.info("[Queue-handler-thread] no messages in the queue for processing at the moment, waiting...")
 # SPECIFIED THREADS ###############################################################################################################
 
 

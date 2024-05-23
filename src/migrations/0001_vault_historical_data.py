@@ -68,4 +68,4 @@ def execute(obj):
     # pylint: disable=broad-exception-caught
     except Exception as migration_error:
         print(f"{NAME}: Migration cannot be completed due to an error: {migration_error}")
-        print(f"{NAME}: Perhaps the history is empty or the Vault secrets path does not exist")
+        print(f"{NAME}: Perhaps the history is empty or the Vault secrets path does not exist. It's not critical for the bot.")

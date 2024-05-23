@@ -1,10 +1,7 @@
-# pylint: disable=R0801
+# pylint: disable=duplicate-code
 """
-This module interacts with the instagram api and uploads content to a temporary local directory.
-Supports downloading the content of the post by link,
-the entire content of posts in the account,
-getting information about the account
-and saving the history of already downloaded messages in the vault.
+This module interacts with the instagram api and uploads content to a temporary directory.
+Supports downloading the content of the post by link and getting information about the account.
 https://instaloader.github.io/module/instaloader.html
 """
 from typing import Union
@@ -18,27 +15,27 @@ from .exceptions import WrongVaultInstance, FailedCreateDownloaderInstance, Fail
 # pylint: disable=too-few-public-methods
 class Downloader:
     """
-    The Instagram api instance is created by this class
-    and contains a set of all the necessary posts
-    for uploading content from Instagram accounts to local storage.
+    An Instagram API instance is created by this class and contains a set of all the necessary methods
+    to upload content from Instagram to a temporary directory.
     """
-
     def __init__(
         self,
         configuration: dict = None,
         vault: object = None
     ) -> None:
         """
-        The method for create a new instagram api client instance.
+        The method for create a new Instagram API client instance.
 
         Args:
-            :param configuration (dict): dictionary with configuration parameters for instagram api communication.
+            :param configuration (dict): dictionary with configuration parameters for Instagram API communication.
                 :param username (str): username for authentication in the instagram api.
                 :param password (str): password for authentication in the instagram api.
                 :param login-method (str): method for authentication in the instagram api. Can be: 'session', 'password', 'anonymous'.
-                :param session-file (str): the path to the session file of the instagram.
-                :param enabled (bool): enable or disable the downloader instance.
+                :param session-file (str): the path for saving the session file.
                 :param user-agent (str): user-agent header.
+                :param fatal-status-codes (list): list of fatal status codes, this causes the thread executing this module's code to crash.
+                :param iphone-support (bool): enable or disable iphone http headers.
+                :param session-base64 (str): base64 encoded session file.
             :param vault (object): instance of vault for reading configuration downloader-api.
 
         Returns:
@@ -54,7 +51,7 @@ class Downloader:
             ...     'password': 'my_password',
             ...     'login-method': 'session',
             ...     'session-file': '/path/to/session/file',
-            ...     'enabled': True,
+            ...     'session-base64': '<base64_encoded_session_file>',
             ...     'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'
             ... }
             >>> vault = Vault()
@@ -72,7 +69,7 @@ class Downloader:
                 "Failed to initialize the Downloader instance."
                 "Please check the configuration in class argument or the secret with the configuration in the Vault."
             )
-        log.info('[class.%s] Try to create a new instance of the Downloader class', __class__.__name__)
+        log.info('[class.%s] Downloader: creating a new instance of the Downloader...', __class__.__name__)
         self.instaloader = instaloader.Instaloader(
             quiet=True,
             user_agent=self.configuration.get('user-agent', None),
@@ -92,11 +89,14 @@ class Downloader:
             fatal_status_codes=literal_eval(self.configuration.get('fatal-status-codes', '[]'))
         )
         auth_status = self._login()
-        log.info('[class.%s] Downloader instance init with account %s: %s', __class__.__name__, self.configuration['username'], auth_status)
+        log.info(
+            '[class.%s] Downloader: downloader instance created successfully: %s in %s',
+            __class__.__name__, auth_status, self.configuration['username']
+        )
 
     def _login(self) -> Union[str, None]:
         """
-        The method for authentication in instagram api.
+        The method for authentication in Instagram API.
 
         Args:
             None
@@ -106,14 +106,16 @@ class Downloader:
             None
         """
         if self.configuration['login-method'] == 'session':
+            # If session-base64 defined in the configuration, then decode and save the session file.
             if self.configuration.get('session-base64', None):
                 with open(self.configuration['session-file'], 'wb') as file:
                     file.write(base64.b64decode(self.configuration['session-base64']))
+            # Otherwise, it expects the session file to be in the specified path.
             self.instaloader.load_session_from_file(
                 self.configuration['username'],
                 self.configuration['session-file']
             )
-            log.info('[class.%s] session file %s was load success', __class__.__name__, self.configuration['session-file'])
+            log.info('[class.%s] Downloader: session file %s was load success', __class__.__name__, self.configuration['session-file'])
             return 'logged_in'
 
         if self.configuration['login-method'] == 'password':
@@ -122,21 +124,26 @@ class Downloader:
                 self.configuration['password']
             )
             self.instaloader.save_session_to_file(self.configuration['session-file'])
-            log.info('[class.%s] login with password was successful. Save session in %s', __class__.__name__, self.configuration['sessionfile'])
+            log.info(
+                '[class.%s] Downloader: login with password was successful. Save session in %s',
+                __class__.__name__, self.configuration['sessionfile']
+            )
             return 'logged_in'
 
         if self.configuration['login-method'] == 'anonymous':
-            log.warning('[class.%s] initialization without logging into an account (anonymous)', __class__.__name__)
+            log.warning('[class.%s] Downloader: initialization without authentication into an account (anonymous)', __class__.__name__)
             return None
 
-        raise FailedAuthInstaloader("Failed to authenticate the Instaloader instance. Please check the configuration in the Vault.")
+        raise FailedAuthInstaloader(
+            "Failed to authenticate the Instaloader instance. Please check the configuration in the Vault or the class argument."
+        )
 
     def get_post_content(
         self,
         shortcode: str = None
     ) -> Union[dict, None]:
         """
-        The method for getting the content of a post from a specified Instagram account.
+        The method for getting the content of a post from a specified Post ID.
 
         Args:
             :param shortcode (str): the ID of the record for downloading content.
@@ -149,13 +156,10 @@ class Downloader:
                     'status': 'completed'
                 }
         """
-        log.info('[class.%s]: downloading the contents of the post %s...', __class__.__name__, shortcode)
-        post = instaloader.Post.from_shortcode(
-            self.instaloader.context,
-            shortcode
-        )
+        log.info('[class.%s] Downloader: downloading the contents of the post %s...', __class__.__name__, shortcode)
+        post = instaloader.Post.from_shortcode(self.instaloader.context, shortcode)
         self.instaloader.download_post(post, '')
-        log.info('[class.%s]: the contents of the post %s have been successfully downloaded', __class__.__name__, shortcode)
+        log.info('[class.%s] Downloader: the contents of the post %s have been successfully downloaded', __class__.__name__, shortcode)
         metadata = {
             'post': shortcode,
             'owner': post.owner_username,

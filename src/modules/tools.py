@@ -1,13 +1,11 @@
-"""This module contains the tools for this python project."""
+"""This module contains the tools for this python project"""
 from typing import Union
 import hashlib
 
 
-def get_hash(
-    data: Union[str, dict] = None
-) -> str:
+def get_hash(data: Union[str, dict] = None) -> str:
     """
-    Get a hash of the data.
+    Get a hash of the input data.
 
     Args:
         data (Union[str, dict]): The data to hash.

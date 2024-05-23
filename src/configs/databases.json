@@ -1,26 +1,4 @@
 {
-    "DataSeeding": [
-        {
-            "table": "locks",
-            "data": {
-                "name": "Unauthorized",
-                "behavior": "block:downloader_class",
-                "description": "Locks the post downloading functionality",
-                "caused_by": "401:unauthorized",
-                "tip": "Instagram session expired, invalid credentials or account is blocked"
-            }
-        },
-        {
-            "table": "locks",
-            "data": {
-                "name": "BadRequest",
-                "behavior": "block:downloader_class:post_link",
-                "description": "Locks the specified post downloading functionality",
-                "caused_by": "400:badrequest",
-                "tip": "When trying to upload content, an error occurs with an invalid request"
-            }
-        }
-    ],
     "Tables": [
         {
             "name": "queue",
@@ -66,20 +44,6 @@
                 "id SERIAL PRIMARY KEY, ",
                 "name VARCHAR(255) NOT NULL, ",
                 "version VARCHAR(255) NOT NULL, ",
-                "timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP"
-            ]
-        },
-        {
-            "name": "locks",
-            "description": "This table will record the locks caused by various exceptions when the bot is running. These locks will block various bot functionality until manual intervention.",
-            "columns": [
-                "id SERIAL PRIMARY KEY, ",
-                "name VARCHAR(255) NOT NULL, ",
-                "behavior VARCHAR(255) NOT NULL, ",
-                "enabled BOOLEAN NOT NULL DEFAULT FALSE, ",
-                "description VARCHAR(255) NOT NULL, ",
-                "caused_by VARCHAR(255) NOT NULL, ",
-                "tip VARCHAR(255) NOT NULL, ",
                 "timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP"
             ]
         },
