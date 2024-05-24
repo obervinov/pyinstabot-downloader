@@ -99,10 +99,10 @@ class DatabaseClient:
             log.info('[class.%s] Prepare Database: create table `%s` (if does not exist)', __class__.__name__, table['name'])
 
         # Write necessary data to the database (service records)
-        if database_init_configuration['DataSeeding']:
+        if database_init_configuration.get('DataSeeding', None):
             # ! This code block needs to be improved after some service data will appear for filling,
             # ! because this code creates duplicate lines each time the project is started.
-            for data in database_init_configuration.get('DataSeeding', None):
+            for data in database_init_configuration['DataSeeding']:
                 self._insert(
                     table_name=data['table'],
                     columns=tuple(data['data'].keys()),
