@@ -542,27 +542,32 @@ class DatabaseClient:
 
             if need_reschedule:
                 log.warning("[class.%s] Database: rescheduling messages in the queue for user %s", __class__.__name__, user_id)
-                # The lag between the current time and the scheduled time of the message
-                minutes_lag = None
-                # The difference in minutes between the current message and the previous message
-                minutes_diff = None
+                # The lag between the current time and the scheduled time of the message in the seconds
+                lag = None
+                # The difference in minutes between the current message and the previous message in the seconds
+                diff = None
                 # The new scheduled time for the message after rescheduling
                 new_schedule_time = None
+                # The previous scheduled time of the message for calculate the skew between the messages. For keep rate limit.
+                previous_schedule_time = None
                 # Reschedule the all messages in the queue
                 for message in full_queue:
-                    minutes_lag = (datetime.now() - message[1]) / 60
-                    if not new_schedule_time:
-                        new_schedule_time = message[1] + minutes_lag
+                    schedule_time = message[1]
+                    lag = (datetime.now() - schedule_time).total_seconds()
+
+                    # If haven't previous message value for compare difference between the messages
+                    if not previous_schedule_time:
+                        new_schedule_time = datetime.now()
                         self._update(
                             table_name='queue',
                             values=f"scheduled_time = '{new_schedule_time}'",
                             condition=f"id = '{message[0]}'"
                         )
                     else:
-                        minutes_diff = (message[1] + minutes_lag - new_schedule_time) / 60
+                        diff = (schedule_time - previous_schedule_time).total_seconds()
                         # Add the difference in minutes between the current message and the previous message to the lag
-                        minutes_skew = minutes_diff + minutes_lag
-                        new_schedule_time = message[1] + minutes_skew
+                        skew = diff + lag
+                        new_schedule_time = datetime.now() + timedelta(seconds=skew)
                         self._update(
                             table_name='queue',
                             values=f"scheduled_time = '{new_schedule_time}'",
