@@ -169,12 +169,13 @@ curl -L https://gist.githubusercontent.com/obervinov/9bd452fee681f0493da7fd0b2bf
 ```
 
   `setup_vault_server.py` - This script performs a quick and convenient configuration of the vault-server for this bot project
-  - `initial` initialization of vault-server
-  - `unseal` vault-server
+  - `initial` initialization of vault-server (_if it is new vault-server_)
+  - `unseal` vault-server (_if it is new vault-server_)
   - creating an isolated `mount point`
-  - loading `policy.hcl`, creating an `approle`
+  - loading `policy.hcl`
+  - creating an `approle`
 
-All these actions can also be performed using the vault cli:
+All these actions can also be performed using the official `vault` cli
 ```bash
 vault operator init
 vault operator unseal

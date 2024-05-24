@@ -91,7 +91,7 @@ class DatabaseClient:
             database_init_configuration = json.load(config_file)
 
         # Create databases if does not exist
-        for table in database_init_configuration['Tables']:
+        for table in database_init_configuration.get('Tables', None):
             self._create_table(
                 table_name=table['name'],
                 columns="".join(f"{column}" for column in table['columns'])
@@ -102,7 +102,7 @@ class DatabaseClient:
         if database_init_configuration['DataSeeding']:
             # ! This code block needs to be improved after some service data will appear for filling,
             # ! because this code creates duplicate lines each time the project is started.
-            for data in database_init_configuration['DataSeeding']:
+            for data in database_init_configuration.get('DataSeeding', None):
                 self._insert(
                     table_name=data['table'],
                     columns=tuple(data['data'].keys()),
