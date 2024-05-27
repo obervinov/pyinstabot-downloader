@@ -573,6 +573,7 @@ class DatabaseClient:
                             values=f"scheduled_time = '{new_schedule_time}'",
                             condition=f"id = '{message[0]}'"
                         )
+                    previous_schedule_time = schedule_time
                     log.info("[class.%s] Database: rescheduled message %s: %s -> %s", __class__.__name__, message[0], message[1], new_schedule_time)
         log.info("[class.%s] Database: users queue verification completed", __class__.__name__)
 
