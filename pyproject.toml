@@ -25,7 +25,7 @@ psycopg2-binary = "^2"
 mock = "^5"
 logger = { git = "https://github.com/obervinov/logger-package.git", tag = "v1.0.6" }
 vault  = { git = "https://github.com/obervinov/vault-package.git", tag = "v2.0.4" }
-users = { git = "https://github.com/obervinov/users-package.git", tag = "v2.0.4" }
+users = { git = "https://github.com/obervinov/users-package.git", branch = "fix/v2.0.5" }
 telegram = { git = "https://github.com/obervinov/telegram-package.git", tag = "v1.2.0" }
 
 [build-system]
