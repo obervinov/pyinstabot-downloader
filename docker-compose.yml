@@ -1,0 +1,67 @@
+# manifest for the development process with the local version of the vault
+---
+version: '3'
+services:
+    vault-server:
+        image: hashicorp/vault:1.14.1
+        container_name: vault
+        command: ["server"]
+        environment:
+            # yamllint disable-line rule:line-length
+            - 'VAULT_LOCAL_CONFIG={"backend": {"file": {"path": "/vault/data"}}, "default_lease_ttl": "1h", "max_lease_ttl": "720h", "listener": {"tcp": {"address": "0.0.0.0:8200", "tls_disable": "1"}}'
+            - VAULT_API_ADDR=http://0.0.0.0:8200
+            - VAULT_PORT=8200
+        ports:
+            - "0.0.0.0:8200:8200"
+        cap_add:
+            - IPC_LOCK
+
+    postgres:
+        image: postgres:latest
+        container_name: postgres
+        environment:
+            POSTGRES_DB: pyinstabot-downloader
+            POSTGRES_USER: python
+            POSTGRES_PASSWORD: python
+        ports:
+            - "0.0.0.0:5432:5432"
+        volumes:
+            - postgres_data:/var/lib/postgresql/data
+
+    pgadmin:
+        image: dpage/pgadmin4:latest
+        container_name: pgadmin
+        environment:
+            PGADMIN_DEFAULT_EMAIL: admin@email.com
+            PGADMIN_DEFAULT_PASSWORD: adminpassword
+        ports:
+            - "5050:80"
+        depends_on:
+            - postgres
+
+    pyinstabot-downloader:
+        build:
+            context: .
+            dockerfile: Dockerfile
+            args:
+                PROJECT_NAME: pyinstabot-downloader
+                PROJECT_DESCRIPTION: "This project is a Telegram bot that allows you to backup post content from your Instagram profile to Dropbox or Mega clouds."
+                PROJECT_VERSION: 2.1.0
+        container_name: pyinstabot-downloader
+        restart: always
+        environment:
+            - PROJECT_ENVIRONMENT=dev
+            - TELEGRAM_BOT_NAME=pyinstabot-downloader
+            - VAULT_APPROLE_ID=${VAULT_APPROLE_ID}
+            - VAULT_APPROLE_SECRETID=${VAULT_APPROLE_SECRETID}
+            - VAULT_ADDR=${VAULT_ADDR}
+            - LOGGER_LEVEL=DEBUG
+            - MESSAGES_CONFIG=configs/messages.json
+        volumes:
+            - ../.config/instaloader:/home/pyinstabot-downloader/.config/instaloader
+        depends_on:
+            - vault-server
+            - postgres
+
+volumes:
+    postgres_data:

@@ -1,0 +1,73 @@
+{
+    "Tables": [
+        {
+            "name": "queue",
+            "description": "Messages received by the bot are placed in this table for further processing at the specified time by a separate thread",
+            "columns": [
+                "id SERIAL PRIMARY KEY, ",
+                "user_id VARCHAR(255) NOT NULL, ",
+                "post_id VARCHAR(255) NOT NULL, ",
+                "post_url VARCHAR(255) NOT NULL, ",
+                "post_owner VARCHAR(255) NOT NULL, ",
+                "link_type VARCHAR(255) NOT NULL DEFAULT 'post', ",
+                "message_id VARCHAR(255) NOT NULL, ",
+                "chat_id VARCHAR(255) NOT NULL, ",
+                "scheduled_time TIMESTAMP NOT NULL, ",
+                "download_status VARCHAR(255) NOT NULL DEFAULT 'not started', ",
+                "upload_status VARCHAR(255) NOT NULL DEFAULT 'not started', ",
+                "timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, ",
+                "state VARCHAR(255) NOT NULL DEFAULT 'waiting'"
+            ]
+        },
+        {
+            "name": "processed",
+            "description": "After processing from the queue, the record should be moved to this table and enriched with additional data",
+            "columns": [
+                "id SERIAL PRIMARY KEY, ",
+                "user_id VARCHAR(255) NOT NULL, ",
+                "post_id VARCHAR(255) NOT NULL, ",
+                "post_url VARCHAR(255) NOT NULL, ",
+                "post_owner VARCHAR(255) NOT NULL, ",
+                "link_type VARCHAR(255) NOT NULL DEFAULT 'post', ",
+                "message_id VARCHAR(255) NOT NULL, ",
+                "chat_id VARCHAR(255) NOT NULL, ",
+                "download_status VARCHAR(255) NOT NULL, ",
+                "upload_status VARCHAR(255) NOT NULL, ",
+                "timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, ",
+                "state VARCHAR(255) NOT NULL DEFAULT 'processed'"
+            ]
+        },
+        {
+            "name": "migrations",
+            "description": "Table to store the migration history of the database",
+            "columns": [
+                "id SERIAL PRIMARY KEY, ",
+                "name VARCHAR(255) NOT NULL, ",
+                "version VARCHAR(255) NOT NULL, ",
+                "timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP"
+            ]
+        },
+        {
+            "name": "messages",
+            "description": "The table stores the message ID and the chat ID",
+            "columns": [
+                "id SERIAL PRIMARY KEY, ",
+                "message_id VARCHAR(255) NOT NULL, ",
+                "chat_id VARCHAR(255) NOT NULL, ",
+                "timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, ",
+                "message_type VARCHAR(255) NOT NULL , ",
+                "producer VARCHAR(255) NOT NULL , ",
+                "message_content_hash VARCHAR(64) NOT NULL"
+            ]
+        },
+        {
+            "name": "users",
+            "description": "The table stores the user ID and the chat ID for communication with the bot",
+            "columns": [
+                "id SERIAL PRIMARY KEY, ",
+                "user_id VARCHAR(255) NOT NULL, ",
+                "chat_id VARCHAR(255) NOT NULL"
+            ]
+        }
+    ]
+}

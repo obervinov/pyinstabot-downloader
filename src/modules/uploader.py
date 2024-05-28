@@ -1,90 +1,93 @@
+# pylint: disable=R0801
 """
 This module processes the content uploaded from Instagram
 and uploads the found media files (image, video) to the destination storage.
 """
 import os
+from typing import Union
 import dropbox
 from mega import Mega
 from logger import log
+from .exceptions import WrongVaultInstance, FailedInitUploaderInstance, WrongStorageType
 
 
 class Uploader:
     """
     This class creates an instance with a connection
-    to the target storage for uploading local media content.
+    to the target storage for uploading media content.
     """
-
     def __init__(
         self,
-        storage: dict = None,
+        configuration: dict = None,
         vault: object = None
     ) -> None:
         """
-        The method creates an instance with a connection
-        to the target storage for uploading local media content.
+        The method creates an instance with a connection to the target storage for uploading media content.
 
         Args:
-            :param storage (dict): dictionary with storage parameters.
-                :param type (str): type of storage for uploading content
-                                   'local' or 'dropbox' or 'mega'.
-                :param temporary (str): the temporary directory from which you want
-                                        to read the content and delete it after uploading.
-                :param cloud_root_path (str): a subdirectory in the cloud storage for saving content
+            :param configuration (dict): dictionary with target storage parameters.
+                :param username (str): username for authentication in the target storage.
+                :param password (str): password for authentication in the target storage.
+                :param storage-type (str): type of storage for uploading content. Can be: 'dropbox', 'mega'.
+                :param exclude-types (str): exclude files with this type from uploading. Example: '.json, .txt'.
+                :param source-directory (str): the path to the local directory with media content for uploading.
+                :param destination-directory (str): a subdirectory in the cloud storage where the content will be uploaded.
             :param vault (object): instance of vault for reading authorization data.
 
         Returns:
             None
 
         Examples:
-            >>> UPLOADER_INSTANCE = Uploader(
-                    storage={
-                        'type': STORAGE_TYPE,
-                        'temporary': TEMPORARY_DIR,
-                        'cloud_root_path': BOT_NAME,
-                        'exclude_type': STORAGE_EXCLUDE_TYPE
-                    },
-                    vault=VAULT_CLIENT
-                )
+            >>> configuration = {
+            ...     'username': 'my_username',
+            ...     'password': 'my_password',
+            ...     'storage-type': 'dropbox',
+            ...     'exclude-types': '.json, .txt',
+            ...     'source-directory': '/path/to/source/directory',
+            ...     'destination-directory': '/path/to/destination/directory'
+            ... }
+            >>> vault = Vault()
+            >>> uploader = Uploader(configuration, vault)
         """
-        self.storage = storage
-        self.temporary_dir = f"{os.getcwd()}/{self.storage['temporary']}"
-        self.vault = vault
+        if not vault:
+            raise WrongVaultInstance("Wrong vault instance, you must pass the vault instance to the class argument.")
 
-        log.info(
-            '[class.%s] uploader instance init with "%s" target storage',
-            __class__.__name__,
-            storage['type']
-        )
-
-        if self.storage['type'] == 'dropbox':
-            self.dropbox_client = dropbox.Dropbox(
-                oauth2_access_token=self.vault.read_secret(
-                    'configuration/dropbox',
-                    'token'
-                ),
-                timeout=60
+        if configuration:
+            self.configuration = configuration
+        elif not configuration:
+            self.configuration = vault.read_secret(path='configuration/uploader-api')
+        else:
+            raise FailedInitUploaderInstance(
+                "Failed to initialize the Uploader instance."
+                "Please check the configuration in class argument or the secret with the configuration in the Vault."
             )
 
-        if self.storage['type'] == 'mega':
-            self.mega_client = Mega().login(
-                self.vault.read_secret(
-                  'configuration/mega',
-                  'username'
-                ),
-                self.vault.read_secret(
-                  'configuration/mega',
-                  'password'
-                )
-            )
-
+        self.local_directory = f"{os.getcwd()}/{self.configuration['source-directory']}"
+        self.storage = self._init_storage_connection()
         self._check_incomplete_transfers()
 
-    def _check_incomplete_transfers(
-        self,
-    ) -> None:
+    def _init_storage_connection(self) -> object:
         """
-        The method for checking uploads in temp storage
-        that for some reason could not be uploaded to the cloud.
+        The method for initializing a connection to the target storage.
+
+        Args:
+            None
+
+        Returns:
+            (object) connection object to the target storage.
+        """
+        if self.configuration['storage-type'] == 'dropbox':
+            return dropbox.Dropbox(oauth2_access_token=self.configuration['password'])
+
+        if self.configuration['storage-type'] == 'mega':
+            mega = Mega()
+            return mega.login(email=self.configuration['username'], password=self.configuration['password'])
+
+        raise WrongStorageType("Wrong storage type, please check the configuration. 'storage-type' can be: 'dropbox', 'mega'.")
+
+    def _check_incomplete_transfers(self) -> None:
+        """
+        The method for checking uploads in temp directory that for some reason could not be uploaded to the target cloud storage.
 
         Args:
             None
@@ -92,92 +95,62 @@ class Uploader:
         Returns:
             None
         """
-        log.info(
-            '[class.%s] checking the pending uploads in the temporary directory ...',
-            __class__.__name__
-        )
+        log.info('[class.%s] Uploader: checking incomplete transfers in the temporary directory...', __class__.__name__)
+        for root, dirs, _ in os.walk(self.configuration['source-directory']):
+            for dir_name in dirs:
+                sub_directory = os.path.join(root, dir_name)
+                # Check the subdirectory for files
+                sub_files = [f for f in os.listdir(sub_directory) if os.path.isfile(os.path.join(sub_directory, f))]
+                if sub_files:
+                    log.warning('[class.%s] Uploader: an unloaded artifact was found: %s', __class__.__name__, sub_directory)
+                    self.run_transfers(sub_directory=sub_directory)
+                else:
+                    log.info('[class.%s] Uploader: remove of an empty directory %s', __class__.__name__, sub_directory)
+                    os.rmdir(sub_directory)
 
-        for _, artifacts, _ in os.walk(self.temporary_dir):
-            for artifact in artifacts:
-                log.warning(
-                    '[class.%s] an unloaded artifact was found %s',
-                    __class__.__name__,
-                    artifact
-                )
-                self.start_upload(
-                    os.path.join(artifact)
-                )
-
-    def start_upload(
+    def run_transfers(
         self,
-        sub_dir_name: str = None
-    ) -> dict:
+        sub_directory: str = None
+    ) -> str:
         """
-        The method of preparing media files for transfer to the target storage (cloud or local).
+        External entrypoint method for uploading media files to the target cloud storage.
 
         Args:
-            :param sub_dir_name (str): the name of the subdirectory where the content is located
-                                       is equivalent to the record ID.
+            :param sub_directory (str): the name of the subdirectory in the source directory with media content.
 
         Returns:
-            (dict) {
-                     '/root/path/shortcode/file1.jpeg': 'uploaded',
-                     '/root/path/shortcode/file2.jpeg': None
-                   }
-
-            (explanation of values)
-                (str) 'uploaded'
-                    (this means that the file has been successfully uploaded to the cloud)
-                (str) 'None'
-                    (this means that an error has occurred the file is not uploaded to the cloud)
-                (str) 'saved'
-                    (this means that the file must remain in the local (temporary directory))
-                    (and it is not required to perform any actions with it)
+            (str) 'completed'
+                (this means that the file has been successfully uploaded to the cloud)
+            (str) 'not_completed'
+                (this means that an error has occurred the file is not uploaded to the cloud)
         """
         transfers = {}
-
-        log.info(
-            '[class.%s] preparing media files for transfer to the "%s"',
-            __class__.__name__,
-            self.storage['type']
-        )
-
-        for root, _, files in os.walk(
-            f'{self.temporary_dir}{sub_dir_name}'
-        ):
+        result = ""
+        log.info('[class.%s] Uploader: preparing media files for transfer to the %s cloud...', __class__.__name__, self.configuration['storage-type'])
+        for root, _, files in os.walk(f"{self.configuration['source-directory']}{sub_directory}"):
             for file in files:
-                if self.storage['exclude_type'] and self.storage['exclude_type'] in file:
-                    os.remove(
-                        os.path.join(root, file)
-                    )
+                if file.split('.')[-1] in self.configuration.get('exclude-types', None):
+                    os.remove(os.path.join(root, file))
                 else:
-                    transfers[file] = self.file_upload(
-                        os.path.join(root, file),
-                        sub_dir_name
+                    transfers[file] = self.upload_to_cloud(
+                        source=os.path.join(root, file),
+                        destination=root.split('/')[1]
                     )
                     if transfers[file] == 'uploaded':
-                        os.remove(
-                            os.path.join(root, file)
-                        )
+                        os.remove(os.path.join(root, file))
+                        result = 'completed'
+                    else:
+                        result = 'not_completed'
+        log.info('[class.%s] Uploader: list of all transfers %s', __class__.__name__, transfers)
+        return result
 
-        if len(os.listdir(f'{self.temporary_dir}{sub_dir_name}')) == 0:
-            os.rmdir(f'{self.temporary_dir}{sub_dir_name}')
-
-        log.info(
-            '[class.%s] All TRANSFERS: %s',
-            __class__.__name__,
-            transfers
-        )
-        return transfers
-
-    def file_upload(
+    def upload_to_cloud(
         self,
         source: str = None,
         destination: str = None
-    ) -> str | None:
+    ) -> Union[str, None]:
         """
-        The method of uploading the contents of the target directory
-        to the cloud or local directory.
+        The method of uploading the contents of the source directory to the target cloud storage.
 
         Args:
             :param source (str): the path to the local file to transfer to the target storage.
@@ -188,68 +161,28 @@ class Uploader:
                 or
             None
         """
-        log.info(
-            '[class.%s] starting upload file %s to %s//:%s',
-            __class__.__name__,
-            source,
-            self.storage['type'],
-            destination
-        )
+        log.info('[class.%s] starting upload file %s to %s://%s', __class__.__name__, source, self.configuration['storage-type'], destination)
+        response = None
+        result = None
 
-        if self.storage['type'] == "local":
-            return "saved"
+        if self.configuration['storage-type'] == 'mega':
+            directory = f"{self.configuration['destination-directory']}/{destination}"
+            log.info('[class.%s] Uploader: trying found mega folder %s...', __class__.__name__, directory)
+            mega_folder = self.storage.find(directory, exclude_deleted=True)
+            if not mega_folder:
+                self.storage.create_folder(directory)
+                mega_folder = self.storage.find(directory, exclude_deleted=True)
+                log.info('[class.%s] Uploader: mega folder not found, created new folder %s', __class__.__name__, mega_folder)
+            else:
+                log.info('[class.%s] Uploader: mega folder %s was found', __class__.__name__, mega_folder)
+            response = self.storage.upload(filename=source, dest=mega_folder[0])
+            result = "uploaded"
 
-        if self.storage['type'] == 'mega':
-            directory = f"{self.storage['cloud_root_path']}/{destination}"
-            try:
-                mega_folder = self.mega_client.find(
-                    directory,
-                    exclude_deleted=True
-                )
-                if not mega_folder:
-                    self.mega_client.create_folder(
-                        directory
-                    )
-                response = self.mega_client.upload(
-                    source,
-                    mega_folder[0]
-                )
-                log.info(
-                    '[class.%s] %s successful transferred',
-                    __class__.__name__,
-                    response
-                )
-                return "uploaded"
-
-            # pylint: disable=W0718
-            # because the mega library does not contain exceptions
-            except Exception as mega_exception:
-                log.error(
-                    '[class.%s] error when uploading via the mega api: %s',
-                    __class__.__name__,
-                    mega_exception
-                )
-                log.warning(
-                    '[class.%s] trying again file_upload()',
-                    __class__.__name__,
-                )
-                self.file_upload(
-                    source,
-                    destination,
-                )
-
-        if self.storage['type'] == 'dropbox':
+        if self.configuration['storage-type'] == 'dropbox':
             with open(source, 'rb') as file_transfer:
-                response = self.dropbox_client.files_upload(
-                    file_transfer.read(),
-                    f'/{destination}/{source.split("/")[-1]}'
-                )
-                log.info(
-                    '[class.%s] %s successful transferred',
-                    __class__.__name__,
-                    response
-                )
+                response = self.storage.files_upload(file_transfer.read(), f"/{destination}/{source.split('/')[-1]}")
             file_transfer.close()
-            return "uploaded"
+            result = "uploaded"
 
-        return None
+        log.info('[class.%s] Uploader: %s successful transferred', __class__.__name__, response)
+        return result
