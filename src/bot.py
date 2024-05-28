@@ -120,7 +120,7 @@ def bot_callback_query_handler(call: telegram.callback_query = None) -> None:
     Returns:
         None
     """
-    log.info('[Bot]: Processing button %s for user %s...', call.data, call.message.chat.id)
+    log.info('[Bot]: Processing button `%s` for user %s...', call.data, call.message.chat.id)
     if users.user_access_check(call.message.chat.id, ROLES_MAP[call.data]).get('permissions', None) == users.user_status_allow:
         if call.data == "Post":
             button_post(call=call)

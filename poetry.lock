@@ -904,8 +904,8 @@ vault = {git = "https://github.com/obervinov/vault-package.git", tag = "v2.0.4"}
 [package.source]
 type = "git"
 url = "https://github.com/obervinov/users-package.git"
-reference = "fix/v2.0.5"
-resolved_reference = "b8e902f55f4d4b856a8422acb1a22953e2379b45"
+reference = "v2.0.5"
+resolved_reference = "f4f4b758d394fd1820c9ee3ce264b5d18a439823"
 
 [[package]]
 name = "vault"
@@ -947,4 +947,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "jaraco.test", "more
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "622770ea0515490d9aed1e25fcd70b3c29f797a8bc3db6d04bb8d55b0c943c2b"
+content-hash = "e08ed1cdb707b44e9aeb7a92e5b75123b065a3481d5209d6c5c482a56d859a67"
