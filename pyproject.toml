@@ -19,7 +19,7 @@ packages = [{include = "src"}]
 [tool.poetry.dependencies]
 python = "^3.9"
 instaloader = "^4"
-dropbox = "^11"
+dropbox = "^12"
 'mega.py' = "^1.0.8"
 psycopg2-binary = "^2"
 mock = "^5"
