@@ -3,9 +3,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/) and this project adheres to [Semantic Versioning](http://semver.org/).
 
 
+## v2.1.2 - 2024-05-29
+### What's Changed
+**Full Changelog**: https://github.com/obervinov/pyinstabot-downloader/compare/v2.1.1...v2.1.2 by @obervinov in https://github.com/obervinov/pyinstabot-downloader/pull/55
+#### 🚀 Features
+* [Bump dropbox from 11.36.2 to 12.0.0](https://github.com/obervinov/pyinstabot-downloader/pull/55)
+
+
 ## v2.1.1 - 2024-05-29
 ### What's Changed
-**Full Changelog**: https://github.com/obervinov/pyinstabot-downloader/compare/v2.1.0...v2.1.1 by @obervinov in https://github.com/obervinov/pyinstabot-downloader/pull/
+**Full Changelog**: https://github.com/obervinov/pyinstabot-downloader/compare/v2.1.0...v2.1.1 by @obervinov in https://github.com/obervinov/pyinstabot-downloader/pull/58
 #### 🐛 Bug Fixes
 * [Fix code scanning alert - pypa-setuptools: Regular Expression Denial of Service (ReDoS) in package_index.py](https://github.com/obervinov/pyinstabot-downloader/issues/57)
 * [Fix code scanning alert - pypa-setuptools: Regular Expression Denial of Service (ReDoS) in package_index.py](https://github.com/obervinov/pyinstabot-downloader/issues/56)
