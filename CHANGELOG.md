@@ -3,6 +3,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/) and this project adheres to [Semantic Versioning](http://semver.org/).
 
 
+## v2.1.1 - 2024-05-29
+### What's Changed
+**Full Changelog**: https://github.com/obervinov/pyinstabot-downloader/compare/v2.1.0...v2.1.1 by @obervinov in https://github.com/obervinov/pyinstabot-downloader/pull/
+#### 🐛 Bug Fixes
+* [Fix code scanning alert - pypa-setuptools: Regular Expression Denial of Service (ReDoS) in package_index.py](https://github.com/obervinov/pyinstabot-downloader/issues/57)
+* [Fix code scanning alert - pypa-setuptools: Regular Expression Denial of Service (ReDoS) in package_index.py](https://github.com/obervinov/pyinstabot-downloader/issues/56)
+
+
 ## v2.1.0 - 2024-05-28
 ### What's Changed
 **Full Changelog**: https://github.com/obervinov/pyinstabot-downloader/compare/v2.0.0...v2.1.0 by @obervinov in https://github.com/obervinov/pyinstabot-downloader/pull/37
