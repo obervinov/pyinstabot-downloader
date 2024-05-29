@@ -4,7 +4,9 @@ name: Tag
 on:
   push:
     tags:
-    - '*'
+      - '*'
+      - '*/*'
+      - '**'
 
 jobs:
   build-tag-image:
