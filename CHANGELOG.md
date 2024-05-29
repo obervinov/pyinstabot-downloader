@@ -5,7 +5,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 
 ## v2.1.3 - 2024-05-29
 ### What's Changed
-**Full Changelog**: https://github.com/obervinov/pyinstabot-downloader/compare/v2.1.2...v2.1.3 by @obervinov in https://github.com/obervinov/pyinstabot-downloader/pull/
+**Full Changelog**: https://github.com/obervinov/pyinstabot-downloader/compare/v2.1.2...v2.1.3 by @obervinov in https://github.com/obervinov/pyinstabot-downloader/pull/59
 #### 🐛 Bug Fixes
 * Fixed workflow for build image per tag 
 
