@@ -26,5 +26,5 @@ jobs:
     uses: obervinov/_templates/.github/workflows/pr.yaml@v1.2.4
 
   build-pr-image:
-    uses: obervinov/_templates/.github/workflows/docker.yaml@v1.2.4
+    uses: obervinov/_templates/.github/workflows/docker.yaml@fix/v1.2.5
     needs: [changelog, pylint, pytest, pyproject]

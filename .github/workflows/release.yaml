@@ -10,9 +10,9 @@ on:
 
 jobs:
   create-release:
-    uses: obervinov/_templates/.github/workflows/release.yaml@v1.2.4
+    uses: obervinov/_templates/.github/workflows/release.yaml@v1.2.5
     needs: [build-release-image]
 
   # milestone:
-  #   uses: obervinov/_templates/.github/workflows/milestone.yaml@v1.2.3
+  #   uses: obervinov/_templates/.github/workflows/milestone.yaml@v1.2.5
   #   needs: [create-release, build-release-image]
