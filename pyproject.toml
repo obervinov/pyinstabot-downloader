@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pyinstabot-downloader"
-version = "2.1.2"
+version = "2.1.3"
 description = "This project is a Telegram bot that allows you to backup post content from your Instagram profile to Dropbox or Mega clouds."
 authors = ["Bervinov Oleg <obervinov@pm.me>"]
 maintainers = ["Bervinov Oleg <obervinov@pm.me>"]

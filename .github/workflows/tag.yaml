@@ -3,12 +3,8 @@ name: Tag
 
 on:
   push:
-    tags:
-      - '*'
-      - '*/*'
-      - '**'
+    tags: [ 'v*.*.*' ]
 
 jobs:
   build-tag-image:
     uses: obervinov/_templates/.github/workflows/docker.yaml@v1.2.2
-
