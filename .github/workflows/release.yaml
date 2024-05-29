@@ -9,25 +9,8 @@ on:
       - closed
 
 jobs:
-  changelog:
-    uses: obervinov/_templates/.github/workflows/changelog.yaml@v1.2.2
-
-  pylint:
-    uses: obervinov/_templates/.github/workflows/pylint.yaml@v1.2.2
-
-  pytest:
-    uses: obervinov/_templates/.github/workflows/pytest-with-vault.yaml@v1.2.2
-
-  pyproject:
-    uses: obervinov/_templates/.github/workflows/pyproject.yaml@v1.2.2
-
-  build-release-image:
-    uses: obervinov/_templates/.github/workflows/docker.yaml@v1.2.2
-    needs: [changelog, pylint, pytest, pyproject]
-
   create-release:
     uses: obervinov/_templates/.github/workflows/release.yaml@v1.2.2
-    needs: [changelog, pylint, pytest, pyproject, build-release-image]
 
   # milestone:
   #   uses: obervinov/_templates/.github/workflows/milestone.yaml@v1.2.2

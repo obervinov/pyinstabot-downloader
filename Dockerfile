@@ -1,4 +1,4 @@
-FROM python:3.9.15-alpine3.16
+FROM python:3.9.15-alpine3.17
 
 ### External argumetns ###
 ARG PROJECT_DESCRIPTION
@@ -34,6 +34,7 @@ RUN adduser -D -h /home/${PROJECT_NAME} -s /bin/sh ${PROJECT_NAME} && \
 
 ### Prepare tools and fix vulnerabilities ###
 RUN apk upgrade --no-cache && apk add --no-cache git curl
+RUN pip3 install --upgrade pip setuptools
 
 ### Switching context ###
 USER ${PROJECT_NAME}
