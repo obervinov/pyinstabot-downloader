@@ -46,7 +46,7 @@ services:
             args:
                 PROJECT_NAME: pyinstabot-downloader
                 PROJECT_DESCRIPTION: "This project is a Telegram bot that allows you to backup post content from your Instagram profile to Dropbox or Mega clouds."
-                PROJECT_VERSION: 2.1.0
+                PROJECT_VERSION: 2.1.5
         container_name: pyinstabot-downloader
         restart: always
         environment:
