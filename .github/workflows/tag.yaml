@@ -3,11 +3,7 @@ name: Tag
 
 on:
   push:
-    tags:
-      - 'v*'
-
-  release:
-    types: [created]
+    tags: [ 'v*.*.*' ]
 
 jobs:
   build-tag-image:
