@@ -599,7 +599,8 @@ class DatabaseClient:
             table_name='queue',
             columns=("post_id", "scheduled_time"),
             condition=f"user_id = '{user_id}'",
-            limit=1000
+            order_by='scheduled_time DESC',
+            limit=10
         )
         for message in queue:
             if user_id not in result:

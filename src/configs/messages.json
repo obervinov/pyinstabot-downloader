@@ -5,7 +5,7 @@
             "args": ["username", "userid", ":raised_hand:", ":unlocked:"]
         },
         "message_statuses": {
-            "text": "{0} <b>Your last activity:</b>\n\n{1} <b>processed</b> (last 10)\n{2}\n{3} <b>in queue</b>\n{4}",
+            "text": "{0} <b>Your last activity (last 10):</b>\n\n{1} <b>processed</b>\n{2}\n{3} <b>in queue</b>\n{4}",
             "args": [":bar_chart:", ":check_mark_button:", "processed", ":shopping_cart:", "queue"]
         },
         "reject_message": {

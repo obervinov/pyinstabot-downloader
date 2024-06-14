@@ -270,7 +270,6 @@ def update_status_message(user_id: str = None) -> None:
                         'kwargs': message_statuses
                     }
                 )
-                bot.pin_chat_message(status_message.chat.id, status_message.id)
                 database.keep_message(
                     message_id=status_message.message_id,
                     chat_id=status_message.chat.id,
@@ -307,10 +306,6 @@ def update_status_message(user_id: str = None) -> None:
                     'alias': 'message_statuses',
                     'kwargs': message_statuses
                 }
-            )
-            bot.pin_chat_message(
-                chat_id=status_message.chat.id,
-                message_id=status_message.id
             )
             database.keep_message(
                 message_id=status_message.message_id,
@@ -351,7 +346,7 @@ def get_user_messages(user_id: str = None) -> dict:
     if queue_dict is not None:
         sorted_data = sorted(queue_dict[user_id], key=lambda x: x['scheduled_time'], reverse=False)
         for item in sorted_data:
-            queue_string = queue_string + f"+ <code>{item['post_id']}: will be started {item['scheduled_time']}</code>\n"
+            queue_string = queue_string + f"+ <code>{item['post_id']}: scheduled for {item['scheduled_time']}</code>\n"
     else:
         queue_string = '<code>queue is empty</code>'
 
