@@ -8,6 +8,8 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 **Full Changelog**: https://github.com/obervinov/pyinstabot-downloader/compare/v2.1.5...v2.1.6 by @obervinov in https://github.com/obervinov/pyinstabot-downloader/pull/70
 #### 🐛 Bug Fixes
 * [Bug: Add a limit on the number of items in the queue to be displayed in the `Your last activity` message](https://github.com/obervinov/pyinstabot-downloader/issues/69)
+#### 🚀 Features
+* Bump dependency versions for modules and workflows
 
 
 ## v2.1.5 - 2024-05-29
