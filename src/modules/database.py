@@ -16,15 +16,13 @@ class DatabaseClient:
     """
     def __init__(
         self,
-        vault: object = None,
-        environment: str = None
+        vault: object = None
     ) -> None:
         """
         Initializes a new instance of the Database client.
 
         Args:
             vault (object): An object representing a HashiCorp Vault client for retrieving secrets with the database configuration.
-            environment (str): The environment to use for the database connection.
 
         Attributes:
             database_connection (psycopg2.extensions.connection): A connection to the PostgreSQL database.
@@ -49,10 +47,7 @@ class DatabaseClient:
             >>> vault = Vault()
             >>> db = Database(vault=vault)
         """
-        if environment:
-            db_configuration = vault.read_secret(path=f"configuration/database-{environment}")
-        else:
-            db_configuration = vault.read_secret(path='configuration/database')
+        db_configuration = vault.read_secret(path='configuration/database')
 
         self.database_connection = psycopg2.connect(
             host=db_configuration['host'],
