@@ -62,7 +62,7 @@ else:
     uploader.run_transfers.return_value = 'completed'
 
 # Client for communication with the database
-database = DatabaseClient(vault=vault, environment=PROJECT_ENVIRONMENT)
+database = DatabaseClient(vault=vault)
 
 
 # START HANDLERS BLOCK ##############################################################################################################

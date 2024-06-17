@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 ## v2.1.6 - 2024-06-17
 ### What's Changed
 **Full Changelog**: https://github.com/obervinov/pyinstabot-downloader/compare/v2.1.5...v2.1.6 by @obervinov in https://github.com/obervinov/pyinstabot-downloader/pull/70
+#### 💥 Breaking Changes
+* remove unused database `environment` attribute (permanent path in the Vault: `configurations/database`)
+* remove unused environment variable `PROJECT_ENVIRONMENT`
 #### 🐛 Bug Fixes
 * [Bug: Add a limit on the number of items in the queue to be displayed in the `Your last activity` message](https://github.com/obervinov/pyinstabot-downloader/issues/69)
 * [Bug: Bot can't update status message](https://github.com/obervinov/pyinstabot-downloader/issues/62)
