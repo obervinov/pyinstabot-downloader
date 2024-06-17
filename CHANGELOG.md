@@ -3,11 +3,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/) and this project adheres to [Semantic Versioning](http://semver.org/).
 
 
-## v2.1.6 - 2024-06-14
+## v2.1.6 - 2024-06-17
 ### What's Changed
 **Full Changelog**: https://github.com/obervinov/pyinstabot-downloader/compare/v2.1.5...v2.1.6 by @obervinov in https://github.com/obervinov/pyinstabot-downloader/pull/70
 #### 🐛 Bug Fixes
 * [Bug: Add a limit on the number of items in the queue to be displayed in the `Your last activity` message](https://github.com/obervinov/pyinstabot-downloader/issues/69)
+* [Bug: Bot can't update status message](https://github.com/obervinov/pyinstabot-downloader/issues/62)
+* [Bug: Crashes the queue processing thread when a post from the queue no longer exists in the content sources](https://github.com/obervinov/pyinstabot-downloader/issues/67)
 #### 🚀 Features
 * Bump dependency versions for modules and workflows
 

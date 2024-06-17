@@ -711,7 +711,7 @@ class DatabaseClient:
                 values=(
                     f"message_content_hash = '{message_content_hash}', "
                     f"message_id = '{message_id}', "
-                    f"timestamp = CURRENT_TIMESTAMP"
+                    f"updated_at = CURRENT_TIMESTAMP"
                 ),
                 condition=f"id = '{check_exist_message_type[0][0]}'"
             )
@@ -798,12 +798,12 @@ class DatabaseClient:
 
         Examples:
             >>> current_message_id(message_type='status_message', chat_id='12345')
-            # ('message_id', 'chat_id', 'timestamp', 'message_content_hash')
-            ('123456789', '12345', datetime.datetime(2023, 11, 14, 21, 14, 26, 680024), '2ef7bde608ce5404e97d5f042f95f89f1c232871d3d7')
+            # ('message_id', 'chat_id', 'created_at', 'updated_at', 'message_content_hash')
+            ('123456789', '12345', datetime.datetime(2023, 11, 14, 21, 14, 26, 680024), datetime.datetime(2023, 11, 14, 21, 14, 26, 680024), 'hash')
         """
         message = self._select(
             table_name='messages',
-            columns=("message_id", "chat_id", "timestamp", "message_content_hash",),
+            columns=("message_id", "chat_id", "created_at", "updated_at", "message_content_hash"),
             condition=f"message_type = '{message_type}' AND chat_id = '{chat_id}'",
             limit=1
         )

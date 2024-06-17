@@ -250,12 +250,12 @@ def update_status_message(user_id: str = None) -> None:
         diff_between_messages = False
         if exist_status_message:
             # check difference between messages content
-            if exist_status_message[3] != get_hash(message_statuses):
+            if exist_status_message[4] != get_hash(message_statuses):
                 diff_between_messages = True
 
             # if message already sended and expiring (because bot can edit message only first 48 hours)
             # automatic renew message every 23 hours
-            if exist_status_message[2] < datetime.now() - timedelta(hours=23):
+            if exist_status_message[2] < datetime.now() - timedelta(hours=24):
                 if exist_status_message[2] < datetime.now() - timedelta(hours=48):
                     log.warning('[Bot]: `status_message` for user %s old more than 48 hours, can not delete them', user_id)
                 else:
@@ -544,7 +544,7 @@ def queue_handler_thread() -> None:
 
             log.info('[Queue-handler-thread] starting handler for post url %s...', message[3])
             # download the contents of an instagram post to a temporary folder
-            if download_status != 'completed':
+            if download_status not in ['completed', 'not_found']:
                 download_metadata = downloader.get_post_content(shortcode=post_id)
                 owner_id = download_metadata['owner']
                 download_status = download_metadata['status']
@@ -555,8 +555,17 @@ def queue_handler_thread() -> None:
                     upload_status=upload_status,
                     post_owner=owner_id
                 )
+            # downloader couldn't find the post for some reason
+            if download_status == 'not_found':
+                database.update_message_state_in_queue(
+                    post_id=post_id,
+                    state='processed',
+                    download_status=download_status,
+                    upload_status=download_status,
+                    post_owner=owner_id
+                )
             # upload the received content to the destination storage
-            if upload_status != 'completed':
+            if upload_status != 'completed' and download_status == 'completed':
                 upload_status = uploader.run_transfers(sub_directory=owner_id)
                 database.update_message_state_in_queue(
                     post_id=post_id,
@@ -575,6 +584,8 @@ def queue_handler_thread() -> None:
                     post_owner=owner_id
                 )
                 log.info('[Queue-handler-thread] the post %s has been processed successfully', post_id)
+            elif download_status == 'not_found' and upload_status == 'not_found':
+                log.warning('[Queue-handler-thread] the post %s not found, message was marked as processed', post_id)
             else:
                 log.warning(
                     '[Queue-handler-thread] the post %s has not been processed yet (download: %s, uploader: %s)',

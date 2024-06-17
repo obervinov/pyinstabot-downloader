@@ -67,5 +67,8 @@ def execute(obj):
     # Will be fixed after the issue https://github.com/obervinov/vault-package/issues/46 is resolved
     # pylint: disable=broad-exception-caught
     except Exception as migration_error:
-        print(f"{NAME}: Migration cannot be completed due to an error: {migration_error}")
-        print(f"{NAME}: Perhaps the history is empty or the Vault secrets path does not exist. It's not critical for the bot.")
+        print(
+            f"{NAME}: Migration cannot be completed due to an error: {migration_error}. "
+            "Perhaps the history is empty or the Vault secrets path does not exist and migration isn't unnecessary."
+            "It's not a critical error, so the migration will be skipped."
+        )

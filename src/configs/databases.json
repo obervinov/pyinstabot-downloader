@@ -54,7 +54,8 @@
                 "id SERIAL PRIMARY KEY, ",
                 "message_id VARCHAR(255) NOT NULL, ",
                 "chat_id VARCHAR(255) NOT NULL, ",
-                "timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, ",
+                "created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, ",
+                "updated_at TIMESTAMP NOT NULL, ",
                 "message_type VARCHAR(255) NOT NULL , ",
                 "producer VARCHAR(255) NOT NULL , ",
                 "message_content_hash VARCHAR(64) NOT NULL"
