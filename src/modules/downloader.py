@@ -91,7 +91,7 @@ class Downloader:
         auth_status = self._login()
         log.info(
             '[Downloader]: downloader instance created successfully: %s in %s',
-            __class__.__name__, auth_status, self.configuration['username']
+            auth_status, self.configuration['username']
         )
 
     def _login(self) -> Union[str, None]:
@@ -126,7 +126,7 @@ class Downloader:
             self.instaloader.save_session_to_file(self.configuration['session-file'])
             log.info(
                 '[Downloader]: login with password was successful. Save session in %s',
-                __class__.__name__, self.configuration['sessionfile']
+                self.configuration['sessionfile']
             )
             return 'logged_in'
 
