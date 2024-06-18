@@ -15,7 +15,7 @@ from telegram import TelegramBot
 from telegram import exceptions as TelegramExceptions
 from users import Users
 from vault import VaultClient
-from configs.constants import (PROJECT_ENVIRONMENT, TELEGRAM_BOT_NAME, ROLES_MAP, QUEUE_FREQUENCY, STATUSES_MESSAGE_FREQUENCY)
+from configs.constants import (TELEGRAM_BOT_NAME, ROLES_MAP, QUEUE_FREQUENCY, STATUSES_MESSAGE_FREQUENCY)
 from modules.database import DatabaseClient
 from modules.exceptions import FailedMessagesStatusUpdater
 from modules.tools import get_hash
