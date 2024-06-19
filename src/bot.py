@@ -539,9 +539,9 @@ def reschedule_queue(
         for item in message.text.split('\n'):
             item = item.split(':')
             post_id = item[0].strip()
-            new_scheduled_time = item[1].strip()
+            new_scheduled_time = datetime.strptime(item[1].strip(), '%Y-%m-%d %H:%M:%S')
             if (
-                isinstance(post_id, str) and len(post_id) == 11 and re.match(r'^[a-zA-Z0-9_-]+$', post_id) and
+                isinstance(post_id, str) and len(post_id) == 11 and
                 isinstance(new_scheduled_time, datetime) and new_scheduled_time > datetime.now()
             ):
                 database.update_schedule_time_in_queue(
