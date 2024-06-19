@@ -126,6 +126,8 @@ def bot_callback_query_handler(call: telegram.callback_query = None) -> None:
             button_post(call=call)
         elif call.data == "Posts List":
             button_posts_list(call=call)
+        elif call.data == "Reschedule Queue":
+            button_reschedule_queue(call=call)
         else:
             log.error('[Bot]: Handler for button %s not found', call.data)
     else:
@@ -220,6 +222,38 @@ def button_posts_list(call: telegram.callback_query = None) -> None:
         bot.register_next_step_handler(
             call.message,
             process_list_posts,
+            help_message
+        )
+    else:
+        telegram.send_styled_message(
+            chat_id=call.message.chat.id,
+            messages_template={
+                'alias': 'permission_denied_message',
+                'kwargs': {'username': call.message.chat.username, 'userid': call.message.chat.id}
+            }
+        )
+
+
+# Inline button handler for Reschedule Queue
+def button_reschedule_queue(call: telegram.callback_query = None) -> None:
+    """
+    The handler for the Reschedule Queue button.
+
+    Args:
+        call (telegram.callback_query): The callback query object.
+
+    Returns:
+        None
+    """
+    user = users.user_access_check(call.message.chat.id, ROLES_MAP['Reschedule Queue'])
+    if user.get('permissions', None) == users.user_status_allow:
+        help_message = telegram.send_styled_message(
+            chat_id=call.message.chat.id,
+            messages_template={'alias': 'help_for_reschedule_queue'}
+        )
+        bot.register_next_step_handler(
+            call.message,
+            reschedule_queue,
             help_message
         )
     else:
@@ -484,6 +518,53 @@ def process_list_posts(
                 'kwargs': {'username': message.chat.username, 'userid': message.chat.id}
             }
         )
+
+
+def reschedule_queue(
+    message: telegram.telegram_types.Message = None,
+    help_message: telegram.telegram_types.Message = None
+) -> None:
+    """
+    Manually reschedules the queue for the user.
+
+    Args:
+        message (telegram.telegram_types.Message, optional): The message containing the list of post links. Defaults to None.
+        help_message (telegram.telegram_types.Message, optional): The help message to be deleted. Defaults to None.
+
+    Returns:
+        None
+    """
+    user = users.user_access_check(message.chat.id, ROLES_MAP['Reschedule Queue'])
+    if user.get('permissions', None) == users.user_status_allow:
+        for item in message.text.split('\n'):
+            item = item.split(':')
+            post_id = item[0].strip()
+            new_scheduled_time = item[1].strip()
+            if (
+                isinstance(post_id, str) and len(post_id) == 11 and re.match(r'^[a-zA-Z0-9_-]+$', post_id) and
+                isinstance(new_scheduled_time, datetime) and new_scheduled_time > datetime.now()
+            ):
+                database.update_schedule_time_in_queue(
+                    post_id=post_id,
+                    user_id=message.chat.id,
+                    scheduled_time=new_scheduled_time
+                )
+            else:
+                telegram.send_styled_message(
+                    chat_id=message.chat.id,
+                    messages_template={'alias': 'wrong_reschedule_queue'}
+                )
+        telegram.delete_message(message.chat.id, message.id)
+        if help_message is not None:
+            telegram.delete_message(message.chat.id, help_message.id)
+    else:
+        telegram.send_styled_message(
+            chat_id=message.chat.id,
+            messages_template={
+                'alias': 'reject_message',
+                'kwargs': {'username': message.chat.username, 'userid': message.chat.id}
+            }
+        )
 # END BLOCK PROCESSING FUNCTIONS ####################################################################################################
 
 
@@ -529,8 +610,6 @@ def queue_handler_thread() -> None:
         None
     """
     log.info('[Queue-handler-thread]: started thread for queue handler')
-    # Verify scheduled timestamps in the users queue for cases when bot was down
-    database.verify_users_queue()
 
     while True:
         time.sleep(QUEUE_FREQUENCY)

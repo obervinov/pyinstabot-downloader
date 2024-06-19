@@ -499,79 +499,33 @@ class DatabaseClient:
 
         return response
 
-    def verify_users_queue(self) -> None:
+    def update_schedule_time_in_queue(
+        self,
+        post_id: str = None,
+        user_id: str = None,
+        scheduled_time: str = None
+    ) -> str:
         """
-        Verify the queue for all users and reschedule messages if necessary.
-        If the message is not processed in time (for example, the bot was down), reschedule the time of the message processing.
+        Update the scheduled time of a message in the queue table.
 
         Args:
-            None
+            post_id (str): The ID of the post.
+            user_id (str): The ID of the user.
+            scheduled_time (str): The new scheduled time for the message.
 
         Returns:
-            None
+            str: A response message indicating the status of the update.
 
         Examples:
-            >>> verify_users_queue()
+            >>> update_schedule_time_in_queue(post_id='123', user_id='12345', scheduled_time='2022-01-01 12:00:00')
+            '123: scheduled time updated'
         """
-        log.info("[class.%s] Database: verifying the message of users in queue...", __class__.__name__)
-        users = self.get_users()
-
-        for user in users:
-            user_id = user[0]
-            need_reschedule = False
-            full_queue = self._select(
-                table_name='queue',
-                columns=("id", "scheduled_time"),
-                condition=f"user_id = '{user_id}'",
-                order_by='scheduled_time ASC',
-                limit=1000
-            )
-
-            for message in full_queue:
-                if message[1] < datetime.now() - timedelta(minutes=10):
-                    need_reschedule = True
-                    log.warning(
-                        "[class.%s] Database: found a message in the queue that was not processed in time for user %s",
-                        __class__.__name__, user_id
-                    )
-                    break
-
-            if need_reschedule:
-                log.warning("[class.%s] Database: rescheduling messages in the queue for user %s", __class__.__name__, user_id)
-                # The lag between the current time and the scheduled time of the message in the seconds
-                lag = None
-                # The difference in minutes between the current message and the previous message in the seconds
-                diff = None
-                # The new scheduled time for the message after rescheduling
-                new_schedule_time = None
-                # The previous scheduled time of the message for calculate the skew between the messages. For keep rate limit.
-                previous_schedule_time = None
-                # Reschedule the all messages in the queue
-                for message in full_queue:
-                    schedule_time = message[1]
-                    lag = (datetime.now() - schedule_time).total_seconds()
-
-                    # If haven't previous message value for compare difference between the messages
-                    if not previous_schedule_time:
-                        new_schedule_time = datetime.now()
-                        self._update(
-                            table_name='queue',
-                            values=f"scheduled_time = '{new_schedule_time}'",
-                            condition=f"id = '{message[0]}'"
-                        )
-                    else:
-                        diff = (schedule_time - previous_schedule_time).total_seconds()
-                        # Add the difference in minutes between the current message and the previous message to the lag
-                        skew = diff + lag
-                        new_schedule_time = datetime.now() + timedelta(seconds=skew)
-                        self._update(
-                            table_name='queue',
-                            values=f"scheduled_time = '{new_schedule_time}'",
-                            condition=f"id = '{message[0]}'"
-                        )
-                    previous_schedule_time = schedule_time
-                    log.info("[class.%s] Database: rescheduled message %s: %s -> %s", __class__.__name__, message[0], message[1], new_schedule_time)
-        log.info("[class.%s] Database: users queue verification completed", __class__.__name__)
+        self._update(
+            table_name='queue',
+            values=f"scheduled_time = '{scheduled_time}'",
+            condition=f"post_id = '{post_id}' AND user_id = '{user_id}'"
+        )
+        return f"{post_id}: scheduled time updated"
 
     def get_user_queue(
         self,

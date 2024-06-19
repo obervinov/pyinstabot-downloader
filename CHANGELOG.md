@@ -9,10 +9,12 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 #### 💥 Breaking Changes
 * remove unused database `environment` attribute (permanent path in the Vault: `configurations/database`)
 * remove unused environment variable `PROJECT_ENVIRONMENT`
+* the automatic queue verification mechanism has been removed. Instead of this method, added functionality to update the queue processing time via a message to the bot.
 #### 🐛 Bug Fixes
 * [Bug: Add a limit on the number of items in the queue to be displayed in the `Your last activity` message](https://github.com/obervinov/pyinstabot-downloader/issues/69)
 * [Bug: Bot can't update status message](https://github.com/obervinov/pyinstabot-downloader/issues/62)
 * [Bug: Crashes the queue processing thread when a post from the queue no longer exists in the content sources](https://github.com/obervinov/pyinstabot-downloader/issues/67)
+* [Bug: queue rescheduler does not always work correctly](https://github.com/obervinov/pyinstabot-downloader/issues/64)
 #### 🚀 Features
 * Bump dependency versions for modules and workflows
 

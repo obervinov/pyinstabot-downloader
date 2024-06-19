@@ -10,7 +10,8 @@ TELEGRAM_BOT_NAME = os.environ.get('TELEGRAM_BOT_NAME', 'pyinstabot-downloader')
 # 'button_title': 'role'
 ROLES_MAP = {
     'Post': 'post',
-    'Posts List': 'posts_list'
+    'Posts List': 'posts_list',
+    'Reschedule Queue': 'reschedule_queue',
 }
 
 # Queue handler
