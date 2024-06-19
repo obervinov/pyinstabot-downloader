@@ -537,7 +537,7 @@ def reschedule_queue(
     user = users.user_access_check(message.chat.id, ROLES_MAP['Reschedule Queue'])
     if user.get('permissions', None) == users.user_status_allow:
         for item in message.text.split('\n'):
-            item = item.split(':')
+            item = item.split('-')
             post_id = item[0].strip()
             new_scheduled_time = datetime.strptime(item[1].strip(), '%Y-%m-%d %H:%M:%S')
             if (
