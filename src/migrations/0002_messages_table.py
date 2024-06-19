@@ -26,11 +26,10 @@ def execute(obj):
     # check table
     obj.cursor.execute("SELECT * FROM information_schema.tables WHERE table_schema = 'public' AND table_name = %s;", (table_name,))
     table = obj.cursor.fetchone()
-    obj.cursor.close()
+
     # check columns in the table
     obj.cursor.execute("SELECT column_name FROM information_schema.columns WHERE table_schema = 'public' AND table_name = %s;", (table_name,))
     columns = [row[0] for row in obj.cursor.fetchall()]
-    obj.cursor.close()
 
     if not table:
         print(f"{NAME}: The {table_name} table does not exist. Skip the migration.")
