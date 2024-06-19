@@ -4,7 +4,6 @@ import sys
 import importlib
 import json
 from typing import Union
-from datetime import datetime, timedelta
 import psycopg2
 from logger import log
 from .tools import get_hash
