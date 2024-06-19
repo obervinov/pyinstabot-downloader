@@ -151,8 +151,8 @@ class Downloader:
         Returns:
             (dict) {
                     'post': shortcode,
-                    'owner': post.owner_username,
-                    'type': post.typename,
+                    'owner': owner,
+                    'type': typename,
                     'status': 'completed'
                 }
         """
@@ -162,6 +162,8 @@ class Downloader:
             self.instaloader.download_post(post, '')
             log.info('[Downloader]: the contents of the post %s have been successfully downloaded', shortcode)
             status = 'completed'
+            owner = post.owner_username
+            typename = post.typename
         except instaloader.exceptions.BadResponseException as error:
             log.error('[Downloader]: error downloading post content: %s', error)
             if "Fetching Post metadata failed" in str(error):
@@ -169,9 +171,11 @@ class Downloader:
                 log.warning('[Downloader]: post %s not found, perhaps it was deleted. Message will be marked as processed.', shortcode)
             else:
                 status = 'failed'
+                owner = 'undefined'
+                typename = 'undefined'
         return {
             'post': shortcode,
-            'owner': post.owner_username,
-            'type': post.typename,
+            'owner': owner,
+            'type': typename,
             'status': status
         }
