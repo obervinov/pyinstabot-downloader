@@ -20,7 +20,7 @@ def execute(obj):
     # database settings
     table_name = 'messages'
     rename_columns = [('timestamp', 'updated_at')]
-    add_columns = [('created_at', 'TIMESTAMP', 'DEFAULT CURRENT_TIMESTAMP')]
+    add_columns = [('created_at', 'TIMESTAMP', 'CURRENT_TIMESTAMP')]
 
     # check if the table exists and has the necessary schema for execute the migration
     # check table
