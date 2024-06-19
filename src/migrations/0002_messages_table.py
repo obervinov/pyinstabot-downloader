@@ -4,7 +4,7 @@ Add additional column 'created_at' and replace column 'timestamp' with 'updated_
 https://github.com/obervinov/pyinstabot-downloader/issues/62
 """
 VERSION = '1.0'
-NAME = '0002_update_messages_table'
+NAME = '0002_messages_table'
 
 
 def execute(obj):
@@ -23,10 +23,15 @@ def execute(obj):
     add_columns = [('created_at', 'TIMESTAMP', 'DEFAULT CURRENT_TIMESTAMP')]
 
     # check if the table exists and has the necessary schema for execute the migration
-    columns = obj.cursor.execute(
-        f"SELECT column_name FROM information_schema.columns WHERE table_schema = 'public' AND table_name = '{table_name}';"
-    ).fetchall()
-    table = obj.cursor.execute(f"SELECT * FROM information_schema.tables WHERE table_name = '{table_name}'").fetchone()
+    # check table
+    obj.cursor.execute("SELECT * FROM information_schema.tables WHERE table_schema = 'public' AND table_name = %s;", (table_name,))
+    table = obj.cursor.fetchone()
+    obj.cursor.close()
+    # check columns in the table
+    obj.cursor.execute("SELECT column_name FROM information_schema.columns WHERE table_schema = 'public' AND table_name = %s;", (table_name,))
+    columns = [row[0] for row in obj.cursor.fetchall()]
+    obj.cursor.close()
+
     if not table:
         print(f"{NAME}: The {table_name} table does not exist. Skip the migration.")
     elif len(columns) < 1:
