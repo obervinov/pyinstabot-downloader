@@ -61,6 +61,7 @@ class DatabaseClient:
             __class__.__name__, db_configuration['host'], db_configuration['port'], db_configuration['database']
         )
 
+        self.errors = psycopg2.errors
         self.cursor = self.database_connection.cursor()
         self.vault = vault
 
