@@ -25,7 +25,7 @@ def execute(obj):
     # check if the table exists and has the necessary schema for execute the migration
     columns = obj.cursor.execute(
         f"SELECT column_name FROM information_schema.columns WHERE table_schema = 'public' AND table_name = '{table_name}';"
-    ).fetchall()  
+    ).fetchall()
     table = obj.cursor.execute(f"SELECT * FROM information_schema.tables WHERE table_name = '{table_name}'").fetchone()
     if not table:
         print(f"{NAME}: The {table_name} table does not exist. Skip the migration.")
