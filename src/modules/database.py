@@ -548,7 +548,7 @@ class DatabaseClient:
             table_name='queue',
             columns=("post_id", "scheduled_time"),
             condition=f"user_id = '{user_id}'",
-            order_by='scheduled_time DESC',
+            order_by='scheduled_time ASC',
             limit=10
         )
         for message in queue:
