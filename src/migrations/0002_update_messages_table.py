@@ -23,10 +23,13 @@ def execute(obj):
     add_columns = [('created_at', 'TIMESTAMP', 'DEFAULT CURRENT_TIMESTAMP')]
 
     # check if the table exists and has the necessary schema for execute the migration
-    obj.cursor.execute(f"SELECT * FROM information_schema.tables WHERE table_name = '{table_name}'")
-    if not obj.cursor.fetchone():
+    columns = obj.cursor.execute(
+        f"SELECT column_name FROM information_schema.columns WHERE table_schema = 'public' AND table_name = '{table_name}';"
+    ).fetchall()  
+    table = obj.cursor.execute(f"SELECT * FROM information_schema.tables WHERE table_name = '{table_name}'").fetchone()
+    if not table:
         print(f"{NAME}: The {table_name} table does not exist. Skip the migration.")
-    elif not all(column[0] in obj.get_columns(table_name) for column in rename_columns):
+    elif len(columns) < 1:
         print(f"{NAME}: The {table_name} table does not have the necessary columns to execute the migration. Skip the migration.")
     else:
         print(f"{NAME}: Renaming columns in the {table_name} table...")
