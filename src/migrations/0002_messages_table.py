@@ -37,9 +37,13 @@ def execute(obj):
         print(f"{NAME}: The {table_name} table does not have the necessary columns to execute the migration. Skip the migration.")
     else:
         print(f"{NAME}: Renaming columns in the {table_name} table...")
-        for column in rename_columns:
-            obj.cursor.execute(f"ALTER TABLE {table_name} RENAME COLUMN {column[0]} TO {column[1]}")
-            obj.database_connection.commit()
+        try:
+            for column in rename_columns:
+                obj.cursor.execute(f"ALTER TABLE {table_name} RENAME COLUMN {column[0]} TO {column[1]}")
+                obj.database_connection.commit()
+        except obj.psycopg2.errors.UndefinedColumn as error:
+            print(f"{NAME}: Columns in the {table_name} table have not been renamed. Skip renaming: {error}")
+
         print(f"{NAME}: Columns in the {table_name} table have been renamed")
         for column in add_columns:
             obj.cursor.execute(f"ALTER TABLE {table_name} ADD COLUMN {column[0]} {column[1]} DEFAULT {column[2]}")
