@@ -280,6 +280,7 @@ def update_status_message(user_id: str = None) -> None:
     try:
         exist_status_message = database.get_considered_message(message_type='status_message', chat_id=user_id)
         message_statuses = get_user_messages(user_id=user_id)
+        diff_between_messages = False
 
         if exist_status_message:
 
@@ -297,6 +298,7 @@ def update_status_message(user_id: str = None) -> None:
                     state='updating'
                 )
 
+            diff_between_messages = exist_status_message[4] != get_hash(message_statuses)
             # if message already sended and expiring (because bot can edit message only first 48 hours)
             # automatic renew message every 24 hours
             if exist_status_message[2] < datetime.now() - timedelta(hours=24):
@@ -318,7 +320,7 @@ def update_status_message(user_id: str = None) -> None:
                 )
                 log.info('[Bot]: `status_message` for user %s has been renewed', user_id)
 
-            elif message_statuses is not None and (exist_status_message[4] != get_hash(message_statuses)):
+            elif message_statuses is not None and diff_between_messages:
                 log.info(
                     '[Bot]: `status_message` for user %s is outdated, updating %s -> %s...',
                     user_id, exist_status_message[3], get_hash(message_statuses)
@@ -336,7 +338,7 @@ def update_status_message(user_id: str = None) -> None:
                     state='updated'
                 )
                 log.info('[Bot]: `status_message` for user %s has been updated', user_id)
-            elif not (exist_status_message[4] != get_hash(message_statuses)):
+            elif not diff_between_messages:
                 log.info('[Bot]: `status_message` for user %s is actual', user_id)
         else:
             status_message = telegram.send_styled_message(
