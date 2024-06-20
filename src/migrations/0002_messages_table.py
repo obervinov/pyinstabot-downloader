@@ -56,3 +56,6 @@ def execute(obj):
             except obj.errors.DuplicateColumn as error:
                 print(f"{NAME}: Columns in the {table_name} table have already been added. Skip adding: {error}")
                 obj.database_connection.rollback()
+            except obj.errors.FeatureNotSupported as error:
+                print(f"{NAME}: Columns in the {table_name} table have not been added. Skip adding: {error}")
+                obj.database_connection.rollback()
