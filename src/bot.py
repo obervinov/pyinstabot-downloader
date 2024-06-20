@@ -81,7 +81,8 @@ def start_command(message: telegram.telegram_types.Message = None) -> None:
         log.info('[Bot]: Processing `start` command for user %s...', message.chat.id)
 
         # Add user to the database
-        _ = database.add_user(user_id=message.chat.id, chat_id=message.chat.id)
+        response = database.add_user(user_id=message.chat.id, chat_id=message.chat.id)
+        log.info('[Bot]: user %s added to the database: %s', message.chat.id, response)
 
         # Main message
         reply_markup = telegram.create_inline_markup(ROLES_MAP.keys())

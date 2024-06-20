@@ -41,6 +41,9 @@ def execute(obj):
             for column in rename_columns:
                 obj.cursor.execute(f"ALTER TABLE {table_name} RENAME COLUMN {column[0]} TO {column[1]}")
                 obj.database_connection.commit()
+        except obj.errors.DuplicateColumn as error:
+            print(f"{NAME}: Columns in the {table_name} table have already been renamed. Skip renaming: {error}")
+            obj.database_connection.rollback()
         except obj.errors.UndefinedColumn as error:
             print(f"{NAME}: Columns in the {table_name} table have not been renamed. Skip renaming: {error}")
             obj.database_connection.rollback()
@@ -50,6 +53,6 @@ def execute(obj):
             try:
                 obj.cursor.execute(f"ALTER TABLE {table_name} ADD COLUMN {column[0]} {column[1]} DEFAULT {column[2]}")
                 obj.database_connection.commit()
-            except obj.errors as error:
-                print(f"{NAME}: Columns in the {table_name} table have not been added. Skip adding: {error}")
+            except obj.errors.DuplicateColumn as error:
+                print(f"{NAME}: Columns in the {table_name} table have already been added. Skip adding: {error}")
                 obj.database_connection.rollback()

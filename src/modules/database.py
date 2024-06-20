@@ -702,7 +702,7 @@ class DatabaseClient:
             '12345 already exists'
         """
         exist_user = self._select(table_name='users', columns=("user_id",), condition=f"user_id = '{user_id}'")
-        if exist_user and user_id in exist_user[0]:
+        if exist_user:
             result = f"{user_id} already exists"
         else:
             self._insert(
