@@ -340,6 +340,13 @@ def update_status_message(user_id: str = None) -> None:
                 log.info('[Bot]: `status_message` for user %s has been updated', user_id)
             elif not diff_between_messages:
                 log.info('[Bot]: `status_message` for user %s is actual', user_id)
+                database.keep_message(
+                    message_id=exist_status_message[0],
+                    chat_id=exist_status_message[1],
+                    message_type='status_message',
+                    message_content=message_statuses,
+                    state='updated'
+                )
         else:
             status_message = telegram.send_styled_message(
                 chat_id=user_id,
@@ -349,7 +356,7 @@ def update_status_message(user_id: str = None) -> None:
                 message_id=status_message.message_id,
                 chat_id=status_message.chat.id,
                 message_type='status_message',
-                message_content=message_statuses
+                message_content=message_statuses,
             )
             log.info('[Bot]: `status_message` for user %s has been created', user_id)
     except TypeError as exception:
