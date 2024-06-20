@@ -278,68 +278,70 @@ def update_status_message(user_id: str = None) -> None:
         None
     """
     try:
-        chat_id = user_id
-        exist_status_message = database.get_considered_message(message_type='status_message', chat_id=chat_id)
+        exist_status_message = database.get_considered_message(message_type='status_message', chat_id=user_id)
         message_statuses = get_user_messages(user_id=user_id)
-        diff_between_messages = False
+
         if exist_status_message:
-            # check difference between messages content
-            if exist_status_message[4] != get_hash(message_statuses):
-                diff_between_messages = True
+
+            # checking competition of status_message update by another thread
+            if exist_status_message[5] == 'updating':
+                while exist_status_message[5] == 'updating':
+                    time.sleep(1)
+                    exist_status_message = database.get_considered_message(message_type='status_message', chat_id=user_id)
+            else:
+                database.keep_message(
+                    message_id=exist_status_message[0],
+                    chat_id=exist_status_message[1],
+                    message_type='status_message',
+                    message_content=message_statuses,
+                    state='updating'
+                )
 
             # if message already sended and expiring (because bot can edit message only first 48 hours)
-            # automatic renew message every 23 hours
+            # automatic renew message every 24 hours
             if exist_status_message[2] < datetime.now() - timedelta(hours=24):
-                if exist_status_message[2] < datetime.now() - timedelta(hours=48):
-                    log.warning('[Bot]: `status_message` for user %s old more than 48 hours, can not delete them', user_id)
-                else:
+                if exist_status_message[2] > datetime.now() - timedelta(hours=48):
                     _ = bot.delete_message(
-                        chat_id=chat_id,
+                        chat_id=user_id,
                         message_id=exist_status_message[0]
                     )
                 status_message = telegram.send_styled_message(
-                    chat_id=chat_id,
-                    messages_template={
-                        'alias': 'message_statuses',
-                        'kwargs': message_statuses
-                    }
+                    chat_id=user_id,
+                    messages_template={'alias': 'message_statuses', 'kwargs': message_statuses}
                 )
                 database.keep_message(
                     message_id=status_message.message_id,
                     chat_id=status_message.chat.id,
                     message_type='status_message',
-                    message_content=message_statuses
+                    message_content=message_statuses,
+                    state='updated'
                 )
                 log.info('[Bot]: `status_message` for user %s has been renewed', user_id)
-            elif message_statuses is not None and diff_between_messages:
+
+            elif message_statuses is not None and (exist_status_message[4] != get_hash(message_statuses)):
                 log.info(
                     '[Bot]: `status_message` for user %s is outdated, updating %s -> %s...',
                     user_id, exist_status_message[3], get_hash(message_statuses)
                 )
                 editable_message = telegram.send_styled_message(
-                    chat_id=chat_id,
-                    messages_template={
-                        'alias': 'message_statuses',
-                        'kwargs': message_statuses
-                    },
+                    chat_id=user_id,
+                    messages_template={'alias': 'message_statuses', 'kwargs': message_statuses},
                     editable_message_id=exist_status_message[0]
                 )
                 database.keep_message(
                     message_id=editable_message.message_id,
                     chat_id=editable_message.chat.id,
                     message_type='status_message',
-                    message_content=message_statuses
+                    message_content=message_statuses,
+                    state='updated'
                 )
                 log.info('[Bot]: `status_message` for user %s has been updated', user_id)
-            elif not diff_between_messages:
+            elif not (exist_status_message[4] != get_hash(message_statuses)):
                 log.info('[Bot]: `status_message` for user %s is actual', user_id)
         else:
             status_message = telegram.send_styled_message(
-                chat_id=chat_id,
-                messages_template={
-                    'alias': 'message_statuses',
-                    'kwargs': message_statuses
-                }
+                chat_id=user_id,
+                messages_template={'alias': 'message_statuses', 'kwargs': message_statuses}
             )
             database.keep_message(
                 message_id=status_message.message_id,
@@ -557,6 +559,7 @@ def reschedule_queue(
         telegram.delete_message(message.chat.id, message.id)
         if help_message is not None:
             telegram.delete_message(message.chat.id, help_message.id)
+        update_status_message(user_id=message.chat.id)
     else:
         telegram.send_styled_message(
             chat_id=message.chat.id,

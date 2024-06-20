@@ -628,8 +628,8 @@ class DatabaseClient:
         self,
         message_id: str = None,
         chat_id: str = None,
-        message_type: str = None,
-        message_content: Union[str, dict] = None
+        message_content: Union[str, dict] = None,
+        **kwargs
     ) -> str:
         """
         Add a message to the messages table in the database.
@@ -638,16 +638,20 @@ class DatabaseClient:
         Args:
             message_id (str): The ID of the message.
             chat_id (str): The ID of the chat.
-            message_type (str): The type of the message.
             message_content (Union[str, dict]): The content of the message.
 
+        Keyword Args:
+            message_type (str): The type of the message.
+            state (str): The state of the message.
         Returns:
             str: A message indicating that the message was added to the messages table.
 
         Examples:
-            >>> keep_message('12345', '67890', 'status_message', 'Hello, username\n...')
+            >>> keep_message('12345', '67890', 'Hello, World!', message_type='status_message', state='updated')
             '12345 kept' or '12345 updated'
         """
+        message_type = kwargs.get('message_type', None)
+        state = kwargs.get('state', 'updated')
         message_content_hash = get_hash(message_content)
         check_exist_message_type = self._select(
             table_name='messages',
@@ -660,6 +664,7 @@ class DatabaseClient:
                 values=(
                     f"message_content_hash = '{message_content_hash}', "
                     f"message_id = '{message_id}', "
+                    f"state = '{state}', "
                     f"updated_at = CURRENT_TIMESTAMP"
                 ),
                 condition=f"id = '{check_exist_message_type[0][0]}'"
@@ -734,7 +739,7 @@ class DatabaseClient:
         self,
         message_type: str = None,
         chat_id: str = None
-    ) -> str:
+    ) -> tuple:
         """
         Get a message with specified type and chat ID from the messages table in the database.
 
@@ -747,12 +752,12 @@ class DatabaseClient:
 
         Examples:
             >>> current_message_id(message_type='status_message', chat_id='12345')
-            # ('message_id', 'chat_id', 'created_at', 'updated_at', 'message_content_hash')
-            ('123456789', '12345', datetime.datetime(2023, 11, 14, 21, 14, 26, 680024), datetime.datetime(2023, 11, 14, 21, 14, 26, 680024), 'hash')
+            # ('message_id', 'chat_id', 'created_at', 'updated_at', 'message_content_hash', 'state')
+            ('123456789', '12345', datetime.datetime, datetime.datetime, 'hash', 'updated')
         """
         message = self._select(
             table_name='messages',
-            columns=("message_id", "chat_id", "created_at", "updated_at", "message_content_hash"),
+            columns=("message_id", "chat_id", "created_at", "updated_at", "message_content_hash", "state"),
             condition=f"message_type = '{message_type}' AND chat_id = '{chat_id}'",
             limit=1
         )
