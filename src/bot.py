@@ -11,8 +11,7 @@ import string
 
 from mock import MagicMock
 from logger import log
-from telegram import TelegramBot
-from telegram import exceptions as TelegramExceptions
+from telegram import TelegramBot, exceptions as TelegramExceptions
 from users import Users
 from vault import VaultClient
 from configs.constants import (TELEGRAM_BOT_NAME, ROLES_MAP, QUEUE_FREQUENCY, STATUSES_MESSAGE_FREQUENCY)
