@@ -30,9 +30,9 @@ This project is a telegram bot that allows you to create backups of content from
 </p>
 
 **Main functions**
-- a backup copy of a `specific post` by link
-- a backup copy of `list of posts` by links
-- the ability to backup to the `Mega` or `Dropbox` clouds
+- a backup copy of a __specific post__ by link
+- a backup copy of __list of posts__ by links
+- the ability to backup to the __Mega__ or __Dropbox__ clouds
 
 **Preview of the bot in action**
 <p align="center">
@@ -83,8 +83,8 @@ This project is a telegram bot that allows you to create backups of content from
 
 ### Bot configuration source and supported parameters
 <img src="https://github.com/obervinov/_templates/blob/v1.2.2/icons/vault.png" width="15" title="vault"> All bot configuration is stored in the `Vault Secrets`</br>
-_except for the part of the configuration that configures the connection to `Vault` and external modules_</br>
-- `configuration/database-<env>`: database connection parameters (depends on the environment variable)
+_except for the part of the configuration that configures the connection to `Vault`_</br>
+- `configuration/database`: database connection parameters
   ```json
   {
     "database": "pyinstabot-downloader",

@@ -9,7 +9,8 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 #### 💥 Breaking Changes
 * remove unused database `environment` attribute (permanent path in the Vault: `configurations/database`)
 * remove unused environment variable `PROJECT_ENVIRONMENT`
-* the automatic queue verification mechanism has been removed. Instead of this method, added functionality to update the queue processing time via a message to the bot.
+* the automatic queue verification mechanism has been removed. Instead of this method, added functionality to update the queue processing time via a message to the bot
+* change the structure of the table `messages`: add a new column `state` and `updated_at`, rename column `timestamp` to `created_at`
 #### 🐛 Bug Fixes
 * [Bug: Add a limit on the number of items in the queue to be displayed in the `Your last activity` message](https://github.com/obervinov/pyinstabot-downloader/issues/69)
 * [Bug: Bot can't update status message](https://github.com/obervinov/pyinstabot-downloader/issues/62)
