@@ -661,6 +661,7 @@ class DatabaseClient:
             columns=("id", "message_id"),
             condition=f"message_type = '{message_type}' AND chat_id = '{chat_id}'",
         )
+        response = None
 
         if check_exist_message_type and recreated:
             self._update(
@@ -674,6 +675,7 @@ class DatabaseClient:
                 ),
                 condition=f"id = '{check_exist_message_type[0][0]}'"
             )
+            response = f"{message_id} recreated"
 
         elif check_exist_message_type and not recreated:
             self._update(
