@@ -643,6 +643,8 @@ class DatabaseClient:
         Keyword Args:
             message_type (str): The type of the message.
             state (str): The state of the message.
+            recreated (bool): A flag indicating whether the message was recreated.
+
         Returns:
             str: A message indicating that the message was added to the messages table.
 
@@ -652,13 +654,28 @@ class DatabaseClient:
         """
         message_type = kwargs.get('message_type', None)
         state = kwargs.get('state', 'updated')
+        recreated = kwargs.get('recreated', False)
         message_content_hash = get_hash(message_content)
         check_exist_message_type = self._select(
             table_name='messages',
             columns=("id", "message_id"),
             condition=f"message_type = '{message_type}' AND chat_id = '{chat_id}'",
         )
-        if check_exist_message_type:
+
+        if check_exist_message_type and recreated:
+            self._update(
+                table_name='messages',
+                values=(
+                    f"message_content_hash = '{message_content_hash}', "
+                    f"message_id = '{message_id}', "
+                    f"state = '{state}', "
+                    "updated_at = CURRENT_TIMESTAMP, ",
+                    "created_at = CURRENT_TIMESTAMP"
+                ),
+                condition=f"id = '{check_exist_message_type[0][0]}'"
+            )
+
+        elif check_exist_message_type and not recreated:
             self._update(
                 table_name='messages',
                 values=(
