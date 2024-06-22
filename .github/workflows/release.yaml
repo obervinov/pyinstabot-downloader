@@ -10,8 +10,8 @@ on:
 
 jobs:
   create-release:
-    uses: obervinov/_templates/.github/workflows/release.yaml@v1.2.5
+    uses: obervinov/_templates/.github/workflows/release.yaml@v1.2.6
 
   # milestone:
-  #   uses: obervinov/_templates/.github/workflows/milestone.yaml@v1.2.5
+  #   uses: obervinov/_templates/.github/workflows/milestone.yaml@v1.2.6
   #   needs: [create-release]

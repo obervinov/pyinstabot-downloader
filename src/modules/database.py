@@ -4,7 +4,6 @@ import sys
 import importlib
 import json
 from typing import Union
-from datetime import datetime, timedelta
 import psycopg2
 from logger import log
 from .tools import get_hash
@@ -16,15 +15,13 @@ class DatabaseClient:
     """
     def __init__(
         self,
-        vault: object = None,
-        environment: str = None
+        vault: object = None
     ) -> None:
         """
         Initializes a new instance of the Database client.
 
         Args:
             vault (object): An object representing a HashiCorp Vault client for retrieving secrets with the database configuration.
-            environment (str): The environment to use for the database connection.
 
         Attributes:
             database_connection (psycopg2.extensions.connection): A connection to the PostgreSQL database.
@@ -49,10 +46,7 @@ class DatabaseClient:
             >>> vault = Vault()
             >>> db = Database(vault=vault)
         """
-        if environment:
-            db_configuration = vault.read_secret(path=f"configuration/database-{environment}")
-        else:
-            db_configuration = vault.read_secret(path='configuration/database')
+        db_configuration = vault.read_secret(path='configuration/database')
 
         self.database_connection = psycopg2.connect(
             host=db_configuration['host'],
@@ -66,6 +60,7 @@ class DatabaseClient:
             __class__.__name__, db_configuration['host'], db_configuration['port'], db_configuration['database']
         )
 
+        self.errors = psycopg2.errors
         self.cursor = self.database_connection.cursor()
         self.vault = vault
 
@@ -503,79 +498,33 @@ class DatabaseClient:
 
         return response
 
-    def verify_users_queue(self) -> None:
+    def update_schedule_time_in_queue(
+        self,
+        post_id: str = None,
+        user_id: str = None,
+        scheduled_time: str = None
+    ) -> str:
         """
-        Verify the queue for all users and reschedule messages if necessary.
-        If the message is not processed in time (for example, the bot was down), reschedule the time of the message processing.
+        Update the scheduled time of a message in the queue table.
 
         Args:
-            None
+            post_id (str): The ID of the post.
+            user_id (str): The ID of the user.
+            scheduled_time (str): The new scheduled time for the message.
 
         Returns:
-            None
+            str: A response message indicating the status of the update.
 
         Examples:
-            >>> verify_users_queue()
+            >>> update_schedule_time_in_queue(post_id='123', user_id='12345', scheduled_time='2022-01-01 12:00:00')
+            '123: scheduled time updated'
         """
-        log.info("[class.%s] Database: verifying the message of users in queue...", __class__.__name__)
-        users = self.get_users()
-
-        for user in users:
-            user_id = user[0]
-            need_reschedule = False
-            full_queue = self._select(
-                table_name='queue',
-                columns=("id", "scheduled_time"),
-                condition=f"user_id = '{user_id}'",
-                order_by='scheduled_time ASC',
-                limit=1000
-            )
-
-            for message in full_queue:
-                if message[1] < datetime.now() - timedelta(minutes=10):
-                    need_reschedule = True
-                    log.warning(
-                        "[class.%s] Database: found a message in the queue that was not processed in time for user %s",
-                        __class__.__name__, user_id
-                    )
-                    break
-
-            if need_reschedule:
-                log.warning("[class.%s] Database: rescheduling messages in the queue for user %s", __class__.__name__, user_id)
-                # The lag between the current time and the scheduled time of the message in the seconds
-                lag = None
-                # The difference in minutes between the current message and the previous message in the seconds
-                diff = None
-                # The new scheduled time for the message after rescheduling
-                new_schedule_time = None
-                # The previous scheduled time of the message for calculate the skew between the messages. For keep rate limit.
-                previous_schedule_time = None
-                # Reschedule the all messages in the queue
-                for message in full_queue:
-                    schedule_time = message[1]
-                    lag = (datetime.now() - schedule_time).total_seconds()
-
-                    # If haven't previous message value for compare difference between the messages
-                    if not previous_schedule_time:
-                        new_schedule_time = datetime.now()
-                        self._update(
-                            table_name='queue',
-                            values=f"scheduled_time = '{new_schedule_time}'",
-                            condition=f"id = '{message[0]}'"
-                        )
-                    else:
-                        diff = (schedule_time - previous_schedule_time).total_seconds()
-                        # Add the difference in minutes between the current message and the previous message to the lag
-                        skew = diff + lag
-                        new_schedule_time = datetime.now() + timedelta(seconds=skew)
-                        self._update(
-                            table_name='queue',
-                            values=f"scheduled_time = '{new_schedule_time}'",
-                            condition=f"id = '{message[0]}'"
-                        )
-                    previous_schedule_time = schedule_time
-                    log.info("[class.%s] Database: rescheduled message %s: %s -> %s", __class__.__name__, message[0], message[1], new_schedule_time)
-        log.info("[class.%s] Database: users queue verification completed", __class__.__name__)
+        self._update(
+            table_name='queue',
+            values=f"scheduled_time = '{scheduled_time}'",
+            condition=f"post_id = '{post_id}' AND user_id = '{user_id}'"
+        )
+        return f"{post_id}: scheduled time updated"
 
     def get_user_queue(
         self,
@@ -599,7 +548,8 @@ class DatabaseClient:
             table_name='queue',
             columns=("post_id", "scheduled_time"),
             condition=f"user_id = '{user_id}'",
-            limit=1000
+            order_by='scheduled_time ASC',
+            limit=10
         )
         for message in queue:
             if user_id not in result:
@@ -678,8 +628,8 @@ class DatabaseClient:
         self,
         message_id: str = None,
         chat_id: str = None,
-        message_type: str = None,
-        message_content: Union[str, dict] = None
+        message_content: Union[str, dict] = None,
+        **kwargs
     ) -> str:
         """
         Add a message to the messages table in the database.
@@ -688,29 +638,53 @@ class DatabaseClient:
         Args:
             message_id (str): The ID of the message.
             chat_id (str): The ID of the chat.
-            message_type (str): The type of the message.
             message_content (Union[str, dict]): The content of the message.
+
+        Keyword Args:
+            message_type (str): The type of the message.
+            state (str): The state of the message.
+            recreated (bool): A flag indicating whether the message was recreated.
 
         Returns:
             str: A message indicating that the message was added to the messages table.
 
         Examples:
-            >>> keep_message('12345', '67890', 'status_message', 'Hello, username\n...')
+            >>> keep_message('12345', '67890', 'Hello, World!', message_type='status_message', state='updated')
             '12345 kept' or '12345 updated'
         """
+        message_type = kwargs.get('message_type', None)
+        state = kwargs.get('state', 'updated')
+        recreated = kwargs.get('recreated', False)
         message_content_hash = get_hash(message_content)
         check_exist_message_type = self._select(
             table_name='messages',
             columns=("id", "message_id"),
             condition=f"message_type = '{message_type}' AND chat_id = '{chat_id}'",
         )
-        if check_exist_message_type:
+        response = None
+
+        if check_exist_message_type and recreated:
             self._update(
                 table_name='messages',
                 values=(
                     f"message_content_hash = '{message_content_hash}', "
                     f"message_id = '{message_id}', "
-                    f"timestamp = CURRENT_TIMESTAMP"
+                    f"state = '{state}', "
+                    "updated_at = CURRENT_TIMESTAMP, "
+                    "created_at = CURRENT_TIMESTAMP"
+                ),
+                condition=f"id = '{check_exist_message_type[0][0]}'"
+            )
+            response = f"{message_id} recreated"
+
+        elif check_exist_message_type and not recreated:
+            self._update(
+                table_name='messages',
+                values=(
+                    f"message_content_hash = '{message_content_hash}', "
+                    f"message_id = '{message_id}', "
+                    f"state = '{state}', "
+                    f"updated_at = CURRENT_TIMESTAMP"
                 ),
                 condition=f"id = '{check_exist_message_type[0][0]}'"
             )
@@ -747,7 +721,7 @@ class DatabaseClient:
             '12345 already exists'
         """
         exist_user = self._select(table_name='users', columns=("user_id",), condition=f"user_id = '{user_id}'")
-        if exist_user and user_id in exist_user[0]:
+        if exist_user:
             result = f"{user_id} already exists"
         else:
             self._insert(
@@ -784,7 +758,7 @@ class DatabaseClient:
         self,
         message_type: str = None,
         chat_id: str = None
-    ) -> str:
+    ) -> tuple:
         """
         Get a message with specified type and chat ID from the messages table in the database.
 
@@ -797,12 +771,12 @@ class DatabaseClient:
 
         Examples:
             >>> current_message_id(message_type='status_message', chat_id='12345')
-            # ('message_id', 'chat_id', 'timestamp', 'message_content_hash')
-            ('123456789', '12345', datetime.datetime(2023, 11, 14, 21, 14, 26, 680024), '2ef7bde608ce5404e97d5f042f95f89f1c232871d3d7')
+            # ('message_id', 'chat_id', 'created_at', 'updated_at', 'message_content_hash', 'state')
+            ('123456789', '12345', datetime.datetime, datetime.datetime, 'hash', 'updated')
         """
         message = self._select(
             table_name='messages',
-            columns=("message_id", "chat_id", "timestamp", "message_content_hash",),
+            columns=("message_id", "chat_id", "created_at", "updated_at", "message_content_hash", "state"),
             condition=f"message_type = '{message_type}' AND chat_id = '{chat_id}'",
             limit=1
         )

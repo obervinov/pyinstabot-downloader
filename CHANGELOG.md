@@ -3,6 +3,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/) and this project adheres to [Semantic Versioning](http://semver.org/).
 
 
+## v2.1.6 - 2024-06-22
+### What's Changed
+**Full Changelog**: https://github.com/obervinov/pyinstabot-downloader/compare/v2.1.5...v2.1.6 by @obervinov in https://github.com/obervinov/pyinstabot-downloader/pull/70
+#### 💥 Breaking Changes
+* remove unused database `environment` attribute (permanent path in the Vault: `configurations/database`)
+* remove unused environment variable `PROJECT_ENVIRONMENT`
+* the automatic queue verification mechanism has been removed. Instead of this method, added functionality to update the queue processing time via a message to the bot
+* change the structure of the table `messages`: add a new column `state` and `updated_at`, rename column `timestamp` to `created_at`
+#### 🐛 Bug Fixes
+* [Bug: Add a limit on the number of items in the queue to be displayed in the `Your last activity` message](https://github.com/obervinov/pyinstabot-downloader/issues/69)
+* [Bug: Bot can't update status message](https://github.com/obervinov/pyinstabot-downloader/issues/62)
+* [Bug: Crashes the queue processing thread when a post from the queue no longer exists in the content sources](https://github.com/obervinov/pyinstabot-downloader/issues/67)
+* [Bug: queue rescheduler does not always work correctly](https://github.com/obervinov/pyinstabot-downloader/issues/64)
+* [Bug: For some reason the bot tried to edit a message with the same content in the message](https://github.com/obervinov/pyinstabot-downloader/issues/65)
+* Removed duplicates in rights checking
+* Small refactoring code
+#### 🚀 Features
+* Bump dependency versions for modules and workflows
+* Add button for rescheduling the queue
+
+
 ## v2.1.5 - 2024-05-29
 ### What's Changed
 **Full Changelog**: https://github.com/obervinov/pyinstabot-downloader/compare/v2.1.4...v2.1.5 by @obervinov in https://github.com/obervinov/pyinstabot-downloader/pull/61

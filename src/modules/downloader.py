@@ -69,7 +69,7 @@ class Downloader:
                 "Failed to initialize the Downloader instance."
                 "Please check the configuration in class argument or the secret with the configuration in the Vault."
             )
-        log.info('[class.%s] Downloader: creating a new instance of the Downloader...', __class__.__name__)
+        log.info('[Downloader]: creating a new instance of the Downloader...')
         self.instaloader = instaloader.Instaloader(
             quiet=True,
             user_agent=self.configuration.get('user-agent', None),
@@ -90,8 +90,8 @@ class Downloader:
         )
         auth_status = self._login()
         log.info(
-            '[class.%s] Downloader: downloader instance created successfully: %s in %s',
-            __class__.__name__, auth_status, self.configuration['username']
+            '[Downloader]: downloader instance created successfully: %s in %s',
+            auth_status, self.configuration['username']
         )
 
     def _login(self) -> Union[str, None]:
@@ -115,7 +115,7 @@ class Downloader:
                 self.configuration['username'],
                 self.configuration['session-file']
             )
-            log.info('[class.%s] Downloader: session file %s was load success', __class__.__name__, self.configuration['session-file'])
+            log.info('[Downloader]: session file %s was load success', self.configuration['session-file'])
             return 'logged_in'
 
         if self.configuration['login-method'] == 'password':
@@ -125,13 +125,13 @@ class Downloader:
             )
             self.instaloader.save_session_to_file(self.configuration['session-file'])
             log.info(
-                '[class.%s] Downloader: login with password was successful. Save session in %s',
-                __class__.__name__, self.configuration['sessionfile']
+                '[Downloader]: login with password was successful. Save session in %s',
+                self.configuration['sessionfile']
             )
             return 'logged_in'
 
         if self.configuration['login-method'] == 'anonymous':
-            log.warning('[class.%s] Downloader: initialization without authentication into an account (anonymous)', __class__.__name__)
+            log.warning('[Downloader]: initialization without authentication into an account (anonymous)')
             return None
 
         raise FailedAuthInstaloader(
@@ -151,19 +151,31 @@ class Downloader:
         Returns:
             (dict) {
                     'post': shortcode,
-                    'owner': post.owner_username,
-                    'type': post.typename,
+                    'owner': owner,
+                    'type': typename,
                     'status': 'completed'
                 }
         """
-        log.info('[class.%s] Downloader: downloading the contents of the post %s...', __class__.__name__, shortcode)
-        post = instaloader.Post.from_shortcode(self.instaloader.context, shortcode)
-        self.instaloader.download_post(post, '')
-        log.info('[class.%s] Downloader: the contents of the post %s have been successfully downloaded', __class__.__name__, shortcode)
-        metadata = {
+        log.info('[Downloader]: downloading the contents of the post %s...', shortcode)
+        try:
+            post = instaloader.Post.from_shortcode(self.instaloader.context, shortcode)
+            self.instaloader.download_post(post, '')
+            log.info('[Downloader]: the contents of the post %s have been successfully downloaded', shortcode)
+            status = 'completed'
+            owner = post.owner_username
+            typename = post.typename
+        except instaloader.exceptions.BadResponseException as error:
+            log.error('[Downloader]: error downloading post content: %s', error)
+            if "Fetching Post metadata failed" in str(error):
+                status = 'not_found'
+                log.warning('[Downloader]: post %s not found, perhaps it was deleted. Message will be marked as processed.', shortcode)
+            else:
+                status = 'failed'
+                owner = 'undefined'
+                typename = 'undefined'
+        return {
             'post': shortcode,
-            'owner': post.owner_username,
-            'type': post.typename,
-            'status': 'completed'
+            'owner': owner,
+            'type': typename,
+            'status': status
         }
-        return metadata
