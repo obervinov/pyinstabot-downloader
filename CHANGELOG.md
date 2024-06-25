@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/) and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## v2.1.7 - 2024-06-25
+### What's Changed
+**Full Changelog**: https://github.com/obervinov/pyinstabot-downloader/compare/v2.1.6...v2.1.7 by @obervinov in https://github.com/obervinov/pyinstabot-downloader/pull/71
+#### 🐛 Bug Fixes
+* fix exception when the post_id not found in the instagram content sources
+
 
 ## v2.1.6 - 2024-06-22
 ### What's Changed
