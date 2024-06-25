@@ -4,7 +4,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 
 ## v2.1.7 - 2024-06-25
 ### What's Changed
-**Full Changelog**: https://github.com/obervinov/pyinstabot-downloader/compare/v2.1.6...v2.1.7 by @obervinov in https://github.com/obervinov/pyinstabot-downloader/pull/71
+**Full Changelog**: https://github.com/obervinov/pyinstabot-downloader/compare/v2.1.6...v2.1.7 by @obervinov in https://github.com/obervinov/pyinstabot-downloader/pull/74
 #### 🐛 Bug Fixes
 * fix exception when the post_id not found in the instagram content sources
 
