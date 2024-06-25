@@ -530,7 +530,7 @@ def queue_handler_thread() -> None:
 
             log.info('[Queue-handler-thread] starting handler for post %s...', message[2])
             # download the contents of an instagram post to a temporary folder
-            if download_status not in ['completed', 'not_found']:
+            if download_status not in ['completed', 'source_not_found']:
                 download_metadata = downloader.get_post_content(shortcode=post_id)
                 owner_id = download_metadata['owner']
                 download_status = download_metadata['status']
@@ -542,7 +542,7 @@ def queue_handler_thread() -> None:
                     post_owner=owner_id
                 )
             # downloader couldn't find the post for some reason
-            if download_status == 'not_found':
+            if download_status == 'source_not_found':
                 database.update_message_state_in_queue(
                     post_id=post_id,
                     state='processed',
@@ -570,7 +570,7 @@ def queue_handler_thread() -> None:
                     post_owner=owner_id
                 )
                 log.info('[Queue-handler-thread] the post %s has been processed successfully', post_id)
-            elif download_status == 'not_found' and upload_status == 'not_found':
+            elif download_status == 'source_not_found' and upload_status == 'source_not_found':
                 log.warning('[Queue-handler-thread] the post %s not found, message was marked as processed', post_id)
             else:
                 log.warning(

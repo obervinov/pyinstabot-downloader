@@ -167,12 +167,13 @@ class Downloader:
         except instaloader.exceptions.BadResponseException as error:
             log.error('[Downloader]: error downloading post content: %s', error)
             if "Fetching Post metadata failed" in str(error):
-                status = 'not_found'
-                log.warning('[Downloader]: post %s not found, perhaps it was deleted. Message will be marked as processed.', shortcode)
-            else:
-                status = 'failed'
+                status = 'source_not_found'
                 owner = 'undefined'
                 typename = 'undefined'
+                log.warning('[Downloader]: post %s not found, perhaps it was deleted. Message will be marked as processed.', shortcode)
+            else:
+                raise instaloader.exceptions.BadResponseException(error)
+
         return {
             'post': shortcode,
             'owner': owner,
