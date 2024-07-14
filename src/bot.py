@@ -304,17 +304,18 @@ def get_user_messages(user_id: str = None) -> dict:
         {'queue': '<code>queue is empty</code>', 'processed': '<code>processed is empty</code>', 'queue_count': 0, 'processed_count': 0}
     """
     queue_dict = database.get_user_queue(user_id=user_id)
+    sorted_queue = sorted(queue_dict.get(user_id, []), key=lambda x: x['scheduled_time'], reverse=False) if queue_dict else []
     processed_dict = database.get_user_processed(user_id=user_id)
+    sorted_processed = sorted(processed_dict.get(user_id, []), key=lambda x: x['timestamp']) if processed_dict else []
 
-    last_ten_queue = queue_dict.get(user_id, [])[-10:] if queue_dict else []
-    last_ten_processed = processed_dict.get(user_id, [])[-10:] if processed_dict else []
+    last_ten_queue = sorted_queue[-10:] if sorted_queue else []
+    last_ten_processed = sorted_processed[-10:] if sorted_processed else []
 
     queue_count = len(queue_dict.get(user_id, [])) if queue_dict else 0
     processed_count = len(processed_dict.get(user_id, [])) if processed_dict else 0
 
     queue_string = ''
     if last_ten_queue:
-        sorted_queue = sorted(last_ten_queue, key=lambda x: x['scheduled_time'])
         for item in sorted_queue:
             queue_string += f"+ <code>{item['post_id']}: scheduled for {item['scheduled_time']}</code>\n"
     else:
@@ -322,7 +323,6 @@ def get_user_messages(user_id: str = None) -> dict:
 
     processed_string = ''
     if last_ten_processed:
-        sorted_processed = sorted(last_ten_processed, key=lambda x: x['timestamp'])
         for item in sorted_processed:
             processed_string += f"* <code>{item['post_id']}: {item['state']} at {item['timestamp']}</code>\n"
     else:
