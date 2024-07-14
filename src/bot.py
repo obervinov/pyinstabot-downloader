@@ -304,12 +304,10 @@ def get_user_messages(user_id: str = None) -> dict:
         {'queue': '<code>queue is empty</code>', 'processed': '<code>processed is empty</code>', 'queue_count': 0, 'processed_count': 0}
     """
     queue_dict = database.get_user_queue(user_id=user_id)
-    sorted_queue = sorted(queue_dict.get(user_id, []), key=lambda x: x['scheduled_time'], reverse=True) if queue_dict else []
     processed_dict = database.get_user_processed(user_id=user_id)
-    sorted_processed = sorted(processed_dict.get(user_id, []), key=lambda x: x['timestamp']) if processed_dict else []
 
-    last_ten_queue = sorted(sorted_queue[-10:], key=lambda x: x['scheduled_time']) if sorted_queue else []
-    last_ten_processed = sorted_processed[-10:] if sorted_processed else []
+    last_ten_queue = queue_dict.get(user_id, [])[10:] if queue_dict else []
+    last_ten_processed = processed_dict.get(user_id, [])[-10:] if processed_dict else []
 
     queue_count = len(queue_dict.get(user_id, [])) if queue_dict else 0
     processed_count = len(processed_dict.get(user_id, [])) if processed_dict else 0

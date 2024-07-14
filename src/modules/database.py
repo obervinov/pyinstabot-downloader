@@ -580,7 +580,7 @@ class DatabaseClient:
             table_name='processed',
             columns=("post_id", "timestamp", "state"),
             condition=f"user_id = '{user_id}'",
-            order_by='timestamp DESC',
+            order_by='timestamp ASC',
             limit=5000
         )
         for message in processed:
