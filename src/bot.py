@@ -301,28 +301,35 @@ def get_user_messages(user_id: str = None) -> dict:
 
     Examples:
         >>> get_user_messages(user_id='1234567890')
-        {'queue': '<code>queue is empty</code>', 'processed': '<code>processed is empty</code>'}
+        {'queue': '<code>queue is empty</code>', 'processed': '<code>processed is empty</code>', 'queue_count': 0, 'processed_count': 0}
     """
     queue_dict = database.get_user_queue(user_id=user_id)
     processed_dict = database.get_user_processed(user_id=user_id)
 
+    last_ten_queue = queue_dict.get(user_id, [])[-10:] if queue_dict else []
+    last_ten_processed = processed_dict.get(user_id, [])[-10:] if processed_dict else []
+
+    queue_count = len(queue_dict.get(user_id, [])) if queue_dict else 0
+    processed_count = len(processed_dict.get(user_id, [])) if processed_dict else 0
+
     queue_string = ''
-    if queue_dict is not None:
-        sorted_data = sorted(queue_dict[user_id], key=lambda x: x['scheduled_time'], reverse=False)
-        for item in sorted_data:
-            queue_string = queue_string + f"+ <code>{item['post_id']}: scheduled for {item['scheduled_time']}</code>\n"
+    if last_ten_queue:
+        sorted_queue = sorted(last_ten_queue, key=lambda x: x['scheduled_time'])
+        for item in sorted_queue:
+            queue_string += f"+ <code>{item['post_id']}: scheduled for {item['scheduled_time']}</code>\n"
     else:
         queue_string = '<code>queue is empty</code>'
 
     processed_string = ''
-    if processed_dict is not None:
-        sorted_data = sorted(processed_dict[user_id], key=lambda x: x['timestamp'], reverse=False)
-        for item in sorted_data:
-            processed_string = processed_string + f"* <code>{item['post_id']}: {item['state']} at {item['timestamp']}</code>\n"
+    if last_ten_processed:
+        sorted_processed = sorted(last_ten_processed, key=lambda x: x['timestamp'])
+        for item in sorted_processed:
+            processed_string += f"* <code>{item['post_id']}: {item['state']} at {item['timestamp']}</code>\n"
     else:
         processed_string = '<code>processed is empty</code>'
 
-    return {'queue': queue_string, 'processed': processed_string}
+    return {'queue': queue_string, 'processed': processed_string, 'queue_count': queue_count, 'processed_count': processed_count}
+
 
 
 def message_parser(message: telegram.telegram_types.Message = None) -> dict:
