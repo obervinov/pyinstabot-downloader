@@ -452,7 +452,7 @@ def reschedule_queue(
     can_be_deleted = True
     if user.get('permissions', None) == users.user_status_allow:
         for item in message.text.split('\n'):
-            item = item.split('=')
+            item = item.split(': scheduled for ')
             post_id = item[0].strip()
             new_scheduled_time = datetime.strptime(item[1].strip(), '%Y-%m-%d %H:%M:%S.%f')
             if (

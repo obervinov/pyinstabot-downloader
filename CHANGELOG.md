@@ -4,7 +4,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 
 ## v2.1.8 - 2024-07-14
 ### What's Changed
-**Full Changelog**: https://github.com/obervinov/pyinstabot-downloader/compare/v2.1.7...v2.1.7 by @obervinov in https://github.com/obervinov/pyinstabot-downloader/pull/80
+**Full Changelog**: https://github.com/obervinov/pyinstabot-downloader/compare/v2.1.7...v2.1.8 by @obervinov in https://github.com/obervinov/pyinstabot-downloader/pull/80
 #### 🐛 Bug Fixes
 * [Bug: Incorrect name of the message template `wrong_reschedule_queue` causes a drop in the processing thread of incoming messages ](https://github.com/obervinov/pyinstabot-downloader/issues/75)
 #### 🚀 Features
