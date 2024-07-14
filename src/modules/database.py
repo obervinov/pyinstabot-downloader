@@ -581,7 +581,7 @@ class DatabaseClient:
             columns=("post_id", "timestamp", "state"),
             condition=f"user_id = '{user_id}'",
             order_by='timestamp DESC',
-            limit=1000
+            limit=5000
         )
         for message in processed:
             if user_id not in result:
