@@ -2,6 +2,17 @@
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/) and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## v2.1.8 - 2024-07-14
+### What's Changed
+**Full Changelog**: https://github.com/obervinov/pyinstabot-downloader/compare/v2.1.7...v2.1.8 by @obervinov in https://github.com/obervinov/pyinstabot-downloader/pull/80
+#### 🐛 Bug Fixes
+* [Bug: Incorrect name of the message template `wrong_reschedule_queue` causes a drop in the processing thread of incoming messages ](https://github.com/obervinov/pyinstabot-downloader/issues/75)
+#### 🚀 Features
+* Bump dependency versions for modules
+* [Feature request: Replace separator for queue reschedule](https://github.com/obervinov/pyinstabot-downloader/issues/79)
+* [Feature request: Add additional statistics on the user's widget](https://github.com/obervinov/pyinstabot-downloader/issues/78)
+
+
 ## v2.1.7 - 2024-06-25
 ### What's Changed
 **Full Changelog**: https://github.com/obervinov/pyinstabot-downloader/compare/v2.1.6...v2.1.7 by @obervinov in https://github.com/obervinov/pyinstabot-downloader/pull/74

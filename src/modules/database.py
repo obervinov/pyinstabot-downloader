@@ -549,7 +549,7 @@ class DatabaseClient:
             columns=("post_id", "scheduled_time"),
             condition=f"user_id = '{user_id}'",
             order_by='scheduled_time ASC',
-            limit=10
+            limit=1000
         )
         for message in queue:
             if user_id not in result:
@@ -580,8 +580,8 @@ class DatabaseClient:
             table_name='processed',
             columns=("post_id", "timestamp", "state"),
             condition=f"user_id = '{user_id}'",
-            order_by='timestamp DESC',
-            limit=10
+            order_by='timestamp ASC',
+            limit=5000
         )
         for message in processed:
             if user_id not in result:

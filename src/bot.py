@@ -301,28 +301,32 @@ def get_user_messages(user_id: str = None) -> dict:
 
     Examples:
         >>> get_user_messages(user_id='1234567890')
-        {'queue': '<code>queue is empty</code>', 'processed': '<code>processed is empty</code>'}
+        {'queue_list': '<code>queue is empty</code>', 'processed_list': '<code>processed is empty</code>', 'queue_count': 0, 'processed_count': 0}
     """
     queue_dict = database.get_user_queue(user_id=user_id)
     processed_dict = database.get_user_processed(user_id=user_id)
 
+    last_ten_queue = queue_dict.get(user_id, [])[:10] if queue_dict else []
+    last_ten_processed = processed_dict.get(user_id, [])[-10:] if processed_dict else []
+
+    queue_count = len(queue_dict.get(user_id, [])) if queue_dict else 0
+    processed_count = len(processed_dict.get(user_id, [])) if processed_dict else 0
+
     queue_string = ''
-    if queue_dict is not None:
-        sorted_data = sorted(queue_dict[user_id], key=lambda x: x['scheduled_time'], reverse=False)
-        for item in sorted_data:
-            queue_string = queue_string + f"+ <code>{item['post_id']}: scheduled for {item['scheduled_time']}</code>\n"
+    if last_ten_queue:
+        for item in last_ten_queue:
+            queue_string += f"+ <code>{item['post_id']}: scheduled for {item['scheduled_time']}</code>\n"
     else:
         queue_string = '<code>queue is empty</code>'
 
     processed_string = ''
-    if processed_dict is not None:
-        sorted_data = sorted(processed_dict[user_id], key=lambda x: x['timestamp'], reverse=False)
-        for item in sorted_data:
-            processed_string = processed_string + f"* <code>{item['post_id']}: {item['state']} at {item['timestamp']}</code>\n"
+    if last_ten_processed:
+        for item in last_ten_processed:
+            processed_string += f"* <code>{item['post_id']}: {item['state']} at {item['timestamp']}</code>\n"
     else:
         processed_string = '<code>processed is empty</code>'
 
-    return {'queue': queue_string, 'processed': processed_string}
+    return {'queue_list': queue_string, 'processed_list': processed_string, 'queue_count': queue_count, 'processed_count': processed_count}
 
 
 def message_parser(message: telegram.telegram_types.Message = None) -> dict:
@@ -449,9 +453,10 @@ def reschedule_queue(
         None
     """
     user = users.user_access_check(message.chat.id, ROLES_MAP['Reschedule Queue'])
+    can_be_deleted = True
     if user.get('permissions', None) == users.user_status_allow:
         for item in message.text.split('\n'):
-            item = item.split('=')
+            item = item.split(': scheduled for ')
             post_id = item[0].strip()
             new_scheduled_time = datetime.strptime(item[1].strip(), '%Y-%m-%d %H:%M:%S.%f')
             if (
@@ -464,11 +469,13 @@ def reschedule_queue(
                     scheduled_time=new_scheduled_time
                 )
             else:
+                can_be_deleted = False
                 telegram.send_styled_message(
                     chat_id=message.chat.id,
-                    messages_template={'alias': 'wrong_reschedule_queue'}
+                    messages_template={'alias': 'wrong_reschedule_queue', 'kwargs': {'current_time': datetime.now()}}
                 )
-        telegram.delete_message(message.chat.id, message.id)
+        if can_be_deleted:
+            telegram.delete_message(message.chat.id, message.id)
         if help_message is not None:
             telegram.delete_message(message.chat.id, help_message.id)
         update_status_message(user_id=message.chat.id)
