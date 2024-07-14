@@ -328,7 +328,7 @@ def get_user_messages(user_id: str = None) -> dict:
     else:
         processed_string = '<code>processed is empty</code>'
 
-    return {'queue': queue_string, 'processed': processed_string, 'queue_count': queue_count, 'processed_count': processed_count}
+    return {'queue_list': queue_string, 'processed_list': processed_string, 'queue_count': queue_count, 'processed_count': processed_count}
 
 
 def message_parser(message: telegram.telegram_types.Message = None) -> dict:
