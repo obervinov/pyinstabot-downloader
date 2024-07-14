@@ -474,7 +474,7 @@ def reschedule_queue(
                 can_be_deleted = False
                 telegram.send_styled_message(
                     chat_id=message.chat.id,
-                    messages_template={'alias': 'wrong_reschedule_queue'}
+                    messages_template={'alias': 'wrong_reschedule_queue', 'kwargs': {'current_time': datetime.now()}}
                 )
         if can_be_deleted:
             telegram.delete_message(message.chat.id, message.id)
