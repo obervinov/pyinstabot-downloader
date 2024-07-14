@@ -29,8 +29,8 @@
             "args": [":information:"]
         },
         "wrong_reschedule_queue": {
-            "text": "{0} <b>Incorrect format for rescheduling messages in the queue. Please check this conditions:</b>\n1. Post-id is a string and its length is equal to 11 characters.\n2. Date-time format is correct and the date is in the future.\n3. The message is separated by a equal sign(=) and a space.\n4. Each new message is on a new line.",
-            "args": []
+            "text": "{0} <b>Incorrect format for rescheduling messages in the queue. Please check this conditions:</b>\n1. Post-id is a string and its length is equal to 11 characters.\n2. Date-time format is correct and the date is in the future.\n3. The message is separated by a equal sign(=) and a space.\n4. Each new message is on a new line.\n\n<b>Current time: {1}</b>",
+            "args": [":warning:", "current_time"]
         },
         "unknown_command": {
             "text": "{0} Invalid button command. Please use inline keyboard.",

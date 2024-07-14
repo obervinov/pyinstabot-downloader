@@ -449,6 +449,7 @@ def reschedule_queue(
         None
     """
     user = users.user_access_check(message.chat.id, ROLES_MAP['Reschedule Queue'])
+    can_be_deleted = True
     if user.get('permissions', None) == users.user_status_allow:
         for item in message.text.split('\n'):
             item = item.split('=')
@@ -462,13 +463,15 @@ def reschedule_queue(
                     post_id=post_id,
                     user_id=message.chat.id,
                     scheduled_time=new_scheduled_time
-                )
+                )    
             else:
+                can_be_deleted = False
                 telegram.send_styled_message(
                     chat_id=message.chat.id,
                     messages_template={'alias': 'wrong_reschedule_queue'}
                 )
-        telegram.delete_message(message.chat.id, message.id)
+        if can_be_deleted:
+            telegram.delete_message(message.chat.id, message.id)
         if help_message is not None:
             telegram.delete_message(message.chat.id, help_message.id)
         update_status_message(user_id=message.chat.id)
