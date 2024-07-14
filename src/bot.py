@@ -301,7 +301,7 @@ def get_user_messages(user_id: str = None) -> dict:
 
     Examples:
         >>> get_user_messages(user_id='1234567890')
-        {'queue': '<code>queue is empty</code>', 'processed': '<code>processed is empty</code>', 'queue_count': 0, 'processed_count': 0}
+        {'queue_list': '<code>queue is empty</code>', 'processed_list': '<code>processed is empty</code>', 'queue_count': 0, 'processed_count': 0}
     """
     queue_dict = database.get_user_queue(user_id=user_id)
     processed_dict = database.get_user_processed(user_id=user_id)
