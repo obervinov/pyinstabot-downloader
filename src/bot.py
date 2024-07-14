@@ -463,7 +463,7 @@ def reschedule_queue(
                     post_id=post_id,
                     user_id=message.chat.id,
                     scheduled_time=new_scheduled_time
-                )    
+                )
             else:
                 can_be_deleted = False
                 telegram.send_styled_message(
