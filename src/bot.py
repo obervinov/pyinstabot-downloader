@@ -316,14 +316,14 @@ def get_user_messages(user_id: str = None) -> dict:
 
     queue_string = ''
     if last_ten_queue:
-        for item in sorted_queue:
+        for item in last_ten_queue:
             queue_string += f"+ <code>{item['post_id']}: scheduled for {item['scheduled_time']}</code>\n"
     else:
         queue_string = '<code>queue is empty</code>'
 
     processed_string = ''
     if last_ten_processed:
-        for item in sorted_processed:
+        for item in last_ten_processed:
             processed_string += f"* <code>{item['post_id']}: {item['state']} at {item['timestamp']}</code>\n"
     else:
         processed_string = '<code>processed is empty</code>'
