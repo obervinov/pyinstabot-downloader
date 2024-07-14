@@ -331,7 +331,6 @@ def get_user_messages(user_id: str = None) -> dict:
     return {'queue': queue_string, 'processed': processed_string, 'queue_count': queue_count, 'processed_count': processed_count}
 
 
-
 def message_parser(message: telegram.telegram_types.Message = None) -> dict:
     """
     Parses the message containing the Instagram post link and returns the data.
