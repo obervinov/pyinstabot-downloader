@@ -306,7 +306,7 @@ def get_user_messages(user_id: str = None) -> dict:
     queue_dict = database.get_user_queue(user_id=user_id)
     processed_dict = database.get_user_processed(user_id=user_id)
 
-    last_ten_queue = queue_dict.get(user_id, [])[10:] if queue_dict else []
+    last_ten_queue = queue_dict.get(user_id, [])[:10] if queue_dict else []
     last_ten_processed = processed_dict.get(user_id, [])[-10:] if processed_dict else []
 
     queue_count = len(queue_dict.get(user_id, [])) if queue_dict else 0
