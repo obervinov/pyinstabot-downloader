@@ -308,7 +308,7 @@ def get_user_messages(user_id: str = None) -> dict:
     processed_dict = database.get_user_processed(user_id=user_id)
     sorted_processed = sorted(processed_dict.get(user_id, []), key=lambda x: x['timestamp']) if processed_dict else []
 
-    last_ten_queue = sorted_queue[-10:] if sorted_queue else []
+    last_ten_queue = sorted(sorted_queue[-10:], key=lambda x: x['scheduled_time']) if sorted_queue else []
     last_ten_processed = sorted_processed[-10:] if sorted_processed else []
 
     queue_count = len(queue_dict.get(user_id, [])) if queue_dict else 0
