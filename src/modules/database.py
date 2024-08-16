@@ -66,6 +66,7 @@ class DatabaseClient:
 
         self._prepare_db()
         self._migrations()
+        self._reset_stale_records()
 
     def _prepare_db(self) -> None:
         """
@@ -312,6 +313,33 @@ class DatabaseClient:
         """
         self.cursor.execute(f"DELETE FROM {table_name} WHERE {condition}")
         self.database_connection.commit()
+
+    def _reset_stale_records(self) -> None:
+        """
+        Reset stale records in the database. To ensure that the bot is restored after a restart.
+        More: https://github.com/obervinov/pyinstabot-downloader/issues/84
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
+        # Reset stale status_message (can be only one status_message per chat)
+        log.info('[class.%s] Resetting stale status messages...', __class__.__name__)
+        status_messages = self._select(
+            table_name='messages',
+            columns=("id", "state"),
+            condition="message_type = 'status_message'",
+        )
+        for message in status_messages:
+            if message[1] != 'updated':
+                self._update(
+                    table_name='messages',
+                    values="state = 'updated'",
+                    condition=f"id = '{message[0]}'"
+                )
+        log.info('[class.%s] Resetting stale status messages has been completed', __class__.__name__)
 
     def add_message_to_queue(
         self,
@@ -689,13 +717,16 @@ class DatabaseClient:
                 condition=f"id = '{check_exist_message_type[0][0]}'"
             )
             response = f"{message_id} updated"
-        else:
+        elif not check_exist_message_type:
             self._insert(
                 table_name='messages',
                 columns=("message_id", "chat_id", "message_type", "message_content_hash", "producer"),
                 values=(message_id, chat_id, message_type, message_content_hash, 'bot')
             )
             response = f"{message_id} kept"
+        else:
+            log.warning('[class.%s] Message with ID %s already exists in the messages table and cannot be updated', __class__.__name__, message_id)
+            response = f"{message_id} already exists"
         return response
 
     def add_user(

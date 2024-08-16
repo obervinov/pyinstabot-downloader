@@ -25,11 +25,11 @@
             "args": [":information:", ":link:"]
         },
         "help_for_reschedule_queue": {
-            "text": "{0} <b>To reschedule the processing of messages in the queue, simply send a list of messages with a modified processing time.\nfor example:</b>\n<code>q1wRty12345 = 2021-01-01 12:00:00\nq1wRty12346 = 2021-01-01 12:00:00\nq1wRty12347 = 2021-01-01 12:00:00</code>",
+            "text": "{0} <b>To reschedule the processing of messages in the queue, simply send a list of messages with a modified processing time.\nfor example:</b>\n<code>q1wRty12345: scheduled for 2021-12-31 23:59:59\nq1wRty12346: scheduled for 2021-12-31 23:59:59\nq1wRty12347: scheduled for 2021-12-31 23:59:59</code>",
             "args": [":information:"]
         },
         "wrong_reschedule_queue": {
-            "text": "{0} <b>Incorrect format for rescheduling messages in the queue. Please check this conditions:</b>\n1. Post-id is a string and its length is equal to 11 characters.\n2. Date-time format is correct and the date is in the future.\n3. The message is separated by a equal sign(=) and a space.\n4. Each new message is on a new line.\n\n<b>Current time: {1}</b>",
+            "text": "{0} <b>Incorrect format for rescheduling messages in the queue. Please check this conditions:</b>\n1. Post-id is a string and its length is equal to 11 characters.\n2. Date-time format is correct and the date is in the future.\n3. The message format is correct \n<code>q1wRty12345: scheduled for 2021-12-31 23:59:59</code>\n4. Each new message is on a new line.\n\n<b>Current time: {1}</b>",
             "args": [":warning:", "current_time"]
         },
         "unknown_command": {

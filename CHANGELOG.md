@@ -2,6 +2,20 @@
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/) and this project adheres to [Semantic Versioning](http://semver.org/).
 
+
+## v2.2.0 - 2024-08-16
+### What's Changed
+**Full Changelog**: https://github.com/obervinov/pyinstabot-downloader/compare/v2.1.8...v2.2.0 by @obervinov in https://github.com/obervinov/pyinstabot-downloader/pull/90
+#### 🐛 Bug Fixes
+* [Bug: Add validation of the received card from the database with a message queue](https://github.com/obervinov/pyinstabot-downloader/issues/86)
+* [Bug: More than one status_message message registered in the database per user](https://github.com/obervinov/pyinstabot-downloader/issues/85)
+* [Bug: Add a version to block the update of the user widget when the bot is launched](https://github.com/obervinov/pyinstabot-downloader/issues/84)
+* [Bug: Invalid `help_for_reschedule_queue` message template](https://github.com/obervinov/pyinstabot-downloader/issues/83)
+* [Bug: For some reason the bot tried to edit a message with the same content in the message](https://github.com/obervinov/pyinstabot-downloader/issues/65)
+#### 🚀 Features
+* bump workflow version to `1.2.8`
+
+
 ## v2.1.8 - 2024-07-14
 ### What's Changed
 **Full Changelog**: https://github.com/obervinov/pyinstabot-downloader/compare/v2.1.7...v2.1.8 by @obervinov in https://github.com/obervinov/pyinstabot-downloader/pull/80

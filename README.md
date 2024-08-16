@@ -223,4 +223,4 @@ docker compose -f docker-compose.yml up -d
 ## <img src="https://github.com/obervinov/_templates/blob/v1.2.2/icons/github-actions.png" width="25" title="github-actions"> GitHub Actions
 | Name  | Version |
 | ------------------------ | ----------- |
-| GitHub Actions Templates | [v1.2.6](https://github.com/obervinov/_templates/tree/v1.2.6) |
+| GitHub Actions Templates | [v1.2.8](https://github.com/obervinov/_templates/tree/v1.2.8) |

@@ -530,10 +530,13 @@ def queue_handler_thread() -> None:
         message = database.get_message_from_queue(datetime.now())
 
         if message is not None:
-            download_status = message[9]
-            upload_status = message[10]
-            post_id = message[2]
-            owner_id = message[4]
+            try:
+                download_status = message[9]
+                upload_status = message[10]
+                post_id = message[2]
+                owner_id = message[4]
+            except IndexError as exception:
+                log.error('[Queue-handler-thread] failed to extract data: %s\nmessage: %s', exception, message)
 
             log.info('[Queue-handler-thread] starting handler for post %s...', message[2])
             # download the contents of an instagram post to a temporary folder
