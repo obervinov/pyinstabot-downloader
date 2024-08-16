@@ -14,12 +14,13 @@ from logger import log
 from telegram import TelegramBot, exceptions as TelegramExceptions
 from users import Users
 from vault import VaultClient
-from configs.constants import (TELEGRAM_BOT_NAME, ROLES_MAP, QUEUE_FREQUENCY, STATUSES_MESSAGE_FREQUENCY)
+from configs.constants import (TELEGRAM_BOT_NAME, ROLES_MAP, QUEUE_FREQUENCY, STATUSES_MESSAGE_FREQUENCY, METRICS_PORT, METRICS_INTERVAL)
 from modules.database import DatabaseClient
 from modules.exceptions import FailedMessagesStatusUpdater
 from modules.tools import get_hash
 from modules.downloader import Downloader
 from modules.uploader import Uploader
+from modules.metrics import Metrics
 
 
 # Vault client
@@ -62,6 +63,9 @@ else:
 
 # Client for communication with the database
 database = DatabaseClient(vault=vault)
+
+# Metrics exporter
+metrics = Metrics(port=METRICS_PORT, interval=METRICS_INTERVAL, vault=vault)
 
 
 # START HANDLERS BLOCK ##############################################################################################################
@@ -603,11 +607,14 @@ def main():
         None
     """
     # Thread for processing queue
-    thread_queue_handler_thread = threading.Thread(target=queue_handler_thread, args=(), name="Thread-queue-handler")
-    thread_queue_handler_thread.start()
+    thread_queue_handler = threading.Thread(target=queue_handler_thread, args=(), name="Thread-queue-handler")
+    thread_queue_handler.start()
     # Thread for update status message
     thread_status_message = threading.Thread(target=status_message_updater_thread, args=(), name="Thread-message-updater")
     thread_status_message.start()
+    # Thread for export metrics
+    thread_metrics = threading.Thread(target=metrics.run, args=([thread_queue_handler, thread_status_message]), name="Thread-metrics")
+    thread_metrics.start()
     # Run bot
     while True:
         try:

@@ -14,6 +14,8 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 * [Bug: For some reason the bot tried to edit a message with the same content in the message](https://github.com/obervinov/pyinstabot-downloader/issues/65)
 #### 🚀 Features
 * bump workflow version to `1.2.8`
+* [Feature request: Add support for `WebDav` as target storage](https://github.com/obervinov/pyinstabot-downloader/issues/81)
+* [Prometheus metric support](https://github.com/obervinov/pyinstabot-downloader/issues/53)
 
 
 ## v2.1.8 - 2024-07-14

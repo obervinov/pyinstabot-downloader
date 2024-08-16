@@ -23,6 +23,9 @@ dropbox = "^12"
 'mega.py' = "^1.0.8"
 psycopg2-binary = "^2"
 mock = "^5"
+webdavclient3 = "^3"
+prometheus-client = "^0"
+psutil = "^6"
 logger = { git = "https://github.com/obervinov/logger-package.git", tag = "v1.0.6" }
 vault  = { git = "https://github.com/obervinov/vault-package.git", tag = "v2.0.4" }
 users = { git = "https://github.com/obervinov/users-package.git", tag = "v2.0.5" }
