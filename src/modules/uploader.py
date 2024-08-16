@@ -87,11 +87,12 @@ class Uploader:
             return mega.login(email=self.configuration['username'], password=self.configuration['password'])
 
         if self.configuration['storage-type'] == 'webdav':
-            return WebDavClient(
-                webdav_hostname=self.configuration['url'],
-                webdav_login=self.configuration['username'],
-                webdav_password=self.configuration['password']
-            )
+            options = {
+                'webdav_hostname': self.configuration['url'],
+                'webdav_login': self.configuration['username'],
+                'webdav_password': self.configuration['password']
+            }
+            return WebDavClient(options)
 
         raise WrongStorageType("Wrong storage type, please check the configuration. 'storage-type' can be: 'dropbox', 'mega'.")
 
