@@ -1,7 +1,6 @@
 """This module provides a way to expose metrics to Prometheus for monitoring the application."""
 import time
 import json
-import psutil
 
 from prometheus_client import start_http_server, Gauge
 from logger import log
@@ -20,18 +19,10 @@ class Metrics():
         self.port = port
         self.interval = interval
         self.vault = vault
-        self.memory_usage_gauge = Gauge('memory_usage', 'Memory usage in bytes')
         self.thread_status_gauge = Gauge('thread_status', 'Thread status (1 = running, 0 = not running)', ['thread_name'])
         if vault:
             self.access_granted_counter = Gauge('access_granted_total', 'Total number of users granted access')
             self.access_denied_counter = Gauge('access_denied_total', 'Total number of users denied access')
-
-    def collect_memory_usage(self) -> None:
-        """
-        The method collects memory usage information and updates the gauge.
-        """
-        memory_info = psutil.virtual_memory()
-        self.memory_usage_gauge.set(memory_info.used)
 
     def collect_users_stats(self) -> None:
         """
@@ -64,7 +55,6 @@ class Metrics():
         start_http_server(self.port)
         log.info('[Metrics] Server started on port %s', self.port)
         while True:
-            self.collect_memory_usage()
             self.collect_users_stats()
             time.sleep(self.interval)
             for thread in threads:
