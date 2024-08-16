@@ -7,7 +7,7 @@ import os
 from typing import Union
 import dropbox
 from mega import Mega
-from webdav2.client import Client as WebDavClient
+from webdav3.client import Client as WebDavClient
 from logger import log
 from .exceptions import WrongVaultInstance, FailedInitUploaderInstance, WrongStorageType
 
