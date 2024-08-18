@@ -339,7 +339,7 @@ class DatabaseClient:
                     values="state = 'updated'",
                     condition=f"id = '{message[0]}'"
                 )
-        log.info('[class.%s] Resetting stale status messages has been completed', __class__.__name__)
+        log.info('[class.%s] Stale status messages have been reset', __class__.__name__)
 
     def add_message_to_queue(
         self,
