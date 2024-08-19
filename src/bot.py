@@ -65,7 +65,7 @@ else:
 database = DatabaseClient(vault=vault)
 
 # Metrics exporter
-metrics = Metrics(port=METRICS_PORT, interval=METRICS_INTERVAL, vault=vault)
+metrics = Metrics(port=METRICS_PORT, interval=METRICS_INTERVAL, vault=vault, database=database)
 
 
 # START HANDLERS BLOCK ##############################################################################################################
