@@ -76,7 +76,10 @@ class Metrics():
         start_http_server(self.port)
         log.info('[Metrics]: Metrics server started on port %s', self.port)
         while True:
-            self.collect_users_stats()
+            if self.vault:
+                self.collect_users_stats()
+            if self.database:
+                self.collect_messages_stats()
             time.sleep(self.interval)
             for thread in threads:
                 self.update_thread_status(thread.name, thread.is_alive())
