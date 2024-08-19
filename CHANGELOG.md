@@ -3,7 +3,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/) and this project adheres to [Semantic Versioning](http://semver.org/).
 
 
-## v2.2.0 - 2024-08-18
+## v2.2.0 - 2024-08-19
 ### What's Changed
 **Full Changelog**: https://github.com/obervinov/pyinstabot-downloader/compare/v2.1.8...v2.2.0 by @obervinov in https://github.com/obervinov/pyinstabot-downloader/pull/90
 #### 🐛 Bug Fixes
@@ -12,7 +12,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 * [Bug: Add a version to block the update of the user widget when the bot is launched](https://github.com/obervinov/pyinstabot-downloader/issues/84)
 * [Bug: Invalid `help_for_reschedule_queue` message template](https://github.com/obervinov/pyinstabot-downloader/issues/83)
 * [Bug: For some reason the bot tried to edit a message with the same content in the message](https://github.com/obervinov/pyinstabot-downloader/issues/65)
-* [ Bug: Error: cursor already closed](https://github.com/obervinov/pyinstabot-downloader/issues/82)
+* [Bug: Error: cursor already closed](https://github.com/obervinov/pyinstabot-downloader/issues/82)
 #### 🚀 Features
 * bump workflow version to `1.2.8`
 * [Feature request: Add support for `WebDav` as target storage](https://github.com/obervinov/pyinstabot-downloader/issues/81)
