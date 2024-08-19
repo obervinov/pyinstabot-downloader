@@ -33,17 +33,19 @@ class Metrics():
         Returns:
             None
         """
+        metrics_prefix = metrics_prefix.replace('-', '_')
+
         self.port = port
         self.interval = interval
         self.vault = kwargs.get('vault', None)
         self.database = kwargs.get('database', None)
-        self.thread_status_gauge = Gauge(f'{metrics_prefix}-thread_status', 'Thread status (1 = running, 0 = not running)', ['thread_name'])
+        self.thread_status_gauge = Gauge(f'{metrics_prefix}_thread_status', 'Thread status (1 = running, 0 = not running)', ['thread_name'])
         if self.vault:
-            self.access_granted_counter = Gauge(f'{metrics_prefix}-access_granted_total', 'Total number of users granted access')
-            self.access_denied_counter = Gauge(f'{metrics_prefix}-access_denied_total', 'Total number of users denied access')
+            self.access_granted_counter = Gauge(f'{metrics_prefix}_access_granted_total', 'Total number of users granted access')
+            self.access_denied_counter = Gauge(f'{metrics_prefix}_access_denied_total', 'Total number of users denied access')
         if self.database:
-            self.processed_messages_counter = Gauge(f'{metrics_prefix}-processed_messages_total', 'Total number of processed messages')
-            self.queue_length_gauge = Gauge(f'{metrics_prefix}-queue_length', 'Queue length')
+            self.processed_messages_counter = Gauge(f'{metrics_prefix}_processed_messages_total', 'Total number of processed messages')
+            self.queue_length_gauge = Gauge(f'{metrics_prefix}_queue_length', 'Queue length')
 
     def collect_users_stats(self) -> None:
         """
