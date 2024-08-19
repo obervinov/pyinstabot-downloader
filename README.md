@@ -161,42 +161,36 @@ _except for the part of the configuration that configures the connection to `Vau
   - `status`: allowed or denied user access to the bot
 
 #### You can use an existing vault-server or launch a new one using docker-compose
+Scripts for configuring the vault-server are located in the [vault-init.sh](scripts/vault-init.sh)
 - instructions for starting and configuring a new vault-server
 ```bash
+# Clone the repository
+git clone https://github.com/obervinov/pyinstabot-downloader.git
+cd pyinstabot-downloader
+
+# Run vault-server
 docker-compose -f docker-compose.yml up vault-server -d
-poetry install
-curl -L https://gist.githubusercontent.com/obervinov/9bd452fee681f0493da7fd0b2bfe1495/raw/bbc4aad0ed7be064e9876dde64ad8b26b185091b/setup_vault_server.py | python3 --url=http://localhost:8200 --name=pyinstabot-downloader --policy=vault/policy.hcl
+
+# Initialize and unseal new vault-server
+vault operator init
+vault operator unseal
+
+# Run the script for configuring the vault-server for this bot project
+export VAULT_ADDR=http://localhost:8200
+export VAULT_TOKEN=hvs.123456qwerty
+./scripts/vault-init.sh
 ```
 
 - instructions for configuring an existing vault server
 ```bash
-poetry install
-curl -L https://gist.githubusercontent.com/obervinov/9bd452fee681f0493da7fd0b2bfe1495/raw/bbc4aad0ed7be064e9876dde64ad8b26b185091b/setup_vault_server.py | python3 --url=http://localhost:8200 --name=pyinstabot-downloader --policy=vault/policy.hcl --token=hvs.123456qwerty
-```
+# Clone the repository
+git clone https://github.com/obervinov/pyinstabot-downloader.git
+cd pyinstabot-downloader
 
-  `setup_vault_server.py` - This script performs a quick and convenient configuration of the vault-server for this bot project
-  - `initial` initialization of vault-server (_if it is new vault-server_)
-  - `unseal` vault-server (_if it is new vault-server_)
-  - creating an isolated `mount point`
-  - loading `policy.hcl`
-  - creating an `approle`
-
-All these actions can also be performed using the official `vault` cli
-```bash
-vault operator init
-vault operator unseal
-vault secrets enable -path=pyinstabot-downloader kv-v2 
-vault policy write pyinstabot-downloader vault/policy.hcl
-vault auth enable -path=pyinstabot-downloader approle
-vault write auth/pyinstabot-downloader/role/pyinstabot-downloader \
-    token_policies=["pyinstabot-downloader"] \
-    token_type=service \
-    secret_id_num_uses=0 \
-    token_num_uses=0 \
-    token_ttl=1h \
-    bind_secret_id=true \
-    mount_point="pyinstabot-downloader" \
-    secret_id_ttl=0
+# Run the script for configuring the vault-server for this bot project
+export VAULT_ADDR=https://vault.example.com:8200
+export VAULT_TOKEN=hvs.123456qwerty
+./scripts/vault-init.sh
 ```
 </br>
 
@@ -208,17 +202,30 @@ You can familiarize yourself with the
 
 The database structure is created automatically when the bot starts. Bot checks the database structure and creates missing tables if necessary.
 After checking the database structure, the bot executes the migrations in the order of their numbering.</br>
-Required only database owner rights in `Vault` for the bot to create tables and execute migrations.
+All that is required is a database and the rights of the owner of this data database.
+To quickly prepare an instance, you can execute the[psql-init.sh](scripts/psql-init.sh) script
+```bash
+git clone https://github.com/obervinov/pyinstabot-downloader.git
+cd pyinstabot-downloader
+
+export PGHOST=<host>
+export PGPORT=<port>
+export PGUSER=<user>
+export PGPASSWORD=<password>
+export PGDATABASE=postgres
+./scripts/psql-init.sh
+```
+
 
 **What data is stored in tables:**
-- user request queue
-- history of processed user requests 
-- information about users activity (requests and contacts)
-- completed migrations
-- messages sent by the bot (to update them)
+- users requests queue
+- users metadata
+- history of processed users requests 
+- migration history
+- messages sent by the bot
 </br>
 
-## <img src="https://github.com/obervinov/_templates/blob/v1.2.2/icons/docker.png" width="25" title="docker"> How to run project
+## <img src="https://github.com/obervinov/_templates/blob/v1.2.2/icons/docker.png" width="25" title="docker"> How to run project locally
 ```sh
 export VAULT_APPROLE_ID={change_me}
 export VAULT_APPROLE_SECRETID={change_me}
