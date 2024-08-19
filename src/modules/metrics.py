@@ -16,18 +16,32 @@ class Metrics():
         port: int = None,
         interval: int = None,
         metrics_prefix: str = None,
-        vault: object = None,
-        database: object = None
+        **kwargs
     ) -> None:
+        """
+        The method initializes the class instance with the necessary parameters.
+
+        Args:
+            :param port (int): port for the metrics server.
+            :param interval (int): interval for collecting metrics.
+            :param metrics_prefix (str): prefix for the metrics.
+
+        Keyword Args:
+            :param vault (Vault): instance of the Vault class.
+            :param database (Database): instance of the Database class.
+
+        Returns:
+            None
+        """
         self.port = port
         self.interval = interval
-        self.vault = vault
-        self.database = database
+        self.vault = kwargs.get('vault', None)
+        self.database = kwargs.get('database', None)
         self.thread_status_gauge = Gauge(f'{metrics_prefix}-thread_status', 'Thread status (1 = running, 0 = not running)', ['thread_name'])
-        if vault:
+        if self.vault:
             self.access_granted_counter = Gauge(f'{metrics_prefix}-access_granted_total', 'Total number of users granted access')
             self.access_denied_counter = Gauge(f'{metrics_prefix}-access_denied_total', 'Total number of users denied access')
-        if database:
+        if self.database:
             self.processed_messages_counter = Gauge(f'{metrics_prefix}-processed_messages_total', 'Total number of processed messages')
             self.queue_length_gauge = Gauge(f'{metrics_prefix}-queue_length', 'Queue length')
 
