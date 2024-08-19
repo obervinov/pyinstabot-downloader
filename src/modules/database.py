@@ -85,7 +85,7 @@ class DatabaseClient:
             database=db_configuration['database']
         )
         log.info(
-            '[Database]: initialized %s connection to %s:%s/%s',
+            '[Database]: initialized connection to %s:%s/%s',
             db_configuration['host'], db_configuration['port'], db_configuration['database']
         )
 
