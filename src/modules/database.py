@@ -3,6 +3,7 @@ import os
 import sys
 import importlib
 import json
+import time
 from typing import Union
 import psycopg2
 from logger import log
@@ -33,6 +34,7 @@ def reconnect_on_exception(method):
                 log.info('[Database]: Reconnection successful.')
                 return method(self, *args, **kwargs)
             except psycopg2.Error as inner_exception:
+                time.sleep(10)
                 log.error('[Database]: Failed to reconnect to the database: %s', str(inner_exception))
                 raise inner_exception
     return wrapper

@@ -261,7 +261,7 @@ def update_status_message(user_id: str = None) -> None:
                 log.info('[Bot]: `status_message` for user %s has been updated', user_id)
 
             elif not diff_between_messages:
-                log.info('[Bot]: `status_message` for user %s is actual', user_id)
+                log.debug('[Bot]: `status_message` for user %s is actual', user_id)
                 database.keep_message(
                     message_id=exist_status_message[0],
                     chat_id=exist_status_message[1],
