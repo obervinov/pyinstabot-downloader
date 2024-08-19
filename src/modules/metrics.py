@@ -15,6 +15,7 @@ class Metrics():
         self,
         port: int = None,
         interval: int = None,
+        metrics_prefix: str = None,
         vault: object = None,
         database: object = None
     ) -> None:
@@ -22,13 +23,13 @@ class Metrics():
         self.interval = interval
         self.vault = vault
         self.database = database
-        self.thread_status_gauge = Gauge('thread_status', 'Thread status (1 = running, 0 = not running)', ['thread_name'])
+        self.thread_status_gauge = Gauge(f'{metrics_prefix}-thread_status', 'Thread status (1 = running, 0 = not running)', ['thread_name'])
         if vault:
-            self.access_granted_counter = Gauge('access_granted_total', 'Total number of users granted access')
-            self.access_denied_counter = Gauge('access_denied_total', 'Total number of users denied access')
+            self.access_granted_counter = Gauge(f'{metrics_prefix}-access_granted_total', 'Total number of users granted access')
+            self.access_denied_counter = Gauge(f'{metrics_prefix}-access_denied_total', 'Total number of users denied access')
         if database:
-            self.processed_messages_counter = Gauge('processed_messages_total', 'Total number of processed messages')
-            self.queue_length_gauge = Gauge('queue_length', 'Queue length')
+            self.processed_messages_counter = Gauge(f'{metrics_prefix}-processed_messages_total', 'Total number of processed messages')
+            self.queue_length_gauge = Gauge(f'{metrics_prefix}-queue_length', 'Queue length')
 
     def collect_users_stats(self) -> None:
         """

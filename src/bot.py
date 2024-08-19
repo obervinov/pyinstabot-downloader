@@ -65,7 +65,7 @@ else:
 database = DatabaseClient(vault=vault)
 
 # Metrics exporter
-metrics = Metrics(port=METRICS_PORT, interval=METRICS_INTERVAL, vault=vault, database=database)
+metrics = Metrics(port=METRICS_PORT, interval=METRICS_INTERVAL, metrics_prefix=TELEGRAM_BOT_NAME, vault=vault, database=database)
 
 
 # START HANDLERS BLOCK ##############################################################################################################
@@ -402,7 +402,6 @@ def process_one_post(
         # Check if the message is unique
         if database.check_message_uniqueness(data['post_id'], data['user_id']):
             status = database.add_message_to_queue(data)
-            update_status_message(user_id=message.chat.id)
             log.info('[Bot]: %s from user %s', status, message.chat.id)
         else:
             log.info('[Bot]: post %s from user %s already exist in the database', data['post_id'], message.chat.id)
@@ -482,7 +481,6 @@ def reschedule_queue(
             telegram.delete_message(message.chat.id, message.id)
         if help_message is not None:
             telegram.delete_message(message.chat.id, help_message.id)
-        update_status_message(user_id=message.chat.id)
 # END BLOCK PROCESSING FUNCTIONS ####################################################################################################
 
 
