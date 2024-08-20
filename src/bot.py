@@ -536,6 +536,7 @@ def queue_handler_thread() -> None:
                 owner_id = message[4]
             except IndexError as exception:
                 log.error('[Queue-handler-thread] failed to extract data: %s\nmessage: %s', exception, message)
+                break
 
             log.info('[Queue-handler-thread] starting handler for post %s...', message[2])
             # download the contents of an instagram post to a temporary folder
