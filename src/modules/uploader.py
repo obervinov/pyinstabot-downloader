@@ -7,6 +7,7 @@ import os
 from typing import Union
 import dropbox
 from mega import Mega
+from webdav3.client import Client as WebDavClient
 from logger import log
 from .exceptions import WrongVaultInstance, FailedInitUploaderInstance, WrongStorageType
 
@@ -28,7 +29,7 @@ class Uploader:
             :param configuration (dict): dictionary with target storage parameters.
                 :param username (str): username for authentication in the target storage.
                 :param password (str): password for authentication in the target storage.
-                :param storage-type (str): type of storage for uploading content. Can be: 'dropbox', 'mega'.
+                :param storage-type (str): type of storage for uploading content. Can be: 'dropbox', 'mega' or 'webdav'.
                 :param exclude-types (str): exclude files with this type from uploading. Example: '.json, .txt'.
                 :param source-directory (str): the path to the local directory with media content for uploading.
                 :param destination-directory (str): a subdirectory in the cloud storage where the content will be uploaded.
@@ -41,7 +42,8 @@ class Uploader:
             >>> configuration = {
             ...     'username': 'my_username',
             ...     'password': 'my_password',
-            ...     'storage-type': 'dropbox',
+            ...     'storage-type': 'webdav',
+            ...     'url': 'https://webdav.example.com/directory',
             ...     'exclude-types': '.json, .txt',
             ...     'source-directory': '/path/to/source/directory',
             ...     'destination-directory': '/path/to/destination/directory'
@@ -69,6 +71,7 @@ class Uploader:
     def _init_storage_connection(self) -> object:
         """
         The method for initializing a connection to the target storage.
+        Can be: 'dropbox', 'mega' or 'webdav'.
 
         Args:
             None
@@ -83,7 +86,15 @@ class Uploader:
             mega = Mega()
             return mega.login(email=self.configuration['username'], password=self.configuration['password'])
 
-        raise WrongStorageType("Wrong storage type, please check the configuration. 'storage-type' can be: 'dropbox', 'mega'.")
+        if self.configuration['storage-type'] == 'webdav':
+            options = {
+                'webdav_hostname': self.configuration['url'],
+                'webdav_login': self.configuration['username'],
+                'webdav_password': self.configuration['password']
+            }
+            return WebDavClient(options)
+
+        raise WrongStorageType("Wrong storage type, please check the configuration. 'storage-type' can be: 'dropbox', 'mega' or 'webdav'.")
 
     def _check_incomplete_transfers(self) -> None:
         """
@@ -182,6 +193,16 @@ class Uploader:
             with open(source, 'rb') as file_transfer:
                 response = self.storage.files_upload(file_transfer.read(), f"/{destination}/{source.split('/')[-1]}")
             file_transfer.close()
+            result = "uploaded"
+
+        if self.configuration['storage-type'] == 'webdav':
+            if not self.storage.check(f"{self.configuration['destination-directory']}/{destination}"):
+                self.storage.mkdir(f"{self.configuration['destination-directory']}/{destination}")
+            self.storage.upload_sync(
+                remote_path=f"{self.configuration['destination-directory']}/{destination}/{source.split('/')[-1]}",
+                local_path=source
+            )
+            response = self.storage.info(f"{self.configuration['destination-directory']}/{destination}/{source.split('/')[-1]}")['etag']
             result = "uploaded"
 
         log.info('[class.%s] Uploader: %s successful transferred', __class__.__name__, response)

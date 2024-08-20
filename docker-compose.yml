@@ -3,7 +3,7 @@
 version: '3'
 services:
     vault-server:
-        image: hashicorp/vault:1.14.1
+        image: hashicorp/vault:1.17.2
         container_name: vault
         command: ["server"]
         environment:
@@ -45,8 +45,8 @@ services:
             dockerfile: Dockerfile
             args:
                 PROJECT_NAME: pyinstabot-downloader
-                PROJECT_DESCRIPTION: "This project is a Telegram bot that allows you to backup post content from your Instagram profile to Dropbox or Mega clouds."
-                PROJECT_VERSION: 2.1.5
+                PROJECT_DESCRIPTION: "This project is a Telegram bot that allows you to upload posts from your Instagram profile to clouds like Dropbox, Mega or any WebDav compatible cloud storage."
+                PROJECT_VERSION: 2.2.0
         container_name: pyinstabot-downloader
         restart: always
         environment:

@@ -14,12 +14,13 @@ from logger import log
 from telegram import TelegramBot, exceptions as TelegramExceptions
 from users import Users
 from vault import VaultClient
-from configs.constants import (TELEGRAM_BOT_NAME, ROLES_MAP, QUEUE_FREQUENCY, STATUSES_MESSAGE_FREQUENCY)
+from configs.constants import (TELEGRAM_BOT_NAME, ROLES_MAP, QUEUE_FREQUENCY, STATUSES_MESSAGE_FREQUENCY, METRICS_PORT, METRICS_INTERVAL)
 from modules.database import DatabaseClient
 from modules.exceptions import FailedMessagesStatusUpdater
 from modules.tools import get_hash
 from modules.downloader import Downloader
 from modules.uploader import Uploader
+from modules.metrics import Metrics
 
 
 # Vault client
@@ -62,6 +63,9 @@ else:
 
 # Client for communication with the database
 database = DatabaseClient(vault=vault)
+
+# Metrics exporter
+metrics = Metrics(port=METRICS_PORT, interval=METRICS_INTERVAL, metrics_prefix=TELEGRAM_BOT_NAME, vault=vault, database=database)
 
 
 # START HANDLERS BLOCK ##############################################################################################################
@@ -194,13 +198,13 @@ def update_status_message(user_id: str = None) -> None:
         None
     """
     try:
+        diff_between_messages = False
         exist_status_message = database.get_considered_message(message_type='status_message', chat_id=user_id)
         message_statuses = get_user_messages(user_id=user_id)
-        diff_between_messages = False
 
         if exist_status_message:
 
-            # checking competition of status_message update by another thread
+            # checking competition of status_message update by another thread (concurrency)
             if exist_status_message[5] == 'updating':
                 while exist_status_message[5] == 'updating':
                     time.sleep(1)
@@ -215,6 +219,7 @@ def update_status_message(user_id: str = None) -> None:
                 )
 
             diff_between_messages = exist_status_message[4] != get_hash(message_statuses)
+
             # if message already sended and expiring (because bot can edit message only first 48 hours)
             # automatic renew message every 24 hours
             if exist_status_message[2] < datetime.now() - timedelta(hours=24):
@@ -238,10 +243,6 @@ def update_status_message(user_id: str = None) -> None:
                 log.info('[Bot]: `status_message` for user %s has been renewed', user_id)
 
             elif message_statuses is not None and diff_between_messages:
-                log.info(
-                    '[Bot]: `status_message` for user %s is outdated, updating %s -> %s...',
-                    user_id, exist_status_message[3], get_hash(message_statuses)
-                )
                 editable_message = telegram.send_styled_message(
                     chat_id=user_id,
                     messages_template={'alias': 'message_statuses', 'kwargs': message_statuses},
@@ -398,7 +399,6 @@ def process_one_post(
         # Check if the message is unique
         if database.check_message_uniqueness(data['post_id'], data['user_id']):
             status = database.add_message_to_queue(data)
-            update_status_message(user_id=message.chat.id)
             log.info('[Bot]: %s from user %s', status, message.chat.id)
         else:
             log.info('[Bot]: post %s from user %s already exist in the database', data['post_id'], message.chat.id)
@@ -478,7 +478,6 @@ def reschedule_queue(
             telegram.delete_message(message.chat.id, message.id)
         if help_message is not None:
             telegram.delete_message(message.chat.id, help_message.id)
-        update_status_message(user_id=message.chat.id)
 # END BLOCK PROCESSING FUNCTIONS ####################################################################################################
 
 
@@ -530,10 +529,14 @@ def queue_handler_thread() -> None:
         message = database.get_message_from_queue(datetime.now())
 
         if message is not None:
-            download_status = message[9]
-            upload_status = message[10]
-            post_id = message[2]
-            owner_id = message[4]
+            try:
+                download_status = message[9]
+                upload_status = message[10]
+                post_id = message[2]
+                owner_id = message[4]
+            except IndexError as exception:
+                log.error('[Queue-handler-thread] failed to extract data: %s\nmessage: %s', exception, message)
+                break
 
             log.info('[Queue-handler-thread] starting handler for post %s...', message[2])
             # download the contents of an instagram post to a temporary folder
@@ -600,11 +603,15 @@ def main():
         None
     """
     # Thread for processing queue
-    thread_queue_handler_thread = threading.Thread(target=queue_handler_thread, args=(), name="Thread-queue-handler")
-    thread_queue_handler_thread.start()
+    thread_queue_handler = threading.Thread(target=queue_handler_thread, args=(), name="Thread-queue-handler")
+    thread_queue_handler.start()
     # Thread for update status message
     thread_status_message = threading.Thread(target=status_message_updater_thread, args=(), name="Thread-message-updater")
     thread_status_message.start()
+    # Thread for export metrics
+    threads = [thread_queue_handler, thread_status_message]
+    thread_metrics = threading.Thread(target=metrics.run, args=(threads,), name="Thread-metrics")
+    thread_metrics.start()
     # Run bot
     while True:
         try:

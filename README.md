@@ -24,7 +24,7 @@
 
 
 ## <img src="https://github.com/obervinov/_templates/blob/v1.2.2/icons/book.png" width="25" title="about"> About this project
-This project is a telegram bot that allows you to create backups of content from your Instagram profile to Dropbox or Mega clouds, as well as in the local file system.
+This project is a Telegram bot that allows you to upload posts from your Instagram profile to clouds like Dropbox, Mega or any WebDav compatible cloud storage.
 <p align="center">
   <img src="doc/preview-main.png" width="600" title="preview-main">
 </p>
@@ -32,7 +32,7 @@ This project is a telegram bot that allows you to create backups of content from
 **Main functions**
 - a backup copy of a __specific post__ by link
 - a backup copy of __list of posts__ by links
-- the ability to backup to the __Mega__ or __Dropbox__ clouds
+- the ability to backup to the __Mega__, __Dropbox__ or any __WebDav__ compatible cloud storage.
 
 **Preview of the bot in action**
 <p align="center">
@@ -51,7 +51,7 @@ This project is a telegram bot that allows you to create backups of content from
 
 ## <img src="https://github.com/obervinov/_templates/blob/v1.2.2/icons/requirements.png" width="25" title="requirements"> Requirements
 - <img src="https://github.com/obervinov/_templates/blob/v1.2.2/icons/vault.png" width="15" title="vault"> Vault server - [a storage of secrets for bot with kv v2 engine](https://developer.hashicorp.com/vault/docs/secrets/kv/kv-v2)
-- <img src="https://github.com/obervinov/_templates/blob/v1.2.2/icons/dropbox.ico" width="15" title="dropbox"> Dropbox [api token](https://dropbox.tech/developers/generate-an-access-token-for-your-own-account)</img> or  <img src="https://github.com/obervinov/_templates/blob/v1.2.2/icons/mega.png" width="15" title="mega"> Mega.nz [account](https://mega.nz)</img>
+- <img src="https://github.com/obervinov/_templates/blob/v1.2.2/icons/dropbox.ico" width="15" title="dropbox"> Dropbox [api token](https://dropbox.tech/developers/generate-an-access-token-for-your-own-account)</img> or <img src="https://github.com/obervinov/_templates/blob/v1.2.2/icons/mega.png" width="15" title="mega"> Mega.nz [account](https://mega.nz)</img> or <img src="https://github.com/obervinov/_templates/blob/main/icons/file.png" width="15" title="webdav"> WebDav provider [url, username and password](https://docs.nextcloud.com/server/latest/user_manual/en/files/access_webdav.html)</img>
 - <img src="https://github.com/obervinov/_templates/blob/v1.2.2/icons/telegram.png" width="15" title="telegram"> Telegram bot api token - [instructions for creating bot and getting a token of api](https://learn.microsoft.com/en-us/azure/bot-service/bot-service-channel-connect-telegram?view=azure-bot-service-4.0)
 - <img src="https://github.com/obervinov/_templates/blob/v1.2.2/icons/instagram.png" width="15" title="instagram"> Instagram username/password - [login and password from the instagram account, it is advisable to create a new account](https://www.instagram.com/accounts/emailsignup/)
 - <img src="https://github.com/obervinov/_templates/blob/v1.2.2/icons/postgres.png" width="15" title="postgresql"> Postgresql - [a storage of project persistent data](https://www.postgresql.org/download/)
@@ -79,6 +79,11 @@ This project is a telegram bot that allows you to create backups of content from
 #### <img src="https://github.com/obervinov/_templates/blob/v1.2.2/icons/mega.png" width="18" title="mega"> If mega is going to be used as the target storage, you need to
 - [Create a mega account](https://mega.nz/register)
 - Don't turn on `2fa`, because the library `mega.py` [can't work with 2fa](https://github.com/odwyersoftware/mega.py/issues/19) (it'll probably be fixed in https://github.com/obervinov/pyinstabot-downloader/issues/36)
+
+#### <img src="https://github.com/obervinov/_templates/blob/main/icons/file.png" width="18" title="webdav"> If webdav compatible cloud storage is going to be used as the target storage, you need to
+- Create an account in any cloud that supports WebDav
+- Get the WebDav url from your cloud provider
+- Get the WebDav username and password from your cloud provider
 </br>
 
 ### Bot configuration source and supported parameters
@@ -130,15 +135,17 @@ _except for the part of the configuration that configures the connection to `Vau
     "exclude-types": "[\".txt\", \".tmp\"]",
     "password": "qwerty123",
     "source-directory": "data/",
-    "storage-type": "dropbox",
-    "username": "username1"
+    "storage-type": "webdav",
+    "username": "username1",
+    "url": "https://webdav.example.com/directory"
   }
   ```
   Clarification of non-obvious parameters
   - `destination-directory`: the directory in the target storage where the content will be uploaded
   - `exclude-types`: a list of file extensions that will be excluded from the upload (for example, `.txt` - text from the post)
   - `source-directory`: the directory where the content will be stored before uploading (temporary directory)
-  - `storage-type`: the type of storage where the content will be uploaded (`dropbox`, `mega`)
+  - `storage-type`: the type of storage where the content will be uploaded (`dropbox`, `mega`, `webdav`)
+  - `url`: the url of the target webdav directory (only for `webdav` storage)
   </br>
 - `configuration/users/<telegram_user_id>`: user permissions configuration
   ```json
@@ -154,42 +161,36 @@ _except for the part of the configuration that configures the connection to `Vau
   - `status`: allowed or denied user access to the bot
 
 #### You can use an existing vault-server or launch a new one using docker-compose
+Scripts for configuring the vault-server are located in the [vault-init.sh](scripts/vault-init.sh)
 - instructions for starting and configuring a new vault-server
 ```bash
+# Clone the repository
+git clone https://github.com/obervinov/pyinstabot-downloader.git
+cd pyinstabot-downloader
+
+# Run vault-server
 docker-compose -f docker-compose.yml up vault-server -d
-poetry install
-curl -L https://gist.githubusercontent.com/obervinov/9bd452fee681f0493da7fd0b2bfe1495/raw/bbc4aad0ed7be064e9876dde64ad8b26b185091b/setup_vault_server.py | python3 --url=http://localhost:8200 --name=pyinstabot-downloader --policy=vault/policy.hcl
+
+# Initialize and unseal new vault-server
+vault operator init
+vault operator unseal
+
+# Run the script for configuring the vault-server for this bot project
+export VAULT_ADDR=http://localhost:8200
+export VAULT_TOKEN=hvs.123456qwerty
+./scripts/vault-init.sh
 ```
 
 - instructions for configuring an existing vault server
 ```bash
-poetry install
-curl -L https://gist.githubusercontent.com/obervinov/9bd452fee681f0493da7fd0b2bfe1495/raw/bbc4aad0ed7be064e9876dde64ad8b26b185091b/setup_vault_server.py | python3 --url=http://localhost:8200 --name=pyinstabot-downloader --policy=vault/policy.hcl --token=hvs.123456qwerty
-```
+# Clone the repository
+git clone https://github.com/obervinov/pyinstabot-downloader.git
+cd pyinstabot-downloader
 
-  `setup_vault_server.py` - This script performs a quick and convenient configuration of the vault-server for this bot project
-  - `initial` initialization of vault-server (_if it is new vault-server_)
-  - `unseal` vault-server (_if it is new vault-server_)
-  - creating an isolated `mount point`
-  - loading `policy.hcl`
-  - creating an `approle`
-
-All these actions can also be performed using the official `vault` cli
-```bash
-vault operator init
-vault operator unseal
-vault secrets enable -path=pyinstabot-downloader kv-v2 
-vault policy write pyinstabot-downloader vault/policy.hcl
-vault auth enable -path=pyinstabot-downloader approle
-vault write auth/pyinstabot-downloader/role/pyinstabot-downloader \
-    token_policies=["pyinstabot-downloader"] \
-    token_type=service \
-    secret_id_num_uses=0 \
-    token_num_uses=0 \
-    token_ttl=1h \
-    bind_secret_id=true \
-    mount_point="pyinstabot-downloader" \
-    secret_id_ttl=0
+# Run the script for configuring the vault-server for this bot project
+export VAULT_ADDR=https://vault.example.com:8200
+export VAULT_TOKEN=hvs.123456qwerty
+./scripts/vault-init.sh
 ```
 </br>
 
@@ -201,17 +202,30 @@ You can familiarize yourself with the
 
 The database structure is created automatically when the bot starts. Bot checks the database structure and creates missing tables if necessary.
 After checking the database structure, the bot executes the migrations in the order of their numbering.</br>
-Required only database owner rights in `Vault` for the bot to create tables and execute migrations.
+All that is required is a database and the rights of the owner of this data database.
+To quickly prepare an instance, you can execute the[psql-init.sh](scripts/psql-init.sh) script
+```bash
+git clone https://github.com/obervinov/pyinstabot-downloader.git
+cd pyinstabot-downloader
+
+export PGHOST=<host>
+export PGPORT=<port>
+export PGUSER=<user>
+export PGPASSWORD=<password>
+export PGDATABASE=postgres
+./scripts/psql-init.sh
+```
+
 
 **What data is stored in tables:**
-- user request queue
-- history of processed user requests 
-- information about users activity (requests and contacts)
-- completed migrations
-- messages sent by the bot (to update them)
+- users requests queue
+- users metadata
+- history of processed users requests 
+- migration history
+- messages sent by the bot
 </br>
 
-## <img src="https://github.com/obervinov/_templates/blob/v1.2.2/icons/docker.png" width="25" title="docker"> How to run project
+## <img src="https://github.com/obervinov/_templates/blob/v1.2.2/icons/docker.png" width="25" title="docker"> How to run project locally
 ```sh
 export VAULT_APPROLE_ID={change_me}
 export VAULT_APPROLE_SECRETID={change_me}
@@ -223,4 +237,4 @@ docker compose -f docker-compose.yml up -d
 ## <img src="https://github.com/obervinov/_templates/blob/v1.2.2/icons/github-actions.png" width="25" title="github-actions"> GitHub Actions
 | Name  | Version |
 | ------------------------ | ----------- |
-| GitHub Actions Templates | [v1.2.6](https://github.com/obervinov/_templates/tree/v1.2.6) |
+| GitHub Actions Templates | [v1.2.8](https://github.com/obervinov/_templates/tree/v1.2.8) |

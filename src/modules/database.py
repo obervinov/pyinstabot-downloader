@@ -3,10 +3,41 @@ import os
 import sys
 import importlib
 import json
+import time
 from typing import Union
 import psycopg2
 from logger import log
 from .tools import get_hash
+
+
+def reconnect_on_exception(method):
+    """
+    A decorator that catches the closed cursor exception and reconnects to the database.
+    """
+    def wrapper(self, *args, **kwargs):
+        try:
+            return method(self, *args, **kwargs)
+        except psycopg2.Error as exception:
+            log.warning('[Database]: Connection to the database was lost: %s. Attempting to reconnect...', str(exception))
+            try:
+                if self.database_connection:
+                    self.database_connection.close()
+                db_configuration = self.vault.read_secret(path='configuration/database')
+                self.database_connection = psycopg2.connect(
+                    host=db_configuration['host'],
+                    port=db_configuration['port'],
+                    user=db_configuration['user'],
+                    password=db_configuration['password'],
+                    database=db_configuration['database']
+                )
+                self.cursor = self.database_connection.cursor()
+                log.info('[Database]: Reconnection successful.')
+                return method(self, *args, **kwargs)
+            except psycopg2.Error as inner_exception:
+                time.sleep(10)
+                log.error('[Database]: Failed to reconnect to the database: %s', str(inner_exception))
+                raise inner_exception
+    return wrapper
 
 
 class DatabaseClient:
@@ -56,8 +87,8 @@ class DatabaseClient:
             database=db_configuration['database']
         )
         log.info(
-            '[class.%s] Database: connected to the database %s:%s/%s',
-            __class__.__name__, db_configuration['host'], db_configuration['port'], db_configuration['database']
+            '[Database]: initialized connection to %s:%s/%s',
+            db_configuration['host'], db_configuration['port'], db_configuration['database']
         )
 
         self.errors = psycopg2.errors
@@ -66,6 +97,7 @@ class DatabaseClient:
 
         self._prepare_db()
         self._migrations()
+        self._reset_stale_records()
 
     def _prepare_db(self) -> None:
         """
@@ -91,7 +123,7 @@ class DatabaseClient:
                 table_name=table['name'],
                 columns="".join(f"{column}" for column in table['columns'])
             )
-            log.info('[class.%s] Prepare Database: create table `%s` (if does not exist)', __class__.__name__, table['name'])
+            log.info('[Database]: Prepare Database: create table `%s` (if does not exist)', table['name'])
 
         # Write necessary data to the database (service records)
         if database_init_configuration.get('DataSeeding', None):
@@ -103,7 +135,7 @@ class DatabaseClient:
                     columns=tuple(data['data'].keys()),
                     values=tuple(data['data'].values())
                 )
-                log.info('[class.%s] Prepare Database: data seeding has been added to the `%s` table', __class__.__name__, data['table'])
+                log.info('[Database]: Prepare Database: data seeding has been added to the `%s` table', data['table'])
 
     def _migrations(self) -> None:
         """
@@ -118,7 +150,7 @@ class DatabaseClient:
         Returns:
             None
         """
-        log.info('[class.%s] Database Migrations: Preparing to execute database migrations...', __class__.__name__)
+        log.info('[Database]: Migrations: Preparing to execute database migrations...')
         # Migrations directory
         migrations_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../migrations'))
         sys.path.append(migrations_dir)
@@ -128,16 +160,13 @@ class DatabaseClient:
                 migration_module_name = migration_file[:-3]
 
                 if not self._is_migration_executed(migration_name=migration_module_name):
-                    log.info('[class.%s] Database Migrations: executing the %s migration...', __class__.__name__, migration_module_name)
+                    log.info('[Database]: Migrations: executing the %s migration...', migration_module_name)
                     migration_module = importlib.import_module(name=migration_module_name)
                     migration_module.execute(self)
                     version = getattr(migration_module, 'VERSION', migration_module_name)
                     self._mark_migration_as_executed(migration_name=migration_module_name, version=version)
                 else:
-                    log.info(
-                        '[class.%s] Database Migrations: the %s has already been executed and was skipped',
-                        __class__.__name__, migration_module_name
-                    )
+                    log.info('[Database] Migrations: the %s has already been executed and was skipped', migration_module_name)
 
     def _is_migration_executed(
         self,
@@ -194,6 +223,7 @@ class DatabaseClient:
         self.cursor.execute(f"CREATE TABLE IF NOT EXISTS {table_name} ({columns})")
         self.database_connection.commit()
 
+    @reconnect_on_exception
     def _insert(
         self,
         table_name: str = None,
@@ -224,10 +254,11 @@ class DatabaseClient:
             self.database_connection.commit()
         except (psycopg2.Error, IndexError) as error:
             log.error(
-                '[class.%s] an error occurred while inserting a row into the table %s: %s\nColumns: %s\nValues: %s\nQuery: %s',
-                __class__.__name__, table_name, error, columns, values, sql_query
+                '[Database]: An error occurred while inserting a row into the table %s: %s\nColumns: %s\nValues: %s\nQuery: %s',
+                table_name, error, columns, values, sql_query
             )
 
+    @reconnect_on_exception
     def _select(
         self,
         table_name: str = None,
@@ -268,6 +299,7 @@ class DatabaseClient:
         self.cursor.execute(sql_query)
         return self.cursor.fetchall()
 
+    @reconnect_on_exception
     def _update(
         self,
         table_name: str = None,
@@ -291,6 +323,7 @@ class DatabaseClient:
         self.cursor.execute(f"UPDATE {table_name} SET {values} WHERE {condition}")
         self.database_connection.commit()
 
+    @reconnect_on_exception
     def _delete(
         self,
         table_name: str = None,
@@ -312,6 +345,33 @@ class DatabaseClient:
         """
         self.cursor.execute(f"DELETE FROM {table_name} WHERE {condition}")
         self.database_connection.commit()
+
+    def _reset_stale_records(self) -> None:
+        """
+        Reset stale records in the database. To ensure that the bot is restored after a restart.
+        More: https://github.com/obervinov/pyinstabot-downloader/issues/84
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
+        # Reset stale status_message (can be only one status_message per chat)
+        log.info('[Database]: Resetting stale status messages...')
+        status_messages = self._select(
+            table_name='messages',
+            columns=("id", "state"),
+            condition="message_type = 'status_message'",
+        )
+        for message in status_messages:
+            if message[1] != 'updated':
+                self._update(
+                    table_name='messages',
+                    values="state = 'updated'",
+                    condition=f"id = '{message[0]}'"
+                )
+        log.info('[Database]: Stale status messages have been reset')
 
     def add_message_to_queue(
         self,
@@ -689,13 +749,16 @@ class DatabaseClient:
                 condition=f"id = '{check_exist_message_type[0][0]}'"
             )
             response = f"{message_id} updated"
-        else:
+        elif not check_exist_message_type:
             self._insert(
                 table_name='messages',
                 columns=("message_id", "chat_id", "message_type", "message_content_hash", "producer"),
                 values=(message_id, chat_id, message_type, message_content_hash, 'bot')
             )
             response = f"{message_id} kept"
+        else:
+            log.warning('[Database]: Message with ID %s already exists in the messages table and cannot be updated', message_id)
+            response = f"{message_id} already exists"
         return response
 
     def add_user(
