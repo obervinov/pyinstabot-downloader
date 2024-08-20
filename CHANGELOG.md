@@ -18,6 +18,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 * [Feature request: Add support for `WebDav` as target storage](https://github.com/obervinov/pyinstabot-downloader/issues/81)
 * [Prometheus metric support](https://github.com/obervinov/pyinstabot-downloader/issues/53)
 * [Feature request: Add a bash script to configure vault and postgresql to the repository](https://github.com/obervinov/pyinstabot-downloader/issues/66)
+* Add GH Actions Job for cleanup untagged images
 
 
 ## v2.1.8 - 2024-07-14

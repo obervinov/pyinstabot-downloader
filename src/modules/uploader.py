@@ -43,7 +43,7 @@ class Uploader:
             ...     'username': 'my_username',
             ...     'password': 'my_password',
             ...     'storage-type': 'webdav',
-            ...     'url': 'https://webdav.yandex.ru',
+            ...     'url': 'https://webdav.example.com/directory',
             ...     'exclude-types': '.json, .txt',
             ...     'source-directory': '/path/to/source/directory',
             ...     'destination-directory': '/path/to/destination/directory'
@@ -94,7 +94,7 @@ class Uploader:
             }
             return WebDavClient(options)
 
-        raise WrongStorageType("Wrong storage type, please check the configuration. 'storage-type' can be: 'dropbox', 'mega'.")
+        raise WrongStorageType("Wrong storage type, please check the configuration. 'storage-type' can be: 'dropbox', 'mega' or 'webdav'.")
 
     def _check_incomplete_transfers(self) -> None:
         """
