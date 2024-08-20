@@ -202,7 +202,7 @@ class Uploader:
                 remote_path=f"{self.configuration['destination-directory']}/{destination}/{source.split('/')[-1]}",
                 local_path=source
             )
-            response = self.storage.info(f"{self.configuration['destination-directory']}/{destination}/{source.split('/')[-1]}")['name']
+            response = self.storage.info(f"{self.configuration['destination-directory']}/{destination}/{source.split('/')[-1]}")['etag']
             result = "uploaded"
 
         log.info('[class.%s] Uploader: %s successful transferred', __class__.__name__, response)
