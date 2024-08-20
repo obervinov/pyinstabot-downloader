@@ -12,3 +12,4 @@ vault write auth/pyinstabot-downloader/role/pyinstabot-downloader \
     bind_secret_id=true \
     mount_point="pyinstabot-downloader" \
     secret_id_ttl=0
+# End of snippet
