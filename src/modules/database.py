@@ -6,6 +6,7 @@ import json
 import time
 from typing import Union
 import psycopg2
+from psycopg2 import pool
 from logger import log
 from .tools import get_hash
 
@@ -94,19 +95,19 @@ class DatabaseClient:
         self._migrations()
         self._reset_stale_records()
 
-    def create_connection_pool(self) -> psycopg2.pool.SimpleConnectionPool:
+    def create_connection_pool(self) -> pool.SimpleConnectionPool:
         """
         Create a connection pool for the PostgreSQL database.
 
         Returns:
-            psycopg2.pool.SimpleConnectionPool: A connection pool for the PostgreSQL database.
+            pool.SimpleConnectionPool: A connection pool for the PostgreSQL database.
         """
         db_configuration = self.vault.read_secret(path='configuration/database')
         log.info(
             '[Database]: Creating a connection pool for the %s:%s/%s',
             db_configuration['host'], db_configuration['port'], db_configuration['database']
         )
-        return psycopg2.pool.SimpleConnectionPool(
+        return pool.SimpleConnectionPool(
             minconn=1,
             maxconn=db_configuration.get('connections', 10),
             host=db_configuration['host'],
