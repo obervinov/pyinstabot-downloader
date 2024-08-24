@@ -609,7 +609,7 @@ def main():
     thread_status_message = threading.Thread(target=status_message_updater_thread, args=(), name="Thread-message-updater")
     thread_status_message.start()
     # Thread for export metrics
-    threads = [thread_queue_handler, thread_status_message]
+    threads = threading.enumerate()
     thread_metrics = threading.Thread(target=metrics.run, args=(threads,), name="Thread-metrics")
     thread_metrics.start()
     # Run bot
