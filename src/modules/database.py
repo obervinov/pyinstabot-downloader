@@ -109,7 +109,7 @@ class DatabaseClient:
         )
         return pool.SimpleConnectionPool(
             minconn=1,
-            maxconn=db_configuration.get('connections', 10),
+            maxconn=db_configuration['connections'],
             host=db_configuration['host'],
             port=db_configuration['port'],
             user=db_configuration['user'],
