@@ -6,6 +6,7 @@ import json
 import time
 from typing import Union
 import psycopg2
+from psycopg2 import pool
 from logger import log
 from .tools import get_hash
 
@@ -19,22 +20,12 @@ def reconnect_on_exception(method):
             return method(self, *args, **kwargs)
         except psycopg2.Error as exception:
             log.warning('[Database]: Connection to the database was lost: %s. Attempting to reconnect...', str(exception))
+            time.sleep(5)
             try:
-                if self.database_connection:
-                    self.database_connection.close()
-                db_configuration = self.vault.read_secret(path='configuration/database')
-                self.database_connection = psycopg2.connect(
-                    host=db_configuration['host'],
-                    port=db_configuration['port'],
-                    user=db_configuration['user'],
-                    password=db_configuration['password'],
-                    database=db_configuration['database']
-                )
-                self.cursor = self.database_connection.cursor()
+                self.database_connections = self.create_connection_pool()
                 log.info('[Database]: Reconnection successful.')
                 return method(self, *args, **kwargs)
             except psycopg2.Error as inner_exception:
-                time.sleep(10)
                 log.error('[Database]: Failed to reconnect to the database: %s', str(inner_exception))
                 raise inner_exception
     return wrapper
@@ -43,6 +34,41 @@ def reconnect_on_exception(method):
 class DatabaseClient:
     """
     A class that represents a client for interacting with a PostgreSQL database.
+
+    Attributes:
+        database_connections (psycopg2.extensions.connection): A connection to the PostgreSQL database.
+        vault (object): An object representing a HashiCorp Vault client for retrieving secrets.
+        errors (psycopg2.errors): A collection of error classes for exceptions raised by the psycopg2 module.
+
+    Methods:
+        _create_connection_pool(): Create a connection pool for the PostgreSQL database.
+        _get_connection(): Get a connection from the connection pool.
+        _close_connection(connection): Close the connection and return it to the connection pool.
+        _prepare_db(): Prepare the database by creating and initializing the necessary tables.
+        _migrations(): Execute database migrations to update the database schema or data.
+        _is_migration_executed(migration_name): Check if a migration has already been executed.
+        _mark_migration_as_executed(migration_name, version): Inserts a migration into the migrations table to mark it as executed.
+        _create_table(table_name, columns): Create a new table in the database with the given name and columns if it does not already exist.
+        _insert(table_name, columns, values): Inserts a new row into the specified table with the given columns and values.
+        _select(table_name, columns, **kwargs): Selects rows from the specified table with the given columns based on the specified condition.
+        _update(table_name, values, condition): Update the specified table with the given values of values based on the specified condition.
+        _delete(table_name, condition): Delete rows from a table based on a condition.
+        _reset_stale_records(): Reset stale records in the database. To ensure that the bot is restored after a restart.
+        add_message_to_queue(data): Add a message to the queue table in the database.
+        get_message_from_queue(scheduled_time): Get a one message from the queue table that is scheduled to be sent at the specified time.
+        update_message_state_in_queue(post_id, state, **kwargs): Update the state of a message in the queue table and move it to the processed table
+                                                                 if the state is 'processed'.
+        update_schedule_time_in_queue(post_id, user_id, scheduled_time): Update the scheduled time of a message in the queue table.
+        get_user_queue(user_id): Get messages from the queue table for the specified user.
+        get_user_processed(user_id): Get last ten messages from the processed table for the specified user.
+        check_message_uniqueness(post_id, user_id): Check if a message with the given post ID and chat ID already exists in the queue.
+        keep_message(message_id, chat_id, message_content, **kwargs): Add a message to the messages table in the database.
+        add_user(user_id, chat_id): Add a user to the users table in the database.
+        get_users(): Get a list of all users in the database.
+        get_considered_message(message_type, chat_id): Get a message with specified type and
+
+    Rises:
+        psycopg2.Error: An error occurred while interacting with the PostgreSQL database.
     """
     def __init__(
         self,
@@ -54,22 +80,6 @@ class DatabaseClient:
         Args:
             vault (object): An object representing a HashiCorp Vault client for retrieving secrets with the database configuration.
 
-        Attributes:
-            database_connection (psycopg2.extensions.connection): A connection to the PostgreSQL database.
-            cursor (psycopg2.extensions.cursor): A cursor for executing SQL queries on the database.
-            vault (object): An object representing a HashiCorp Vault client for retrieving secrets.
-
-        Parameters:
-            host (str): The hostname of the database server.
-            port (int): The port number of the database server.
-            user (str): The username to use when connecting to the database.
-            password (str): The password to use when connecting to the database.
-            database (str): The name of the database to connect to.
-            log (object): An object representing a logger for logging messages.
-
-        Returns:
-            None
-
         Examples:
             To create a new instance of the Database class:
             >>> from modules.database import Database
@@ -77,40 +87,57 @@ class DatabaseClient:
             >>> vault = Vault()
             >>> db = Database(vault=vault)
         """
-        db_configuration = vault.read_secret(path='configuration/database')
+        self.vault = vault
+        self.errors = psycopg2.errors
+        self.database_connections = self.create_connection_pool()
 
-        self.database_connection = psycopg2.connect(
+        self._prepare_db()
+        self._migrations()
+        self._reset_stale_records()
+
+    def create_connection_pool(self) -> pool.SimpleConnectionPool:
+        """
+        Create a connection pool for the PostgreSQL database.
+
+        Returns:
+            pool.SimpleConnectionPool: A connection pool for the PostgreSQL database.
+        """
+        db_configuration = self.vault.read_secret(path='configuration/database')
+        log.info(
+            '[Database]: Creating a connection pool for the %s:%s/%s',
+            db_configuration['host'], db_configuration['port'], db_configuration['database']
+        )
+        return pool.SimpleConnectionPool(
+            minconn=1,
+            maxconn=db_configuration['connections'],
             host=db_configuration['host'],
             port=db_configuration['port'],
             user=db_configuration['user'],
             password=db_configuration['password'],
             database=db_configuration['database']
         )
-        log.info(
-            '[Database]: initialized connection to %s:%s/%s',
-            db_configuration['host'], db_configuration['port'], db_configuration['database']
-        )
 
-        self.errors = psycopg2.errors
-        self.cursor = self.database_connection.cursor()
-        self.vault = vault
+    def _get_connection(self) -> psycopg2.extensions.connection:
+        """
+        Get a connection from the connection pool.
 
-        self._prepare_db()
-        self._migrations()
-        self._reset_stale_records()
+        Returns:
+            psycopg2.extensions.connection: A connection to the PostgreSQL database.
+        """
+        return self.database_connections.getconn()
+
+    def _close_connection(self, connection: psycopg2.extensions.connection) -> None:
+        """
+        Close the cursor and return it to the connection pool.
+
+        Args:
+            connection (psycopg2.extensions.connection): A connection to the PostgreSQL database.
+        """
+        self.database_connections.putconn(connection)
 
     def _prepare_db(self) -> None:
         """
         Prepare the database by creating and initializing the necessary tables.
-
-        Args:
-            None
-
-        Parameters:
-            None
-
-        Returns:
-            None
         """
         # Read configuration file for database initialization
         configuration_path = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '../configs/databases.json'))
@@ -140,15 +167,6 @@ class DatabaseClient:
     def _migrations(self) -> None:
         """
         Execute database migrations to update the database schema or data.
-
-        Args:
-            None
-
-        Parameters:
-            None
-
-        Returns:
-            None
         """
         log.info('[Database]: Migrations: Preparing to execute database migrations...')
         # Migrations directory
@@ -181,8 +199,7 @@ class DatabaseClient:
         Returns:
             bool: True if the migration has been executed, False otherwise.
         """
-        self.cursor.execute(f"SELECT id FROM migrations WHERE name = '{migration_name}'")
-        return self.cursor.fetchone() is not None
+        return self._select(table_name='migrations', columns=('id',), condition=f"name = '{migration_name}'")
 
     def _mark_migration_as_executed(
         self,
@@ -194,12 +211,8 @@ class DatabaseClient:
 
         Args:
             migration_name (str): The name of the migration to mark as executed.
-
-        Returns:
-            None
         """
-        self.cursor.execute(f"INSERT INTO migrations (name, version) VALUES ('{migration_name}', '{version}')")
-        self.database_connection.commit()
+        self._insert(table_name='migrations', columns=('name', 'version'), values=(migration_name, version))
 
     def _create_table(
         self,
@@ -213,15 +226,15 @@ class DatabaseClient:
             table_name (str): The name of the table to create.
             columns (str): A string containing the column definitions for the table.
 
-        Returns:
-            None
-
         Examples:
             To create a new table called 'users' with columns 'id' and 'name', you can call the method like this:
             >>> _create_table('users', 'id INTEGER PRIMARY KEY, name TEXT')
         """
-        self.cursor.execute(f"CREATE TABLE IF NOT EXISTS {table_name} ({columns})")
-        self.database_connection.commit()
+        conn = self._get_connection()
+        with conn.cursor() as cursor:
+            cursor.execute(f"CREATE TABLE IF NOT EXISTS {table_name} ({columns})")
+        conn.commit()
+        self._close_connection(conn)
 
     @reconnect_on_exception
     def _insert(
@@ -238,9 +251,6 @@ class DatabaseClient:
             columns (tuple): A tuple containing the names of the columns to insert the values into.
             values (tuple): A tuple containing the values to insert into the table.
 
-        Returns:
-            None
-
         Examples:
             >>> db_client._insert(
             ...   table_name='users',
@@ -250,8 +260,11 @@ class DatabaseClient:
         """
         try:
             sql_query = f"INSERT INTO {table_name} ({', '.join(columns)}) VALUES ({', '.join(['%s'] * len(columns))})"
-            self.cursor.execute(sql_query, values)
-            self.database_connection.commit()
+            conn = self._get_connection()
+            with conn.cursor() as cursor:
+                cursor.execute(sql_query, values)
+            conn.commit()
+            self._close_connection(conn)
         except (psycopg2.Error, IndexError) as error:
             log.error(
                 '[Database]: An error occurred while inserting a row into the table %s: %s\nColumns: %s\nValues: %s\nQuery: %s',
@@ -296,8 +309,12 @@ class DatabaseClient:
         if kwargs.get('limit', None):
             sql_query += f" LIMIT {kwargs.get('limit')}"
 
-        self.cursor.execute(sql_query)
-        return self.cursor.fetchall()
+        conn = self._get_connection()
+        with conn.cursor() as cursor:
+            cursor.execute(sql_query)
+            response = cursor.fetchall()
+        self._close_connection(conn)
+        return response if response else None
 
     @reconnect_on_exception
     def _update(
@@ -314,14 +331,14 @@ class DatabaseClient:
             values (str): The values of values to update in the table.
             condition (str): The condition to use for updating the table.
 
-        Returns:
-            None
-
         Examples:
             >>> _update('users', "username='new_username', password='new_password'", "id=1")
         """
-        self.cursor.execute(f"UPDATE {table_name} SET {values} WHERE {condition}")
-        self.database_connection.commit()
+        conn = self._get_connection()
+        with conn.cursor() as cursor:
+            cursor.execute(f"UPDATE {table_name} SET {values} WHERE {condition}")
+        conn.commit()
+        self._close_connection(conn)
 
     @reconnect_on_exception
     def _delete(
@@ -336,26 +353,20 @@ class DatabaseClient:
             table_name (str): The name of the table to delete rows from.
             condition (str): The condition to use to determine which rows to delete.
 
-        Returns:
-            None
-
         Examples:
             To delete all rows from the 'users' table where the 'username' column is 'john':
             >>> db._delete('users', "username='john'")
         """
-        self.cursor.execute(f"DELETE FROM {table_name} WHERE {condition}")
-        self.database_connection.commit()
+        conn = self._get_connection()
+        with conn.cursor() as cursor:
+            cursor.execute(f"DELETE FROM {table_name} WHERE {condition}")
+        conn.commit()
+        self._close_connection(conn)
 
     def _reset_stale_records(self) -> None:
         """
         Reset stale records in the database. To ensure that the bot is restored after a restart.
         More: https://github.com/obervinov/pyinstabot-downloader/issues/84
-
-        Args:
-            None
-
-        Returns:
-            None
         """
         # Reset stale status_message (can be only one status_message per chat)
         log.info('[Database]: Resetting stale status messages...')
@@ -798,9 +809,6 @@ class DatabaseClient:
     def get_users(self) -> list:
         """
         Get a list of all users in the database.
-
-        Args:
-            None
 
         Returns:
             list: A list of all users from the messages table.

@@ -3,6 +3,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/) and this project adheres to [Semantic Versioning](http://semver.org/).
 
 
+## v2.2.1 - 2024-08-24
+### What's Changed
+**Full Changelog**: https://github.com/obervinov/pyinstabot-downloader/compare/v2.2.0...v2.2.1 by @obervinov in https://github.com/obervinov/pyinstabot-downloader/pull/94
+#### 🐛 Bug Fixes
+* [Bug: Correct the exception Cursor already close](https://github.com/obervinov/pyinstabot-downloader/issues/93)
+* [Bug: Display the state of all additional bot threads in prometheus metrics](https://github.com/obervinov/pyinstabot-downloader/issues/92)
+
+
 ## v2.2.0 - 2024-08-20
 ### What's Changed
 **Full Changelog**: https://github.com/obervinov/pyinstabot-downloader/compare/v2.1.8...v2.2.0 by @obervinov in https://github.com/obervinov/pyinstabot-downloader/pull/90

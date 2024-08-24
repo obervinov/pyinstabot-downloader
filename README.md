@@ -96,7 +96,8 @@ _except for the part of the configuration that configures the connection to `Vau
     "host": "postgresql.example.com",
     "password": "qwerty123",
     "port": "5432",
-    "user": "user1"
+    "user": "user1",
+    "connections": "10"
   }
   ```
   </br>
