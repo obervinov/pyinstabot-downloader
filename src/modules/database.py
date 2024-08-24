@@ -87,9 +87,9 @@ class DatabaseClient:
             >>> vault = Vault()
             >>> db = Database(vault=vault)
         """
-        self.database_connections = self.create_connection_pool()
-        self.errors = psycopg2.errors
         self.vault = vault
+        self.errors = psycopg2.errors
+        self.database_connections = self.create_connection_pool()
 
         self._prepare_db()
         self._migrations()
