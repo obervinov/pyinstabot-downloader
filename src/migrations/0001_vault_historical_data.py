@@ -1,4 +1,4 @@
-# pylint: disable=C0103,R0914
+# pylint: disable=C0103,R0914,R0801
 """
 Migrates historical data from the Vault to the processed table in the database.
 https://github.com/obervinov/pyinstabot-downloader/issues/30
