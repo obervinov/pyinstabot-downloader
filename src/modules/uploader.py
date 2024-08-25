@@ -57,7 +57,7 @@ class Uploader:
         if configuration:
             self.configuration = configuration
         elif not configuration:
-            self.configuration = vault.read_secret(path='configuration/uploader-api')
+            self.configuration = vault.kv2engine.read_secret(path='configuration/uploader-api')
         else:
             raise FailedInitUploaderInstance(
                 "Failed to initialize the Uploader instance."

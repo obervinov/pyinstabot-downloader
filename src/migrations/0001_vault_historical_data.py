@@ -60,8 +60,11 @@ def execute(obj):
                 )
 
                 print(f"{NAME}: Migrating {post_id} from history/{owner}")
-                obj.cursor.execute(f"INSERT INTO {table_name} ({columns}) VALUES ({values})")
-                obj.database_connection.commit()
+                conn = obj.get_connection()
+                with conn.cursor() as cursor:
+                    cursor.execute(f"INSERT INTO {table_name} ({columns}) VALUES ({values})")
+                conn.commit()
+                obj.close_connection(conn)
                 print(f"{NAME}: Post {post_id} from history/{owner} has been added to processed table")
         print(f"{NAME}: Migration has been completed")
     # Will be fixed after the issue https://github.com/obervinov/vault-package/issues/46 is resolved

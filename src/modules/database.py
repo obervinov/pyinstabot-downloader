@@ -41,9 +41,9 @@ class DatabaseClient:
         errors (psycopg2.errors): A collection of error classes for exceptions raised by the psycopg2 module.
 
     Methods:
-        _create_connection_pool(): Create a connection pool for the PostgreSQL database.
-        _get_connection(): Get a connection from the connection pool.
-        _close_connection(connection): Close the connection and return it to the connection pool.
+        create_connection_pool(): Create a connection pool for the PostgreSQL database.
+        get_connection(): Get a connection from the connection pool.
+        close_connection(connection): Close the connection and return it to the connection pool.
         _prepare_db(): Prepare the database by creating and initializing the necessary tables.
         _migrations(): Execute database migrations to update the database schema or data.
         _is_migration_executed(migration_name): Check if a migration has already been executed.
@@ -102,7 +102,7 @@ class DatabaseClient:
         Returns:
             pool.SimpleConnectionPool: A connection pool for the PostgreSQL database.
         """
-        db_configuration = self.vault.read_secret(path='configuration/database')
+        db_configuration = self.vault.kv2engine.read_secret(path='configuration/database')
         log.info(
             '[Database]: Creating a connection pool for the %s:%s/%s',
             db_configuration['host'], db_configuration['port'], db_configuration['database']
@@ -117,7 +117,7 @@ class DatabaseClient:
             database=db_configuration['database']
         )
 
-    def _get_connection(self) -> psycopg2.extensions.connection:
+    def get_connection(self) -> psycopg2.extensions.connection:
         """
         Get a connection from the connection pool.
 
@@ -126,7 +126,7 @@ class DatabaseClient:
         """
         return self.database_connections.getconn()
 
-    def _close_connection(self, connection: psycopg2.extensions.connection) -> None:
+    def close_connection(self, connection: psycopg2.extensions.connection) -> None:
         """
         Close the cursor and return it to the connection pool.
 
@@ -230,11 +230,11 @@ class DatabaseClient:
             To create a new table called 'users' with columns 'id' and 'name', you can call the method like this:
             >>> _create_table('users', 'id INTEGER PRIMARY KEY, name TEXT')
         """
-        conn = self._get_connection()
+        conn = self.get_connection()
         with conn.cursor() as cursor:
             cursor.execute(f"CREATE TABLE IF NOT EXISTS {table_name} ({columns})")
         conn.commit()
-        self._close_connection(conn)
+        self.close_connection(conn)
 
     @reconnect_on_exception
     def _insert(
@@ -260,11 +260,11 @@ class DatabaseClient:
         """
         try:
             sql_query = f"INSERT INTO {table_name} ({', '.join(columns)}) VALUES ({', '.join(['%s'] * len(columns))})"
-            conn = self._get_connection()
+            conn = self.get_connection()
             with conn.cursor() as cursor:
                 cursor.execute(sql_query, values)
             conn.commit()
-            self._close_connection(conn)
+            self.close_connection(conn)
         except (psycopg2.Error, IndexError) as error:
             log.error(
                 '[Database]: An error occurred while inserting a row into the table %s: %s\nColumns: %s\nValues: %s\nQuery: %s',
@@ -309,11 +309,11 @@ class DatabaseClient:
         if kwargs.get('limit', None):
             sql_query += f" LIMIT {kwargs.get('limit')}"
 
-        conn = self._get_connection()
+        conn = self.get_connection()
         with conn.cursor() as cursor:
             cursor.execute(sql_query)
             response = cursor.fetchall()
-        self._close_connection(conn)
+        self.close_connection(conn)
         return response if response else None
 
     @reconnect_on_exception
@@ -334,11 +334,11 @@ class DatabaseClient:
         Examples:
             >>> _update('users', "username='new_username', password='new_password'", "id=1")
         """
-        conn = self._get_connection()
+        conn = self.get_connection()
         with conn.cursor() as cursor:
             cursor.execute(f"UPDATE {table_name} SET {values} WHERE {condition}")
         conn.commit()
-        self._close_connection(conn)
+        self.close_connection(conn)
 
     @reconnect_on_exception
     def _delete(
@@ -357,11 +357,11 @@ class DatabaseClient:
             To delete all rows from the 'users' table where the 'username' column is 'john':
             >>> db._delete('users', "username='john'")
         """
-        conn = self._get_connection()
+        conn = self.get_connection()
         with conn.cursor() as cursor:
             cursor.execute(f"DELETE FROM {table_name} WHERE {condition}")
         conn.commit()
-        self._close_connection(conn)
+        self.close_connection(conn)
 
     def _reset_stale_records(self) -> None:
         """

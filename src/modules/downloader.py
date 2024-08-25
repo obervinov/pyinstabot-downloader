@@ -63,7 +63,7 @@ class Downloader:
         if configuration:
             self.configuration = configuration
         elif not configuration:
-            self.configuration = vault.read_secret(path='configuration/downloader-api')
+            self.configuration = vault.kv2engine.read_secret(path='configuration/downloader-api')
         else:
             raise FailedCreateDownloaderInstance(
                 "Failed to initialize the Downloader instance."

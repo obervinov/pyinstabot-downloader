@@ -68,7 +68,22 @@
             "columns": [
                 "id SERIAL PRIMARY KEY, ",
                 "user_id VARCHAR(255) NOT NULL, ",
-                "chat_id VARCHAR(255) NOT NULL"
+                "chat_id VARCHAR(255) NOT NULL, ",
+                "status VARCHAR(255) NOT NULL DEFAULT 'denied'"
+            ]
+        },
+        {
+            "name": "users_requests",
+            "description": "The table stores the metadata of the user requests",
+            "columns": [
+                "id SERIAL PRIMARY KEY, ",
+                "user_id VARCHAR(255) NOT NULL, ",
+                "message_id VARCHAR(255) NOT NULL, ",
+                "chat_id VARCHAR(255) NOT NULL, ",
+                "authentication VARCHAR(255) NOT NULL, ",
+                "\"authorization\" VARCHAR(255) NOT NULL, ",
+                "timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, ",
+                "rate_limits TIMESTAMP"
             ]
         }
     ]

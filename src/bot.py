@@ -36,7 +36,7 @@ users = Users(vault=vault, rate_limits=False)
 
 # Client for download content from supplier
 # If API disabled, the mock object will be used
-downloader_api_enabled = vault.read_secret(path='configuration/downloader-api').get('enabled', False)
+downloader_api_enabled = vault.kv2engine.read_secret(path='configuration/downloader-api').get('enabled', False)
 if downloader_api_enabled == 'True':
     log.info('[Bot]: downloader API is enabled: %s', downloader_api_enabled)
     downloader = Downloader(vault=vault)
@@ -52,7 +52,7 @@ else:
 
 # Client for upload content to the cloud storage
 # If API disabled, the mock object will be used
-uploader_api_enabled = vault.read_secret(path='configuration/uploader-api').get('enabled', False)
+uploader_api_enabled = vault.kv2engine.read_secret(path='configuration/uploader-api').get('enabled', False)
 if uploader_api_enabled == 'True':
     log.info('[Bot]: uploader API is enabled: %s', uploader_api_enabled)
     uploader = Uploader(vault=vault)
@@ -388,7 +388,7 @@ def process_one_post(
     user = users_rl.user_access_check(message.chat.id, ROLES_MAP['Post'])
     if user.get('permissions', None) == users_rl.user_status_allow:
         data = message_parser(message)
-        rate_limit = user.get('rate_limits', {}).get('end_time', None)
+        rate_limit = user.get('rate_limits', None)
 
         # Define time to process the message in queue
         if rate_limit:
