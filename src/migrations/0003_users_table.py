@@ -1,4 +1,4 @@
-# pylint: disable=C0103,R0914
+# pylint: disable=C0103,R0914,R0801
 """
 Add additional column 'status' in the users table.
 https://github.com/obervinov/users-package/blob/v3.0.0/tests/postgres/tables.sql

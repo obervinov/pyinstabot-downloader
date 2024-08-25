@@ -1,3 +1,4 @@
+# pylint: disable=C0103,R0914,R0801
 """
 Add additional column 'created_at' and replace column 'timestamp' with 'updated_at' in the messages table.
 https://github.com/obervinov/pyinstabot-downloader/issues/62

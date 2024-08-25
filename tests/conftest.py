@@ -7,6 +7,7 @@ import subprocess
 import time
 import requests
 import pytest
+import hvac
 # pylint: disable=E0401
 from vault import VaultClient
 
@@ -77,9 +78,9 @@ def fixture_vault_url(prepare_dev_environment):
     return url
 
 
-@pytest.fixture(name="name", scope='session')
-def fixture_name():
-    """Returns the project name"""
+@pytest.fixture(name="namespace", scope='session')
+def fixture_namespace():
+    """Returns the project namespace"""
     return "pyinstabot-downloader"
 
 
@@ -89,35 +90,115 @@ def fixture_policy_path():
     return "tests/vault/policy.hcl"
 
 
-@pytest.fixture(name="vault_approle", scope='session')
-def fixture_vault_approle(vault_url, name, policy_path):
-    """Prepare a temporary Vault instance and return the Vault client"""
-    configurator = VaultClient(
-                url=vault_url,
-                name=name,
-                new=True
-    )
-    namespace = configurator.create_namespace(
-            name=name
-    )
-    policy = configurator.create_policy(
-            name=name,
-            path=policy_path
+@pytest.fixture(name="psql_tables_path", scope='session')
+def fixture_psql_tables_path():
+    """Returns the path to the postgres sql file with tables"""
+    return "tests/postgres/tables.sql"
+
+
+@pytest.fixture(name="postgres_url", scope='session')
+def fixture_postgres_url():
+    """Returns the postgres url"""
+    return "postgresql://{{username}}:{{password}}@postgres:5432/postgres?sslmode=disable"
+
+
+@pytest.fixture(name="prepare_vault", scope='session')
+def fixture_prepare_vault(vault_url, namespace, policy_path, postgres_url):
+    """Returns the vault client"""
+    client = hvac.Client(url=vault_url)
+    init_data = client.sys.initialize()
+
+    # Unseal the vault
+    if client.sys.is_sealed():
+        client.sys.submit_unseal_keys(keys=[init_data['keys'][0], init_data['keys'][1], init_data['keys'][2]])
+    # Authenticate in the vault server using the root token
+    client = hvac.Client(url=vault_url, token=init_data['root_token'])
+
+    # Create policy
+    with open(policy_path, 'rb') as policyfile:
+        _ = client.sys.create_or_update_policy(
+            name=namespace,
+            policy=policyfile.read().decode("utf-8"),
         )
-    return configurator.create_approle(
-        name=name,
+
+    # Create Namespace
+    _ = client.sys.enable_secrets_engine(
+        backend_type='kv',
         path=namespace,
-        policy=policy
+        options={'version': 2}
     )
+
+    # Prepare AppRole for the namespace
+    client.sys.enable_auth_method(
+        method_type='approle',
+        path=namespace
+    )
+    _ = client.auth.approle.create_or_update_approle(
+        role_name=namespace,
+        token_policies=[namespace],
+        token_type='service',
+        secret_id_num_uses=0,
+        token_num_uses=0,
+        token_ttl='15s',
+        bind_secret_id=True,
+        token_no_default_policy=True,
+        mount_point=namespace
+    )
+    approle_adapter = hvac.api.auth_methods.AppRole(client.adapter)
+
+    # Prepare database engine configuration
+    client.sys.enable_secrets_engine(
+        backend_type='database',
+        path='database'
+    )
+
+    # Configure database engine
+    configuration = client.secrets.database.configure(
+        name="postgresql",
+        plugin_name="postgresql-database-plugin",
+        verify_connection=False,
+        allowed_roles=["test-role"],
+        username="postgres",
+        password="postgres",
+        connection_url=postgres_url
+    )
+    print(f"Configured database engine: {configuration}")
+
+    # Create role for the database
+    statement = (
+        "CREATE ROLE \"{{name}}\" WITH LOGIN PASSWORD '{{password}}' VALID UNTIL '{{expiration}}'; "
+        "GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO \"{{name}}\"; "
+        "GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO \"{{name}}\";"
+    )
+    role = client.secrets.database.create_role(
+        name="test-role",
+        db_name="postgresql",
+        creation_statements=statement,
+        default_ttl="1h",
+        max_ttl="24h"
+    )
+    print(f"Created role: {role}")
+
+    # Return the role_id and secret_id
+    return {
+        'id': approle_adapter.read_role_id(role_name=namespace, mount_point=namespace)["data"]["role_id"],
+        'secret-id': approle_adapter.generate_secret_id(role_name=namespace, mount_point=namespace)["data"]["secret_id"]
+    }
 
 
 @pytest.fixture(name="vault_instance", scope='session')
-def fixture_vault_instance(vault_url, vault_approle, name):
-    """Returns an initialized vault instance"""
+def fixture_vault_instance(vault_url, namespace, prepare_vault):
+    """Returns client of the configurator"""
     return VaultClient(
         url=vault_url,
-        name=name,
-        approle=vault_approle
+        namespace=namespace,
+        auth={
+            'type': 'approle',
+            'approle': {
+                'id': prepare_vault['id'],
+                'secret-id': prepare_vault['secret-id']
+            }
+        }
     )
 
 
@@ -140,13 +221,13 @@ def fixture_vault_configuration_data(vault_instance):
         'database': 'pyinstabot-downloader'
     }
     for key, value in database.items():
-        _ = vault_instance.write_secret(
+        _ = vault_instance.kv2engine.write_secret(
             path='configuration/database',
             key=key,
             value=value
         )
 
-    _ = vault_instance.write_secret(
+    _ = vault_instance.kv2engine.write_secret(
         path='configuration/telegram',
         key='token',
         value=os.getenv("TG_TOKEN")
@@ -168,23 +249,8 @@ def fixture_vault_configuration_data(vault_instance):
     }
     user_id = os.getenv("TG_USERID")
     for key, value in user_attributes.items():
-        _ = vault_instance.write_secret(
+        _ = vault_instance.kv2engine.write_secret(
             path=f'configuration/users/{user_id}',
-            key=key,
-            value=value
-        )
-
-    test_owner = {
-        "eiD5aech8Oh": "downloaded",
-        "eiD5aech8Oa": "downloaded",
-        "eiD5aech8Oq": "downloaded",
-        "eiD5aech8Ol": "downloaded",
-        "eiD5aech8Op": "downloaded",
-        "eiD5aech8Oy": "downloaded"
-    }
-    for key, value in test_owner.items():
-        _ = vault_instance.write_secret(
-            path='history/testOwner',
             key=key,
             value=value
         )

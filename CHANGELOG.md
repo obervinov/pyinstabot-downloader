@@ -14,6 +14,8 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 * bump users-package to major version `3.0.0`
 * bump telegram-package to major version `2.0.1`
 * [Switch reading of the database connection configuration to db engine](https://github.com/obervinov/pyinstabot-downloader/issues/33)
+#### 🐛 Bug Fixes
+* general bug fixes and improvements
 
 
 ## v2.2.1 - 2024-08-24
