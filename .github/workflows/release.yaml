@@ -17,7 +17,7 @@ jobs:
     steps:
       - name: Delete untagged images from GitHub Container Registry
         continue-on-error: true
-        uses: Chizkiyahu/delete-untagged-ghcr-action@v3
+        uses: Chizkiyahu/delete-untagged-ghcr-action@v4
         with:
           token: ${{ secrets.PAT_GHCR_CLEANUP }}
           package_name: 'pyinstabot-downloader'
