@@ -62,7 +62,7 @@ else:
     uploader.run_transfers.return_value = 'completed'
 
 # Client for communication with the database
-database = DatabaseClient(vault=vault)
+database = DatabaseClient(vault=vault, db_role=TELEGRAM_BOT_NAME)
 
 # Metrics exporter
 metrics = Metrics(port=METRICS_PORT, interval=METRICS_INTERVAL, metrics_prefix=TELEGRAM_BOT_NAME, vault=vault, database=database)

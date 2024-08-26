@@ -2,12 +2,11 @@
 This module stores fixtures for performing tests.
 """
 import os
-import sys
-import subprocess
 import time
 import requests
 import pytest
 import hvac
+import psycopg2
 # pylint: disable=E0401
 from vault import VaultClient
 
@@ -29,31 +28,6 @@ def pytest_configure(config):
         # test code
     """
     config.addinivalue_line("markers", "order: Set the execution order of tests")
-
-
-@pytest.fixture(name="prepare_dev_environment", scope='session')
-def fixture_prepare_dev_environment():
-    """
-    Prepare a local environment or ci environment and return the URL of the Vault server
-    """
-    if not os.getenv("CI"):
-        if not os.getenv("TG_USERID"):
-            print("You need to set the TG_USER_ID environment variable to run the tests (telegram user-id)")
-            sys.exit(1)
-        if not os.getenv("TG_TOKEN"):
-            print("You need to set the TG_TOKEN environment variable to run the tests (telegram token)")
-            sys.exit(1)
-        command = (
-            "vault=$(docker ps -a | grep vault | awk '{print $1}') && "
-            "bot=$(docker ps -a | grep pyinstabot-downloader | awk '{print $1}') && "
-            "[ -n '$vault' ] && docker container rm -f $vault && "
-            "[ -n '$bot' ] && docker container rm -f $bot && "
-            "docker compose -f docker-compose.dev.yml up -d"
-        )
-        with subprocess.Popen(command, shell=True):
-            print("Running dev environment...")
-        return 'ready'
-    return None
 
 
 @pytest.fixture(name="vault_url", scope='session')
@@ -100,6 +74,25 @@ def fixture_psql_tables_path():
 def fixture_postgres_url():
     """Returns the postgres url"""
     return "postgresql://{{username}}:{{password}}@postgres:5432/postgres?sslmode=disable"
+
+
+@pytest.fixture(name="postgres_instance", scope='session')
+def fixture_postgres_instance(psql_tables_path):
+    """Prepare the postgres database, return the connection and cursor"""
+    # Prepare database for tests
+    psql_connection = psycopg2.connect(
+        host='0.0.0.0',
+        port=5432,
+        user='postgres',
+        password='postgres',
+        dbname='postgres'
+    )
+    psql_cursor = psql_connection.cursor()
+    with open(psql_tables_path, 'r', encoding='utf-8') as sql_file:
+        sql_script = sql_file.read()
+        psql_cursor.execute(sql_script)
+        psql_connection.commit()
+    return psql_connection, psql_cursor
 
 
 @pytest.fixture(name="prepare_vault", scope='session')
@@ -179,10 +172,11 @@ def fixture_prepare_vault(vault_url, namespace, policy_path, postgres_url):
     )
     print(f"Created role: {role}")
 
-    # Return the role_id and secret_id
+    # Return the role_id, secret_id and db_role
     return {
         'id': approle_adapter.read_role_id(role_name=namespace, mount_point=namespace)["data"]["role_id"],
-        'secret-id': approle_adapter.generate_secret_id(role_name=namespace, mount_point=namespace)["data"]["secret_id"]
+        'secret-id': approle_adapter.generate_secret_id(role_name=namespace, mount_point=namespace)["data"]["secret_id"],
+        'db_role': 'test-role'
     }
 
 
@@ -216,8 +210,6 @@ def fixture_vault_configuration_data(vault_instance):
     database = {
         'host': 'postgres',
         'port': '5432',
-        'user': 'python',
-        'password': 'python',
         'database': 'pyinstabot-downloader'
     }
     for key, value in database.items():
@@ -254,3 +246,24 @@ def fixture_vault_configuration_data(vault_instance):
             key=key,
             value=value
         )
+    bot_configurations = [
+        {
+            'path': 'configuration/downloader-api',
+            'data': {
+                'enabled': 'false',
+            }
+        },
+        {
+            'path': 'configuration/uploader-api',
+            'data': {
+                'enabled': 'false',
+            }
+        }
+    ]
+    for configuration in bot_configurations:
+        for key, value in configuration['data'].items():
+            _ = vault_instance.kv2engine.write_secret(
+                path=configuration['path'],
+                key=key,
+                value=value
+            )

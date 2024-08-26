@@ -38,6 +38,7 @@ class DatabaseClient:
     Attributes:
         database_connections (psycopg2.extensions.connection): A connection to the PostgreSQL database.
         vault (object): An object representing a HashiCorp Vault client for retrieving secrets.
+        db_role (str): The role to use for generating database credentials.
         errors (psycopg2.errors): A collection of error classes for exceptions raised by the psycopg2 module.
 
     Methods:
@@ -72,13 +73,15 @@ class DatabaseClient:
     """
     def __init__(
         self,
-        vault: object = None
+        vault: object = None,
+        db_role: str = None
     ) -> None:
         """
         Initializes a new instance of the Database client.
 
         Args:
             vault (object): An object representing a HashiCorp Vault client for retrieving secrets with the database configuration.
+            db_role (str): The role to use for generating database credentials.
 
         Examples:
             To create a new instance of the Database class:
@@ -88,6 +91,7 @@ class DatabaseClient:
             >>> db = Database(vault=vault)
         """
         self.vault = vault
+        self.db_role = db_role
         self.errors = psycopg2.errors
         self.database_connections = self.create_connection_pool()
 
@@ -103,6 +107,7 @@ class DatabaseClient:
             pool.SimpleConnectionPool: A connection pool for the PostgreSQL database.
         """
         db_configuration = self.vault.kv2engine.read_secret(path='configuration/database')
+        db_credentials = self.vault.dbengine.generate_credentials(role=self.db_role)
         log.info(
             '[Database]: Creating a connection pool for the %s:%s/%s',
             db_configuration['host'], db_configuration['port'], db_configuration['database']
@@ -112,8 +117,8 @@ class DatabaseClient:
             maxconn=db_configuration['connections'],
             host=db_configuration['host'],
             port=db_configuration['port'],
-            user=db_configuration['user'],
-            password=db_configuration['password'],
+            user=db_credentials['username'],
+            password=db_credentials['password'],
             database=db_configuration['database']
         )
 
@@ -172,8 +177,10 @@ class DatabaseClient:
         # Migrations directory
         migrations_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../migrations'))
         sys.path.append(migrations_dir)
+        migration_files = [f for f in os.listdir(migrations_dir) if f.endswith('.py')]
+        migration_files.sort()
 
-        for migration_file in os.listdir(migrations_dir):
+        for migration_file in migration_files:
             if migration_file.endswith('.py'):
                 migration_module_name = migration_file[:-3]
 
@@ -185,6 +192,8 @@ class DatabaseClient:
                     self._mark_migration_as_executed(migration_name=migration_module_name, version=version)
                 else:
                     log.info('[Database] Migrations: the %s has already been executed and was skipped', migration_module_name)
+            else:
+                log.error('[Database]: Migrations: the %s is not a valid migration file', migration_file)
 
     def _is_migration_executed(
         self,
