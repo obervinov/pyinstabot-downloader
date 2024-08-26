@@ -209,7 +209,8 @@ def fixture_vault_configuration_data(vault_instance):
     database = {
         'host': 'postgres',
         'port': '5432',
-        'database': 'pyinstabot-downloader'
+        'database': 'pyinstabot-downloader',
+        'connections': '10'
     }
     for key, value in database.items():
         _ = vault_instance.kv2engine.write_secret(
