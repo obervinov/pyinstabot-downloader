@@ -72,7 +72,7 @@ def fixture_psql_tables_path():
 @pytest.fixture(name="postgres_url", scope='session')
 def fixture_postgres_url():
     """Returns the postgres url"""
-    return "postgresql://{{username}}:{{password}}@localhost:5432/postgres?sslmode=disable"
+    return "postgresql://{{username}}:{{password}}@0.0.0.0:5432/postgres?sslmode=disable"
 
 
 @pytest.fixture(name="postgres_instance", scope='session')
@@ -80,7 +80,7 @@ def fixture_postgres_instance(psql_tables_path):
     """Prepare the postgres database, return the connection and cursor"""
     # Prepare database for tests
     psql_connection = psycopg2.connect(
-        host='localhost',
+        host='0.0.0.0',
         port=5432,
         user='postgres',
         password='postgres',
@@ -207,7 +207,7 @@ def fixture_vault_configuration_data(vault_instance):
         None
     """
     database = {
-        'host': 'localhost',
+        'host': '0.0.0.0',
         'port': '5432',
         'database': 'pyinstabot-downloader',
         'connections': '10'
