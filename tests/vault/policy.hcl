@@ -23,6 +23,14 @@ path "sys/mounts/pyinstabot-downloader" {
   capabilities = ["read", "create", "update"]
 }
 
+# Operations for pytest
+# Allow reading database credentials for a role 
+path "database/creds/test-role" {
+  capabilities = ["read"]
+}
+
+###############################################################
+
 # Operations for the module
 # Read and update namespace configuration
 path "pyinstabot-downloader/config" {
@@ -54,4 +62,9 @@ path "pyinstabot-downloader/data/history/*" {
 # Allowed to read and list of user configurations
 path "pyinstabot-downloader/metadata/configuration/users" {
   capabilities = ["read", "list"]
+}
+
+# Allow reading database credentials for a role 
+path "database/creds/pyinstabot-downloader"{
+  capabilities = ["read"]
 }
