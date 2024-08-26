@@ -62,7 +62,7 @@ def test_init_database_client(prepare_vault, vault_instance, vault_configuration
 # @pytest.mark.order(4)
 # def test_database_connection(prepare_vault, vault_instance, vault_configuration_data, postgres_instance):
 #     """
-    
+
 #     """
 #     _ = vault_configuration_data
 #     _ = postgres_instance
@@ -71,4 +71,3 @@ def test_init_database_client(prepare_vault, vault_instance, vault_configuration
 
 #     connection = database.get_connection()
 #     assert isinstance(connection, psycopg2.extensions.connection)
-

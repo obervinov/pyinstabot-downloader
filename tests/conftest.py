@@ -31,9 +31,8 @@ def pytest_configure(config):
 
 
 @pytest.fixture(name="vault_url", scope='session')
-def fixture_vault_url(prepare_dev_environment):
+def fixture_vault_url():
     """Prepare a local environment or ci environment and return the URL of the Vault server"""
-    _ = prepare_dev_environment
     # prepare vault for local environment
     if not os.getenv("CI"):
         url = "http://0.0.0.0:8200"
