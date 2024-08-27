@@ -23,25 +23,25 @@ def execute(obj):
 
     # information about owners
     try:
-        owners = obj.vault.list_secrets(path='history/')
+        owners = obj.vault.kv2eninge.list_secrets(path='history/')
         owners_counter = len(owners)
         print(f"Founded {owners_counter} owners in history")
 
         # reade history form Vault
         for owner in owners:
             # information about owner posts
-            posts = obj.vault.read_secret(path=f"history/{owner}")
+            posts = obj.vault.kv2eninge.read_secret(path=f"history/{owner}")
             posts_counter = len(posts)
             print(f"{NAME}: Founded {posts_counter} posts in history/{owner}")
 
             for post in posts:
-                user_id = next(iter(obj.vault.read_secret(path='configuration/users').keys()))
+                user_id = next(iter(obj.vault.kv2eninge.read_secret(path='configuration/users').keys()))
                 post_id = post
                 post_url = f"https://www.instagram.com/p/{post}"
                 post_owner = owner
                 link_type = 'post'
                 message_id = 'unknown'
-                chat_id = next(iter(obj.vault.read_secret(path='configuration/users').keys()))
+                chat_id = next(iter(obj.vault.kv2eninge.read_secret(path='configuration/users').keys()))
                 download_status = 'completed'
                 upload_status = 'completed'
                 state = 'processed'
