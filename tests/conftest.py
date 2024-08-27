@@ -86,21 +86,6 @@ def fixture_postgres_instance(psql_tables_path):
         password='postgres',
         dbname='postgres'
     )
-    psql_connection.set_session(autocommit=True)
-    psql_cursor = psql_connection.cursor()
-    try:
-        psql_cursor.execute('CREATE DATABASE pyinstabot_downloader;')
-    except psycopg2.errors.DuplicateDatabase:
-        pass
-    psql_connection.close()
-
-    psql_connection = psycopg2.connect(
-        host='0.0.0.0',
-        port=5432,
-        user='postgres',
-        password='postgres',
-        dbname='pyinstabot_downloader'
-    )
     psql_cursor = psql_connection.cursor()
     with open(psql_tables_path, 'r', encoding='utf-8') as sql_file:
         sql_script = sql_file.read()
@@ -110,11 +95,8 @@ def fixture_postgres_instance(psql_tables_path):
 
 
 @pytest.fixture(name="prepare_vault", scope='session')
-def fixture_prepare_vault(vault_url, namespace, policy_path, postgres_url, postgres_instance):
+def fixture_prepare_vault(vault_url, namespace, policy_path, postgres_url):
     """Returns the vault client"""
-    # Wait for the postgres instance to be ready
-    _ = postgres_instance
-
     # Initialize the vault
     client = hvac.Client(url=vault_url)
     init_data = client.sys.initialize()
@@ -228,7 +210,7 @@ def fixture_vault_configuration_data(vault_instance):
     database = {
         'host': '0.0.0.0',
         'port': '5432',
-        'database': 'pyinstabot-downloader',
+        'database': 'postgres',
         'connections': '10'
     }
     for key, value in database.items():
