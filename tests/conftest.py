@@ -86,8 +86,12 @@ def fixture_postgres_instance(psql_tables_path):
         password='postgres',
         dbname='postgres'
     )
+    psql_connection.set_session(autocommit=True)
     psql_cursor = psql_connection.cursor()
-    psql_cursor.execute('CREATE DATABASE pyinstabot_downloader;')
+    try:
+        psql_cursor.execute('CREATE DATABASE pyinstabot_downloader;')
+    except psycopg2.errors.DuplicateDatabase:
+        pass
     psql_connection.close()
 
     psql_connection = psycopg2.connect(
