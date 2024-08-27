@@ -39,7 +39,7 @@ def test_init_database_client(prepare_vault, vault_instance, vault_configuration
             assert False
 
     # Check migrations execution in the database
-    cursor.execute("SELECT * FROM migrations")
+    cursor.execute("SELECT name, version FROM migrations")
     migrations_list = cursor.fetchall()
     assert len(migrations_list) > 0
 
@@ -55,8 +55,8 @@ def test_init_database_client(prepare_vault, vault_instance, vault_configuration
             migration_module = importlib.import_module(name=migration_module_name)
             version = getattr(migration_module, 'VERSION', migration_module_name)
             name = getattr(migration_module, 'NAME', migration_module_name)
-            if (version, name) not in migrations_list:
-                print(f"Not found migration {version}:{name} in {migrations_list}")
+            if (name, version) not in migrations_list:
+                print(f"Not found migration {name}:{version} in {migrations_list}")
                 assert False
 
 
