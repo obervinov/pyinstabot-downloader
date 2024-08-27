@@ -428,7 +428,7 @@ class DatabaseClient:
             ...     'link_type': 'profile',
             ...     'message_id': 'abcde',
             ...     'chat_id': 'xyz',
-            ...     'scheduled_time': '2022-01-01 12:00:00'
+            ...     'scheduled_time': '2022-01-01 12:00:00',
             ...     'download_status': 'not started',
             ...     'upload_status': 'not started'
             ... }

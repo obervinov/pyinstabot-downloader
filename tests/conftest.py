@@ -32,7 +32,12 @@ def pytest_configure(config):
 
 @pytest.fixture(name="vault_url", scope='session')
 def fixture_vault_url():
-    """Prepare a local environment or ci environment and return the URL of the Vault server"""
+    """
+    Prepare a local environment or ci environment and return the URL of the Vault server
+
+    Returns:
+        str: The URL of the Vault server.
+    """
     # prepare vault for local environment
     if not os.getenv("CI"):
         url = "http://0.0.0.0:8200"
@@ -53,31 +58,56 @@ def fixture_vault_url():
 
 @pytest.fixture(name="namespace", scope='session')
 def fixture_namespace():
-    """Returns the project namespace"""
+    """
+    Returns the namespace for the tests
+
+    Returns:
+        str: The namespace for the tests.
+    """
     return "pyinstabot-downloader"
 
 
 @pytest.fixture(name="policy_path", scope='session')
 def fixture_policy_path():
-    """Returns the policy path"""
+    """
+    Returns the policy path for the tests
+
+    Returns:
+        str: The policy path for the tests.
+    """
     return "tests/vault/policy.hcl"
 
 
 @pytest.fixture(name="psql_tables_path", scope='session')
 def fixture_psql_tables_path():
-    """Returns the path to the postgres sql file with tables"""
+    """
+    Returns the path to the postgres sql file with tables
+
+    Returns:
+        str: The path to the postgres sql file with tables.
+    """
     return "tests/postgres/tables.sql"
 
 
 @pytest.fixture(name="postgres_url", scope='session')
 def fixture_postgres_url():
-    """Returns the postgres url"""
+    """
+    Returns the postgres url for the tests
+
+    Returns:
+        str: The postgres url.
+    """
     return "postgresql://{{username}}:{{password}}@postgres:5432/postgres?sslmode=disable"
 
 
 @pytest.fixture(name="postgres_instance", scope='session')
 def fixture_postgres_instance(psql_tables_path):
-    """Prepare the postgres database, return the connection and cursor"""
+    """
+    Prepare the postgres database, return the connection and cursor
+
+    Returns:
+        tuple: The connection and cursor objects for the postgres database.
+    """
     # Prepare database for tests
     psql_connection = psycopg2.connect(
         host='0.0.0.0',
@@ -96,7 +126,12 @@ def fixture_postgres_instance(psql_tables_path):
 
 @pytest.fixture(name="prepare_vault", scope='session')
 def fixture_prepare_vault(vault_url, namespace, policy_path, postgres_url, postgres_instance):
-    """Returns the vault client"""
+    """
+    Returns the vault client and prepares the vault for the tests
+
+    Returns:
+        object: The vault client.
+    """
     # Wait for the postgres database to be ready
     _ = postgres_instance
 
@@ -190,7 +225,12 @@ def fixture_prepare_vault(vault_url, namespace, policy_path, postgres_url, postg
 
 @pytest.fixture(name="vault_instance", scope='session')
 def fixture_vault_instance(vault_url, namespace, prepare_vault):
-    """Returns client of the configurator"""
+    """
+    Returns client of the configurator vault
+
+    Returns:
+        object: The vault client.
+    """
     return VaultClient(
         url=vault_url,
         namespace=namespace,
@@ -211,9 +251,6 @@ def fixture_vault_configuration_data(vault_instance):
 
     Args:
         vault_instance: An instance of the Vault class.
-
-    Returns:
-        None
     """
     database = {
         'host': '0.0.0.0',
@@ -276,3 +313,19 @@ def fixture_vault_configuration_data(vault_instance):
                 key=key,
                 value=value
             )
+
+
+@pytest.fixture(name="postgres_messages_test_data", scope='session')
+def fixture_postgres_messages_test_data(postgres_instance):
+    """
+    This function sets up test data in the messages table in the postgres database.
+
+    Args:
+        postgres_instance: A tuple containing the connection and cursor objects for the postgres database.
+    """
+    conn, cursor = postgres_instance
+    cursor.execute(
+        "INSERT INTO messages (message_id, chat_id, created_at, updated_at, message_type, producer, message_content_hash, state) "
+        "VALUES ('123456', '123456', '2024-08-27 00:00:00', '2024-08-27 00:00:00', 'status_message', 'pytest', 'hash', 'updating')"
+    )
+    conn.commit()
