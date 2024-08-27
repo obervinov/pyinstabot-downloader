@@ -384,14 +384,15 @@ class DatabaseClient:
             columns=("id", "state"),
             condition="message_type = 'status_message'",
         )
-        for message in status_messages:
-            if message[1] != 'updated':
-                self._update(
-                    table_name='messages',
-                    values="state = 'updated'",
-                    condition=f"id = '{message[0]}'"
-                )
-        log.info('[Database]: Stale status messages have been reset')
+        if status_messages:
+            for message in status_messages:
+                if message[1] != 'updated':
+                    self._update(
+                        table_name='messages',
+                        values="state = 'updated'",
+                        condition=f"id = '{message[0]}'"
+                    )
+            log.info('[Database]: Stale status messages have been reset')
 
     def add_message_to_queue(
         self,
