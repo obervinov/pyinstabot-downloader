@@ -160,7 +160,12 @@ def fixture_prepare_vault(vault_url, namespace, policy_path, postgres_url):
     # Create role for the database
     statement = (
         "CREATE ROLE \"{{name}}\" WITH LOGIN PASSWORD '{{password}}' VALID UNTIL '{{expiration}}'; "
-        "GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO \"{{name}}\"; "
+        "ALTER TABLE public.users OWNER TO \"{{name}}\"; "
+        "ALTER TABLE public.users_requests OWNER TO \"{{name}}\"; "
+        "ALTER TABLE public.messages OWNER TO \"{{name}}\"; "
+        "ALTER TABLE public.queue OWNER TO \"{{name}}\"; "
+        "ALTER TABLE public.processed OWNER TO \"{{name}}\"; "
+        "ALTER TABLE public.migrations OWNER TO \"{{name}}\"; "
         "GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO \"{{name}}\";"
     )
     role = client.secrets.database.create_role(
