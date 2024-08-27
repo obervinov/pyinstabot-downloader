@@ -110,8 +110,12 @@ def fixture_postgres_instance(psql_tables_path):
 
 
 @pytest.fixture(name="prepare_vault", scope='session')
-def fixture_prepare_vault(vault_url, namespace, policy_path, postgres_url):
+def fixture_prepare_vault(vault_url, namespace, policy_path, postgres_url, postgres_instance):
     """Returns the vault client"""
+    # Wait for the postgres instance to be ready
+    _ = postgres_instance
+
+    # Initialize the vault
     client = hvac.Client(url=vault_url)
     init_data = client.sys.initialize()
 
