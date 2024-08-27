@@ -43,7 +43,7 @@ def test_init_database_client(prepare_vault, vault_instance, vault_configuration
     migrations_list = cursor.fetchall()
     assert len(migrations_list) > 0
 
-    migrations_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), 'src/migrations'))
+    migrations_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../src/migrations'))
     sys.path.append(migrations_dir)
     migration_files = [f for f in os.listdir(migrations_dir) if f.endswith('.py')]
     migration_files.sort()
