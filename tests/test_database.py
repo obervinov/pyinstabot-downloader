@@ -31,7 +31,7 @@ def test_init_database_client(prepare_vault, vault_instance, vault_configuration
     # Check tables creation in the database
     cursor.execute("SELECT * FROM information_schema.tables WHERE table_schema = 'public'")
     tables_list = cursor.fetchall()
-    tables_configuration_path = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'src/configs/databases.json'))
+    tables_configuration_path = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '../src/configs/databases.json'))
     with open(tables_configuration_path, encoding='UTF-8') as config_file:
         database_init_configuration = json.load(config_file)
     for table in database_init_configuration.get('Tables', None):
