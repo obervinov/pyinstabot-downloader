@@ -61,12 +61,14 @@ def test_init_database_client(prepare_vault, vault_instance, vault_configuration
 
 
 @pytest.mark.order(4)
-def test_reset_stale_messages(postgres_instance, postgres_messages_test_data):
+def test_reset_stale_messages(prepare_vault, vault_instance, postgres_instance, postgres_messages_test_data):
     """
     Checking the reset of stale messages when the database client is initialized
     """
     _, cursor = postgres_instance
     _ = postgres_messages_test_data
+    db_role = prepare_vault['db_role']
+    _ = DatabaseClient(vault=vault_instance, db_role=db_role)
 
     # Check the reset of stale messages
     cursor.execute("SELECT state FROM messages")
@@ -96,7 +98,7 @@ def test_database_connection(prepare_vault, vault_instance, postgres_instance):
 
 
 @pytest.mark.order(6)
-def test_add_message_in_queue(prepare_vault, vault_instance, postgres_instance):
+def test_add_message_to_queue(prepare_vault, vault_instance, postgres_instance):
     """
     Checking the addition of a message to the queue
     """
@@ -115,7 +117,7 @@ def test_add_message_in_queue(prepare_vault, vault_instance, postgres_instance):
     }
     db_role = prepare_vault['db_role']
     database = DatabaseClient(vault=vault_instance, db_role=db_role)
-    response = database.add_message_in_queue(data=data)
+    response = database.add_message_to_queue(data=data)
 
     # Check the addition of a message to the queue
     cursor.execute(
