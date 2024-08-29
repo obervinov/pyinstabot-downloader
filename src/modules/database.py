@@ -107,6 +107,7 @@ class DatabaseClient:
             pool.SimpleConnectionPool: A connection pool for the PostgreSQL database.
         """
         db_configuration = self.vault.kv2engine.read_secret(path='configuration/database')
+        log.warning(db_configuration)
         db_credentials = self.vault.dbengine.generate_credentials(role=self.db_role)
         log.info(
             '[Database]: Creating a connection pool for the %s:%s/%s',
