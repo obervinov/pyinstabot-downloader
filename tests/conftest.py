@@ -60,7 +60,7 @@ def fixture_namespace():
     Returns:
         str: The namespace for the tests.
     """
-    return "pyinstabot-downloader"
+    return "pytest"
 
 
 @pytest.fixture(name="policy_path", scope='session')
@@ -184,7 +184,7 @@ def fixture_prepare_vault(vault_url, namespace, policy_path, postgres_url, postg
         name="postgresql",
         plugin_name="postgresql-database-plugin",
         verify_connection=False,
-        allowed_roles=["test-role"],
+        allowed_roles=["pytest"],
         username="postgres",
         password="postgres",
         connection_url=postgres_url
@@ -203,7 +203,7 @@ def fixture_prepare_vault(vault_url, namespace, policy_path, postgres_url, postg
         "GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO \"{{name}}\";"
     )
     role = client.secrets.database.create_role(
-        name="test-role",
+        name="pytest",
         db_name="postgresql",
         creation_statements=statement,
         default_ttl="1h",
@@ -214,8 +214,7 @@ def fixture_prepare_vault(vault_url, namespace, policy_path, postgres_url, postg
     # Return the role_id, secret_id and db_role
     return {
         'id': approle_adapter.read_role_id(role_name=namespace, mount_point=namespace)["data"]["role_id"],
-        'secret-id': approle_adapter.generate_secret_id(role_name=namespace, mount_point=namespace)["data"]["secret_id"],
-        'db_role': 'test-role'
+        'secret-id': approle_adapter.generate_secret_id(role_name=namespace, mount_point=namespace)["data"]["secret_id"]
     }
 
 

@@ -19,13 +19,13 @@ path "auth/token/lookup-self" {
 
 # Operations for pytest
 # Allow read, create or update operations on the pytest path
-path "sys/mounts/pyinstabot-downloader" {
+path "sys/mounts/pytest" {
   capabilities = ["read", "create", "update"]
 }
 
 # Operations for pytest
 # Allow reading database credentials for a role 
-path "database/creds/test-role" {
+path "database/creds/pytest" {
   capabilities = ["read"]
 }
 
