@@ -29,6 +29,13 @@ path "database/creds/pytest" {
   capabilities = ["read"]
 }
 
+# Operations for pytest
+# Allow reading database credentials for a role 
+path "pytest/config" {
+  capabilities = ["read", "list", "update"]
+}
+
+
 ###############################################################
 
 # Operations for the module
