@@ -76,22 +76,22 @@ def test_reset_stale_messages(namespace, vault_instance, postgres_instance, post
         assert message[0] == 'updated'
 
 
-# @pytest.mark.order(5)
-# def test_database_connection(namespace, vault_instance, postgres_instance):
-#     """
-#     Checking the database connection and disconnection
-#     """
-#     _ = postgres_instance
-#     database = DatabaseClient(vault=vault_instance, db_role=namespace)
+@pytest.mark.order(5)
+def test_database_connection(namespace, vault_instance, postgres_instance):
+    """
+    Checking the database connection and disconnection
+    """
+    _ = postgres_instance
+    database = DatabaseClient(vault=vault_instance, db_role=namespace)
 
-#     # Check the database connection
-#     connection = database.get_connection()
-#     assert isinstance(connection, psycopg2.extensions.connection)
-#     assert not connection.closed
+    # Check the database connection
+    connection = database.get_connection()
+    assert isinstance(connection, psycopg2.extensions.connection)
+    assert not connection.closed
 
-#     # Check the database disconnection
-#     database.close_connection(connection)
-#     assert connection.closed
+    # Check the database disconnection
+    database.close_connection(connection)
+    assert connection.closed
 
 
 # @pytest.mark.order(6)
