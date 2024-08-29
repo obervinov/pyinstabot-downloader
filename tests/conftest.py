@@ -38,12 +38,8 @@ def fixture_vault_url():
     Returns:
         str: The URL of the Vault server.
     """
-    # prepare vault for local environment
-    if not os.getenv("CI"):
-        url = "http://0.0.0.0:8200"
-    # prepare vault for ci environment
-    else:
-        url = "http://localhost:8200"
+
+    url = "http://0.0.0.0:8200"
     # checking the availability of the vault server
     while True:
         try:
