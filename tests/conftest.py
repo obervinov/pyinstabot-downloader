@@ -248,7 +248,7 @@ def fixture_vault_configuration_data(vault_instance):
         vault_instance: An instance of the Vault class.
     """
     database = {
-        'host': 'postgres',
+        'host': '0.0.0.0',
         'port': '5432',
         'database': 'postgres',
         'connections': '10'
