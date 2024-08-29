@@ -35,8 +35,15 @@ path "pytest/config" {
   capabilities = ["read", "list", "update"]
 }
 
+# Operations for pytest
+# Allow reading database credentials for a role 
+path "pytest/data/configuration/*" {
+  capabilities = ["create", "read", "update", "list"]
+}
+
 
 ###############################################################
+
 
 # Operations for the module
 # Read and update namespace configuration
