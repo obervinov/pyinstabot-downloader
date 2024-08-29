@@ -93,7 +93,7 @@ def fixture_postgres_url():
     Returns:
         str: The postgres url.
     """
-    return "postgresql://{{username}}:{{password}}@0.0.0.0:5432/postgres?sslmode=disable"
+    return "postgresql://{{username}}:{{password}}@postgres:5432/postgres?sslmode=disable"
 
 
 @pytest.fixture(name="postgres_instance", scope='session')
@@ -248,7 +248,7 @@ def fixture_vault_configuration_data(vault_instance):
         vault_instance: An instance of the Vault class.
     """
     database = {
-        'host': '0.0.0.0',
+        'host': 'postgres',
         'port': '5432',
         'database': 'postgres',
         'connections': '10'
