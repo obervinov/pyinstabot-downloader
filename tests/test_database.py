@@ -59,21 +59,21 @@ def test_init_database_client(namespace, vault_instance, vault_configuration_dat
                 assert False
 
 
-# @pytest.mark.order(4)
-# def test_reset_stale_messages(namespace, vault_instance, postgres_instance, postgres_messages_test_data):
-#     """
-#     Checking the reset of stale messages when the database client is initialized
-#     """
-#     _, cursor = postgres_instance
-#     _ = postgres_messages_test_data
-#     _ = DatabaseClient(vault=vault_instance, db_role=namespace)
+@pytest.mark.order(4)
+def test_reset_stale_messages(namespace, vault_instance, postgres_instance, postgres_messages_test_data):
+    """
+    Checking the reset of stale messages when the database client is initialized
+    """
+    _, cursor = postgres_instance
+    _ = postgres_messages_test_data
+    _ = DatabaseClient(vault=vault_instance, db_role=namespace)
 
-#     # Check the reset of stale messages
-#     cursor.execute("SELECT state FROM messages")
-#     messages_list = cursor.fetchall()
-#     assert len(messages_list) > 0
-#     for message in messages_list:
-#         assert message[0] == 'updated'
+    # Check the reset of stale messages
+    cursor.execute("SELECT state FROM messages")
+    messages_list = cursor.fetchall()
+    assert len(messages_list) > 0
+    for message in messages_list:
+        assert message[0] == 'updated'
 
 
 # @pytest.mark.order(5)
