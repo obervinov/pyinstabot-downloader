@@ -218,7 +218,7 @@ def fixture_prepare_vault(vault_url, namespace, policy_path, postgres_url, postg
     }
 
 
-@pytest.fixture(name="vault_instance", scope='session')
+@pytest.fixture(name="vault_instance", scope='function')
 def fixture_vault_instance(vault_url, namespace, prepare_vault):
     """
     Returns client of the configurator vault
