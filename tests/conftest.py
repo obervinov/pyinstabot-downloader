@@ -202,10 +202,15 @@ def fixture_prepare_vault(vault_url, namespace, policy_path, postgres_url, postg
         "ALTER TABLE public.migrations OWNER TO \"{{name}}\"; "
         "GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO \"{{name}}\";"
     )
+    revocation_statements = (
+        "SELECT 'ALTER SEQUENCE ' || sequence_name || ' OWNER TO postgres;' FROM information_schema.sequences WHERE sequence_schema = 'public'; "
+        "SELECT 'ALTER TABLE ' || table_name || ' OWNER TO postgres;' FROM information_schema.tables WHERE table_schema = 'public';"
+    )
     role = client.secrets.database.create_role(
         name="pytest",
         db_name="postgresql",
         creation_statements=statement,
+        revocation_statements=revocation_statements,
         default_ttl="1h",
         max_ttl="24h"
     )
@@ -218,7 +223,7 @@ def fixture_prepare_vault(vault_url, namespace, policy_path, postgres_url, postg
     }
 
 
-@pytest.fixture(name="vault_instance", scope='function')
+@pytest.fixture(name="vault_instance", scope='session')
 def fixture_vault_instance(vault_url, namespace, prepare_vault):
     """
     Returns client of the configurator vault
@@ -239,7 +244,7 @@ def fixture_vault_instance(vault_url, namespace, prepare_vault):
     )
 
 
-@pytest.fixture(name="vault_configuration_data", scope='function')
+@pytest.fixture(name="vault_configuration_data", scope='session')
 def fixture_vault_configuration_data(vault_instance):
     """
     This function sets up a database configuration in the vault_instance object.

@@ -36,8 +36,13 @@ def execute(obj):
 
         if not table:
             print(f"{NAME}: The {table_name} table does not exist. Skip the migration.")
+
         elif len(columns) < 1:
             print(f"{NAME}: The {table_name} table does not have the necessary columns to execute the migration. Skip the migration.")
+
+        elif not all(column in [rc[0] for rc in rename_columns] for column in columns):
+            print(f"{NAME}: The {table_name} table does not have the necessary columns to rename. Skip renaming.")
+
         else:
             for column in rename_columns:
                 try:
@@ -53,15 +58,18 @@ def execute(obj):
                     conn.rollback()
 
             for column in add_columns:
-                try:
-                    print(f"{NAME}: Add column {column[0]} to the {table_name} table...")
-                    cursor.execute(f"ALTER TABLE {table_name} ADD COLUMN {column[0]} {column[1]} DEFAULT {column[2]}")
-                    conn.commit()
-                    print(f"{NAME}: Column {column[0]} has been added to the {table_name} table.")
-                except obj.errors.DuplicateColumn as error:
-                    print(f"{NAME}: Columns in the {table_name} table have already been added. Skip adding: {error}")
-                    conn.rollback()
-                except obj.errors.FeatureNotSupported as error:
-                    print(f"{NAME}: Columns in the {table_name} table have not been added. Skip adding: {error}")
-                    conn.rollback()
+                if column[0] in columns:
+                    print(f"{NAME}: The {table_name} table already has the {column[0]} column. Skip adding.")
+                else:
+                    try:
+                        print(f"{NAME}: Add column {column[0]} to the {table_name} table...")
+                        cursor.execute(f"ALTER TABLE {table_name} ADD COLUMN {column[0]} {column[1]} DEFAULT {column[2]}")
+                        conn.commit()
+                        print(f"{NAME}: Column {column[0]} has been added to the {table_name} table.")
+                    except obj.errors.DuplicateColumn as error:
+                        print(f"{NAME}: Columns in the {table_name} table have already been added. Skip adding: {error}")
+                        conn.rollback()
+                    except obj.errors.FeatureNotSupported as error:
+                        print(f"{NAME}: Columns in the {table_name} table have not been added. Skip adding: {error}")
+                        conn.rollback()
     obj.close_connection(conn)
