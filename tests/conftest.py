@@ -203,8 +203,8 @@ def fixture_prepare_vault(vault_url, namespace, policy_path, postgres_url, postg
         "GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO \"{{name}}\";"
     )
     revocation_statements = [
-        "SELECT 'ALTER SEQUENCE ' || sequence_name || ' OWNER TO postgres;' FROM information_schema.sequences WHERE sequence_schema = 'public';",
-        "SELECT 'ALTER TABLE ' || table_name || ' OWNER TO postgres;' FROM information_schema.tables WHERE table_schema = 'public';"
+        "SELECT \"ALTER SEQUENCE\" || sequence_name || \" OWNER TO postgres;\" FROM information_schema.sequences WHERE sequence_schema = \"public\";",
+        "SELECT \"ALTER TABLE\" || table_name || \" OWNER TO postgres;\" FROM information_schema.tables WHERE table_schema = \"public\";"
     ]
     role = client.secrets.database.create_role(
         name="pytest",
