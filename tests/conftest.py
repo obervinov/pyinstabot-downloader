@@ -214,7 +214,7 @@ def fixture_prepare_vault(vault_url, namespace, policy_path, postgres_url, postg
         "ALTER TABLE public.messages OWNER TO postgres;",
         "ALTER TABLE public.queue OWNER TO postgres;",
         "ALTER TABLE public.processed OWNER TO postgres;",
-        "ALTER TABLE public.migrations OWNER TO postgres;"   
+        "ALTER TABLE public.migrations OWNER TO postgres;"
     ]
     role = client.secrets.database.create_role(
         name="pytest",
