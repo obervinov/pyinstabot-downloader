@@ -203,18 +203,18 @@ def fixture_prepare_vault(vault_url, namespace, policy_path, postgres_url, postg
         "GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO \"{{name}}\";"
     )
     revocation_statements = [
-        (
-            "SELECT 'ALTER SEQUENCE ' || quote_ident(sequence_name) || "
-            "' OWNER TO postgres;' "
-            "FROM information_schema.sequences "
-            "WHERE sequence_schema = 'public';"
-        ),
-        (
-            "SELECT 'ALTER TABLE ' || quote_ident(table_name) || "
-            "' OWNER TO postgres;' "
-            "FROM information_schema.tables "
-            "WHERE table_schema = 'public';"
-        )
+        "ALTER SEQUENCE public.users_id_seq OWNER TO postgres;",
+        "ALTER SEQUENCE public.users_requests_id_seq OWNER TO postgres;",
+        "ALTER SEQUENCE public.messages_id_seq OWNER TO postgres;",
+        "ALTER SEQUENCE public.queue_id_seq OWNER TO postgres;",
+        "ALTER SEQUENCE public.processed_id_seq OWNER TO postgres;",
+        "ALTER SEQUENCE public.migrations_id_seq OWNER TO postgres;",
+        "ALTER TABLE public.users OWNER TO postgres;",
+        "ALTER TABLE public.users_requests OWNER TO postgres;",
+        "ALTER TABLE public.messages OWNER TO postgres;",
+        "ALTER TABLE public.queue OWNER TO postgres;",
+        "ALTER TABLE public.processed OWNER TO postgres;",
+        "ALTER TABLE public.migrations OWNER TO postgres;"   
     ]
     role = client.secrets.database.create_role(
         name="pytest",
