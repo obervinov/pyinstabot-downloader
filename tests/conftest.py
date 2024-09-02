@@ -203,12 +203,6 @@ def fixture_prepare_vault(vault_url, namespace, policy_path, postgres_url, postg
         "GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO \"{{name}}\";"
     )
     revocation_statements = [
-        "ALTER SEQUENCE public.users_id_seq OWNER TO postgres;",
-        "ALTER SEQUENCE public.users_requests_id_seq OWNER TO postgres;",
-        "ALTER SEQUENCE public.messages_id_seq OWNER TO postgres;",
-        "ALTER SEQUENCE public.queue_id_seq OWNER TO postgres;",
-        "ALTER SEQUENCE public.processed_id_seq OWNER TO postgres;",
-        "ALTER SEQUENCE public.migrations_id_seq OWNER TO postgres;",
         "ALTER TABLE public.users OWNER TO postgres;",
         "ALTER TABLE public.users_requests OWNER TO postgres;",
         "ALTER TABLE public.messages OWNER TO postgres;",
