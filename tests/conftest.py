@@ -205,12 +205,14 @@ def fixture_prepare_vault(vault_url, namespace, policy_path, postgres_url, postg
     revocation_statements = [
         (
             "SELECT 'ALTER SEQUENCE ' || quote_ident(sequence_name) || "
-            "' OWNER TO postgres;' FROM information_schema.sequences "
+            "' OWNER TO postgres;' "
+            "FROM information_schema.sequences "
             "WHERE sequence_schema = 'public';"
         ),
         (
             "SELECT 'ALTER TABLE ' || quote_ident(table_name) || "
-            "' OWNER TO postgres;' FROM information_schema.tables "
+            "' OWNER TO postgres;' "
+            "FROM information_schema.tables "
             "WHERE table_schema = 'public';"
         )
     ]
