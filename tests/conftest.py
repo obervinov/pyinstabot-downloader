@@ -270,7 +270,7 @@ def fixture_vault_instance(vault_url, namespace, prepare_vault):
 
 
 @pytest.fixture(name="vault_configuration_data", scope='session')
-def fixture_vault_configuration_data(vault_instance):
+def fixture_vault_configuration_data(vault_instance, namespace):
     """
     This function sets up a database configuration in the vault_instance object.
 
@@ -280,7 +280,7 @@ def fixture_vault_configuration_data(vault_instance):
     database = {
         'host': '0.0.0.0',
         'port': '5432',
-        'database': 'postgres',
+        'database': namespace,
         'connections': '10'
     }
     for key, value in database.items():
