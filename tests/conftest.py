@@ -7,6 +7,7 @@ import requests
 import pytest
 import hvac
 import psycopg2
+from psycopg2 import sql
 # pylint: disable=E0401
 from vault import VaultClient
 
@@ -97,27 +98,61 @@ def fixture_postgres_url():
 
 
 @pytest.fixture(name="postgres_instance", scope='session')
-def fixture_postgres_instance(psql_tables_path):
+def fixture_postgres_instance(psql_tables_path, namespace):
     """
-    Prepare the postgres database, return the connection and cursor
+    Prepare the postgres database for tests, return the connection and cursor.
 
     Returns:
         tuple: The connection and cursor objects for the postgres database.
     """
-    # Prepare database for tests
-    psql_connection = psycopg2.connect(
+    pytest_db_name = namespace
+    original_db_name = "postgres"
+
+    # Connect to the default 'postgres' database to create a new test database
+    connection = psycopg2.connect(
         host='0.0.0.0',
         port=5432,
         user='postgres',
         password='postgres',
-        dbname='postgres'
+        dbname=original_db_name
     )
-    psql_cursor = psql_connection.cursor()
+    connection.autocommit = True
+    cursor = connection.cursor()
+
+    try:
+        # Create a new pytest database
+        cursor.execute(sql.SQL("CREATE DATABASE {}").format(
+            sql.Identifier(pytest_db_name)
+        ))
+    except psycopg2.errors.DuplicateDatabase:
+        print(f"Database {pytest_db_name} already exists.")
+    except Exception as error:
+        print(f"Failed to create database {pytest_db_name}: {error}")
+        raise
+    finally:
+        cursor.close()
+        connection.close()
+
+    # Connect to the newly created test database
+    pytest_connection = psycopg2.connect(
+        host='0.0.0.0',
+        port=5432,
+        user='postgres',
+        password='postgres',
+        dbname=pytest_db_name
+    )
+    pytest_cursor = pytest_connection.cursor()
+
+    # Execute the SQL script to create tables
     with open(psql_tables_path, 'r', encoding='utf-8') as sql_file:
         sql_script = sql_file.read()
-        psql_cursor.execute(sql_script)
-        psql_connection.commit()
-    return psql_connection, psql_cursor
+        pytest_cursor.execute(sql_script)
+        pytest_connection.commit()
+
+    yield pytest_connection, pytest_cursor
+
+    pytest_cursor.close()
+    pytest_connection.close()
 
 
 @pytest.fixture(name="prepare_vault", scope='session')
@@ -166,7 +201,7 @@ def fixture_prepare_vault(vault_url, namespace, policy_path, postgres_url, postg
         token_type='service',
         secret_id_num_uses=0,
         token_num_uses=0,
-        token_ttl='15s',
+        token_ttl='360s',
         bind_secret_id=True,
         token_no_default_policy=True,
         mount_point=namespace
@@ -194,6 +229,7 @@ def fixture_prepare_vault(vault_url, namespace, policy_path, postgres_url, postg
     # Create role for the database
     statement = [
         "CREATE ROLE \"{{name}}\" WITH LOGIN PASSWORD '{{password}}' VALID UNTIL '{{expiration}}';",
+        f"ALTER DATABASE {namespace} OWNER TO \"{{name}}\";",
         "ALTER TABLE public.users OWNER TO \"{{name}}\";",
         "ALTER TABLE public.users_requests OWNER TO \"{{name}}\";",
         "ALTER TABLE public.queue OWNER TO \"{{name}}\";",
@@ -203,6 +239,7 @@ def fixture_prepare_vault(vault_url, namespace, policy_path, postgres_url, postg
         "GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO \"{{name}}\";"
     ]
     revocation_statements = [
+        f"ALTER DATABASE {namespace} OWNER TO postgres;",
         "ALTER TABLE public.users OWNER TO postgres;",
         "ALTER TABLE public.users_requests OWNER TO postgres;",
         "ALTER TABLE public.messages OWNER TO postgres;",
@@ -212,7 +249,7 @@ def fixture_prepare_vault(vault_url, namespace, policy_path, postgres_url, postg
     ]
     role = client.secrets.database.create_role(
         name="pytest",
-        db_name="postgresql",
+        db_name=namespace,
         creation_statements=statement,
         revocation_statements=revocation_statements,
         default_ttl="1h",
