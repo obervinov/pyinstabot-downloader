@@ -124,8 +124,6 @@ def fixture_postgres_instance(psql_tables_path, namespace):
         cursor.execute(sql.SQL("CREATE DATABASE {}").format(
             sql.Identifier(pytest_db_name)
         ))
-    except psycopg2.errors.DuplicateDatabase:
-        print(f"Database {pytest_db_name} already exists.")
     except Exception as error:
         print(f"Failed to create database {pytest_db_name}: {error}")
         raise
