@@ -95,7 +95,7 @@ def fixture_postgres_url(namespace):
         str: The postgres url.
     """
     database_name = namespace
-    return f"postgresql://{{username}}:{{password}}@postgres:5432/{database_name}?sslmode=disable"
+    return ("postgresql://{{username}}:{{password}}@postgres:5432/%s?sslmode=disable", database_name)
 
 
 @pytest.fixture(name="postgres_instance", scope='session')
@@ -164,7 +164,6 @@ def fixture_prepare_vault(vault_url, namespace, policy_path, postgres_url, postg
     """
     # Wait for the postgres database to be ready
     _ = postgres_instance
-    database_name = namespace
 
     # Initialize the vault
     client = hvac.Client(url=vault_url)
