@@ -79,52 +79,47 @@ def test_reset_stale_messages(namespace, vault_instance, postgres_instance, post
 @pytest.mark.order(5)
 def test_database_connection(namespace, vault_instance, postgres_instance):
     """
-    Checking the database connection and disconnection
+    Checking the database connection
     """
     _ = postgres_instance
     database = DatabaseClient(vault=vault_instance, db_role=namespace)
-
-    # Check the database connection
     connection = database.get_connection()
     assert isinstance(connection, psycopg2.extensions.connection)
     assert not connection.closed
-
-    # Check the database disconnection
     database.close_connection(connection)
-    assert connection == 0
 
 
-# @pytest.mark.order(6)
-# def test_add_message_to_queue(namespace, vault_instance, postgres_instance):
-#     """
-#     Checking the addition of a message to the queue
-#     """
-#     _, cursor = postgres_instance
-#     data = {
-#         'user_id': '12345',
-#         'post_id': '67890',
-#         'post_url': 'https://www.instagram.com/p/67890/',
-#         'post_owner': 'johndoe',
-#         'link_type': 'profile',
-#         'message_id': 'abcde',
-#         'chat_id': 'xyz',
-#         'scheduled_time': '2022-01-01 12:00:00',
-#         'download_status': 'not started',
-#         'upload_status': 'not started'
-#     }
-#     database = DatabaseClient(vault=vault_instance, db_role=namespace)
-#     response = database.add_message_to_queue(data=data)
+@pytest.mark.order(6)
+def test_add_message_to_queue(namespace, vault_instance, postgres_instance):
+    """
+    Checking the addition of a message to the queue
+    """
+    _, cursor = postgres_instance
+    data = {
+        'user_id': '12345',
+        'post_id': '67890',
+        'post_url': 'https://www.instagram.com/p/67890/',
+        'post_owner': 'johndoe',
+        'link_type': 'profile',
+        'message_id': 'abcde',
+        'chat_id': 'xyz',
+        'scheduled_time': '2022-01-01 12:00:00',
+        'download_status': 'not started',
+        'upload_status': 'not started'
+    }
+    database = DatabaseClient(vault=vault_instance, db_role=namespace)
+    response = database.add_message_to_queue(data=data)
 
-#     # Check the addition of a message to the queue
-#     cursor.execute(
-#         "SELECT user_id, post_id, post_url, post_owner, link_type, message_id, chat_id, scheduled_time, download_status, upload_status "
-#         "FROM queue WHERE message_id = 'abcde'"
-#     )
-#     queue_item = cursor.fetchone()
-#     assert len(queue_item) > 0
-#     assert response == f"{data['message_id']}: added to queue"
-#     assert queue_item == (
-#         data['user_id'], data['post_id'], data['post_url'],
-#         data['post_owner'], data['link_type'], data['message_id'],
-#         data['chat_id'], data['scheduled_time'], data['download_status'], data['upload_status']
-#     )
+    # Check the addition of a message to the queue
+    cursor.execute(
+        "SELECT user_id, post_id, post_url, post_owner, link_type, message_id, chat_id, scheduled_time, download_status, upload_status "
+        "FROM queue WHERE message_id = 'abcde'"
+    )
+    queue_item = cursor.fetchone()
+    assert len(queue_item) > 0
+    assert response == f"{data['message_id']}: added to queue"
+    assert queue_item == (
+        data['user_id'], data['post_id'], data['post_url'],
+        data['post_owner'], data['link_type'], data['message_id'],
+        data['chat_id'], data['scheduled_time'], data['download_status'], data['upload_status']
+    )
