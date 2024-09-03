@@ -91,7 +91,7 @@ def test_database_connection(namespace, vault_instance, postgres_instance):
 
     # Check the database disconnection
     database.close_connection(connection)
-    assert connection.closed
+    assert connection == 0
 
 
 # @pytest.mark.order(6)
