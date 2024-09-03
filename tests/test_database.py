@@ -7,6 +7,7 @@ import sys
 import json
 import importlib
 import pytest
+from datetime import datetime
 import psycopg2
 from psycopg2 import pool
 from src.modules.database import DatabaseClient
@@ -121,5 +122,5 @@ def test_add_message_to_queue(namespace, vault_instance, postgres_instance):
     assert queue_item == (
         data['user_id'], data['post_id'], data['post_url'],
         data['post_owner'], data['link_type'], data['message_id'],
-        data['chat_id'], data['scheduled_time'], data['download_status'], data['upload_status']
+        data['chat_id'], datetime.strptime(data['scheduled_time'], '%Y-%m-%d %H:%M:%S'), data['download_status'], data['upload_status']
     )
