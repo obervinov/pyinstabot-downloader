@@ -87,14 +87,15 @@ def fixture_psql_tables_path():
 
 
 @pytest.fixture(name="postgres_url", scope='session')
-def fixture_postgres_url():
+def fixture_postgres_url(namespace):
     """
     Returns the postgres url for the tests
 
     Returns:
         str: The postgres url.
     """
-    return "postgresql://{{username}}:{{password}}@postgres:5432/postgres?sslmode=disable"
+    database_name = namespace
+    return f"postgresql://{{username}}:{{password}}@postgres:5432/{database_name}?sslmode=disable"
 
 
 @pytest.fixture(name="postgres_instance", scope='session')
@@ -163,6 +164,7 @@ def fixture_prepare_vault(vault_url, namespace, policy_path, postgres_url, postg
     """
     # Wait for the postgres database to be ready
     _ = postgres_instance
+    database_name = namespace
 
     # Initialize the vault
     client = hvac.Client(url=vault_url)
@@ -227,29 +229,14 @@ def fixture_prepare_vault(vault_url, namespace, policy_path, postgres_url, postg
     # Create role for the database
     statement = [
         "CREATE ROLE \"{{name}}\" WITH LOGIN PASSWORD '{{password}}' VALID UNTIL '{{expiration}}';",
-        f"ALTER DATABASE {namespace} OWNER TO \"{{name}}\";",
-        "ALTER TABLE public.users OWNER TO \"{{name}}\";",
-        "ALTER TABLE public.users_requests OWNER TO \"{{name}}\";",
-        "ALTER TABLE public.queue OWNER TO \"{{name}}\";",
-        "ALTER TABLE public.processed OWNER TO \"{{name}}\";",
-        "ALTER TABLE public.migrations OWNER TO \"{{name}}\";",
-        "ALTER TABLE public.messages OWNER TO \"{{name}}\";",
+        "GRANT ALL PRIVILEGES ON SCHEMA public TO \"{{name}}\";",
+        "GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO \"{{name}}\";",
         "GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO \"{{name}}\";"
-    ]
-    revocation_statements = [
-        f"ALTER DATABASE {namespace} OWNER TO postgres;",
-        "ALTER TABLE public.users OWNER TO postgres;",
-        "ALTER TABLE public.users_requests OWNER TO postgres;",
-        "ALTER TABLE public.messages OWNER TO postgres;",
-        "ALTER TABLE public.queue OWNER TO postgres;",
-        "ALTER TABLE public.processed OWNER TO postgres;",
-        "ALTER TABLE public.migrations OWNER TO postgres;"
     ]
     role = client.secrets.database.create_role(
         name="pytest",
-        db_name=namespace,
+        db_name="postgresql",
         creation_statements=statement,
-        revocation_statements=revocation_statements,
         default_ttl="1h",
         max_ttl="24h"
     )
