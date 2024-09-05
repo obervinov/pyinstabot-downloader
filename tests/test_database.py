@@ -122,7 +122,7 @@ def test_messages_queue(namespace, vault_instance):
     queue_item['link_type'] = queue_message[5]
     queue_item['message_id'] = queue_message[6]
     queue_item['chat_id'] = queue_message[7]
-    queue_item['scheduled_time'] = queue_message[8]
+    queue_item['scheduled_time'] = datetime.strftime(queue_message[8], '%Y-%m-%d %H:%M:%S')
     queue_item['download_status'] = queue_message[9]
     queue_item['upload_status'] = queue_message[10]
     assert status == f"{data['message_id']}: added to queue"
@@ -230,7 +230,7 @@ def test_get_user_queue(namespace, vault_instance):
             'link_type': 'post',
             'message_id': '111111',
             'chat_id': 'xyz',
-            'scheduled_time': '2022-01-01 12:00:00',
+            'scheduled_time': datetime.now() + datetime.timedelta(hours=1),
             'download_status': 'not started',
             'upload_status': 'not started'
         },
@@ -242,7 +242,7 @@ def test_get_user_queue(namespace, vault_instance):
             'link_type': 'post',
             'message_id': '222222',
             'chat_id': 'xyz',
-            'scheduled_time': '2022-01-01 12:00:00',
+            'scheduled_time': datetime.now() - datetime.timedelta(hours=2),
             'download_status': 'not started',
             'upload_status': 'not started'
         },
@@ -254,7 +254,7 @@ def test_get_user_queue(namespace, vault_instance):
             'link_type': 'post',
             'message_id': '333333',
             'chat_id': 'xyz',
-            'scheduled_time': '2022-01-02 13:00:00',
+            'scheduled_time': datetime.now() + datetime.timedelta(hours=3),
             'download_status': 'not started',
             'upload_status': 'not started'
         }
