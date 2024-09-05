@@ -64,7 +64,6 @@ class DatabaseClient:
         get_user_processed(user_id): Get last ten messages from the processed table for the specified user.
         check_message_uniqueness(post_id, user_id): Check if a message with the given post ID and chat ID already exists in the queue.
         keep_message(message_id, chat_id, message_content, **kwargs): Add a message to the messages table in the database.
-        add_user(user_id, chat_id): Add a user to the users table in the database.
         get_users(): Get a list of all users in the database.
         get_considered_message(message_type, chat_id): Get a message with specified type and
 
@@ -672,7 +671,7 @@ class DatabaseClient:
             columns=("post_id", "timestamp", "state"),
             condition=f"user_id = '{user_id}'",
             order_by='timestamp ASC',
-            limit=5000
+            limit=10000
         )
         for message in processed:
             if user_id not in result:
@@ -780,6 +779,7 @@ class DatabaseClient:
                 condition=f"id = '{check_exist_message_type[0][0]}'"
             )
             response = f"{message_id} updated"
+
         elif not check_exist_message_type:
             self._insert(
                 table_name='messages',
@@ -787,51 +787,20 @@ class DatabaseClient:
                 values=(message_id, chat_id, message_type, message_content_hash, 'bot')
             )
             response = f"{message_id} kept"
+
         else:
             log.warning('[Database]: Message with ID %s already exists in the messages table and cannot be updated', message_id)
             response = f"{message_id} already exists"
+
         return response
-
-    def add_user(
-        self,
-        user_id: str = None,
-        chat_id: str = None
-    ) -> str:
-        """
-        Add a user to the users table in the database.
-        It is used to store the user ID and chat ID for sending messages to the user.
-
-        Args:
-            user_id (str): The ID of the user.
-            chat_id (str): The ID of the chat.
-
-        Returns:
-            str: A message indicating that the user was added to the users table or that the user already exists.
-
-        Examples:
-            >>> add_user(user_id='12345', chat_id='67890')
-            '12345 added'
-                or
-            '12345 already exists'
-        """
-        exist_user = self._select(table_name='users', columns=("user_id",), condition=f"user_id = '{user_id}'")
-        if exist_user:
-            result = f"{user_id} already exists"
-        else:
-            self._insert(
-                table_name='users',
-                columns=("chat_id", "user_id"),
-                values=(chat_id, user_id)
-            )
-            result = f"{user_id} added"
-        return result
 
     def get_users(self) -> list:
         """
+        This method will be deprecated after https://github.com/obervinov/users-package/issues/44 (users-package:v3.1.0).
         Get a list of all users in the database.
 
         Returns:
-            list: A list of all users from the messages table.
+            list: A list of all users from the users table.
 
         Examples:
             >>> get_users()

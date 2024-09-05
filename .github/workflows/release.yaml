@@ -10,7 +10,7 @@ on:
 
 jobs:
   create-release:
-    uses: obervinov/_templates/.github/workflows/release.yaml@fix/v1.2.9
+    uses: obervinov/_templates/.github/workflows/release.yaml@v1.2.9
 
   cleanup-untagged-images:
     runs-on: ubuntu-latest
@@ -26,5 +26,5 @@ jobs:
           owner_type: 'user'
 
   # milestone:
-  #   uses: obervinov/_templates/.github/workflows/milestone.yaml@fix/v1.2.9
+  #   uses: obervinov/_templates/.github/workflows/milestone.yaml@v1.2.9
   #   needs: [create-release]
