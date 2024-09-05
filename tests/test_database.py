@@ -12,7 +12,7 @@ import pytest
 import psycopg2
 from psycopg2 import pool
 from src.modules.database import DatabaseClient
-from src.modules.tools import get_hash 
+from src.modules.tools import get_hash
 
 
 # pylint: disable=too-many-locals
@@ -333,11 +333,10 @@ def test_check_message_uniqueness(namespace, vault_instance):
 
 
 @pytest.mark.order(12)
-def test_service_messages(namespace, vault_instance, postgres_instance):
+def test_service_messages(namespace, vault_instance):
     """
-    Checking 
+    Checking the registration of service messages
     """
-    _, cursor = postgres_instance
     data = {
         'message_id': '444444',
         'chat_id': 'xyz',
