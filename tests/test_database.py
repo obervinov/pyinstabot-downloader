@@ -221,6 +221,7 @@ def test_get_user_queue(namespace, vault_instance):
     Checking the extraction of the user queue
     """
     user_id = '111111'
+    timestamp = datetime.now()
     data = [
         {
             'user_id': user_id,
@@ -230,7 +231,7 @@ def test_get_user_queue(namespace, vault_instance):
             'link_type': 'post',
             'message_id': '111111',
             'chat_id': 'xyz',
-            'scheduled_time': datetime.now() + timedelta(hours=1),
+            'scheduled_time': timestamp + timedelta(hours=1),
             'download_status': 'not started',
             'upload_status': 'not started'
         },
@@ -242,7 +243,7 @@ def test_get_user_queue(namespace, vault_instance):
             'link_type': 'post',
             'message_id': '222222',
             'chat_id': 'xyz',
-            'scheduled_time': datetime.now() - timedelta(hours=2),
+            'scheduled_time': timestamp - timedelta(hours=2),
             'download_status': 'not started',
             'upload_status': 'not started'
         },
@@ -254,7 +255,7 @@ def test_get_user_queue(namespace, vault_instance):
             'link_type': 'post',
             'message_id': '333333',
             'chat_id': 'xyz',
-            'scheduled_time': datetime.now() + timedelta(hours=3),
+            'scheduled_time': timestamp + timedelta(hours=3),
             'download_status': 'not started',
             'upload_status': 'not started'
         }
@@ -352,7 +353,7 @@ def test_service_messages(namespace, vault_instance):
     assert new_message[0] == data['message_id']
     assert new_message[1] == data['chat_id']
     assert new_message[4] == get_hash(data['message_content'])
-    assert new_message[5] == 'updated'
+    assert new_message[5] == 'added'
 
     # Update exist message
     data['message_content'] = 'Updated message'
