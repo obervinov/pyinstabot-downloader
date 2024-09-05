@@ -6,7 +6,7 @@ import os
 import sys
 import json
 import importlib
-from datetime import datetime
+from datetime import datetime, timedelta
 from collections import defaultdict
 import pytest
 import psycopg2
@@ -100,7 +100,7 @@ def test_messages_queue(namespace, vault_instance):
     data = {
         'user_id': '12345',
         'post_id': 'qwerty123',
-        'post_url': 'https://www.instagram.com/p/qwerty123/',
+        'post_url': 'https://www.example.com/p/qwerty123/',
         'post_owner': 'johndoe',
         'link_type': 'post',
         'message_id': '111111',
@@ -138,7 +138,7 @@ def test_change_message_state_in_queue(namespace, vault_instance, postgres_insta
     data = {
         'user_id': '12345',
         'post_id': 'qwerty456',
-        'post_url': 'https://www.instagram.com/p/qwerty456/',
+        'post_url': 'https://www.example.com/p/qwerty456/',
         'post_owner': 'johndoe',
         'link_type': 'post',
         'message_id': '222222',
@@ -188,7 +188,7 @@ def test_change_message_schedule_time_in_queue(namespace, vault_instance, postgr
     data = {
         'user_id': '12345',
         'post_id': 'qwerty789',
-        'post_url': 'https://www.instagram.com/p/qwerty789/',
+        'post_url': 'https://www.example.com/p/qwerty789/',
         'post_owner': 'johndoe',
         'link_type': 'post',
         'message_id': '333333',
@@ -225,36 +225,36 @@ def test_get_user_queue(namespace, vault_instance):
         {
             'user_id': user_id,
             'post_id': 'qwerty123',
-            'post_url': 'https://www.instagram.com/p/qwerty123/',
+            'post_url': 'https://www.example.com/p/qwerty123/',
             'post_owner': 'johndoe',
             'link_type': 'post',
             'message_id': '111111',
             'chat_id': 'xyz',
-            'scheduled_time': datetime.now() + datetime.timedelta(hours=1),
+            'scheduled_time': datetime.now() + timedelta(hours=1),
             'download_status': 'not started',
             'upload_status': 'not started'
         },
         {
             'user_id': user_id,
             'post_id': 'qwerty456',
-            'post_url': 'https://www.instagram.com/p/qwerty456/',
+            'post_url': 'https://www.example.com/p/qwerty456/',
             'post_owner': 'johndoe',
             'link_type': 'post',
             'message_id': '222222',
             'chat_id': 'xyz',
-            'scheduled_time': datetime.now() - datetime.timedelta(hours=2),
+            'scheduled_time': datetime.now() - timedelta(hours=2),
             'download_status': 'not started',
             'upload_status': 'not started'
         },
         {
             'user_id': user_id,
             'post_id': 'qwerty789',
-            'post_url': 'https://www.instagram.com/p/qwerty789/',
+            'post_url': 'https://www.example.com/p/qwerty789/',
             'post_owner': 'johndoe',
             'link_type': 'post',
             'message_id': '333333',
             'chat_id': 'xyz',
-            'scheduled_time': datetime.now() + datetime.timedelta(hours=3),
+            'scheduled_time': datetime.now() + timedelta(hours=3),
             'download_status': 'not started',
             'upload_status': 'not started'
         }
@@ -311,7 +311,7 @@ def test_check_message_uniqueness(namespace, vault_instance):
     data = {
         'user_id': '123456',
         'post_id': 'qwerty1111',
-        'post_url': 'https://www.instagram.com/p/qwerty789/',
+        'post_url': 'https://www.example.com/p/qwerty789/',
         'post_owner': 'johndoe',
         'link_type': 'post',
         'message_id': '333333',
@@ -321,14 +321,13 @@ def test_check_message_uniqueness(namespace, vault_instance):
         'upload_status': 'not started'
     }
     database = DatabaseClient(vault=vault_instance, db_role=namespace)
-    uniqueness = database.check_message_uniqueness(post_id=data['post_id'])
+
+    uniqueness = database.check_message_uniqueness(post_id=data['post_id'], user_id=data['user_id'])
     assert uniqueness is True
 
     status = database.add_message_to_queue(data=data)
     assert status == f"{data['message_id']}: added to queue"
-
-    _ = database.add_message_to_queue(data=data)
-    uniqueness = database.check_message_uniqueness(post_id=data['post_id'])
+    uniqueness = database.check_message_uniqueness(post_id=data['post_id'], user_id=data['user_id'])
     assert uniqueness is False
 
 

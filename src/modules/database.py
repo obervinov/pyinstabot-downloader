@@ -432,7 +432,7 @@ class DatabaseClient:
             >>> data = {
             ...     'user_id': '12345',
             ...     'post_id': '67890',
-            ...     'post_url': 'https://www.instagram.com/p/67890/',
+            ...     'post_url': 'https://www.example.com/p/67890/',
             ...     'post_owner': 'johndoe',
             ...     'link_type': 'profile',
             ...     'message_id': 'abcde',
@@ -489,7 +489,7 @@ class DatabaseClient:
 
         Examples:
             >>> database.get_message_from_queue('2022-01-01 12:00:00')
-            (1, '123456789', 'vahj5AN8aek', 'https://www.instagram.com/p/vahj5AN8aek', 'johndoe', 'post', '12345', '12346', '123456789',
+            (1, '123456789', 'vahj5AN8aek', 'https://www.example.com/p/vahj5AN8aek', 'johndoe', 'post', '12345', '12346', '123456789',
             datetime.datetime(2023, 11, 14, 21, 21, 22, 603440), 'None', 'None', datetime.datetime(2023, 11, 14, 21, 14, 26, 680024), 'waiting')
         """
         message = self._select(
