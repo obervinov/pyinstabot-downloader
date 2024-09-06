@@ -641,10 +641,11 @@ class DatabaseClient:
             order_by='scheduled_time ASC',
             limit=10000
         )
-        for message in queue:
-            if user_id not in result:
-                result[user_id] = []
-            result[user_id].append({'post_id': message[0], 'scheduled_time': message[1]})
+        if queue:
+            for message in queue:
+                if user_id not in result:
+                    result[user_id] = []
+                result[user_id].append({'post_id': message[0], 'scheduled_time': message[1]})
         return result if result else None
 
     def get_user_processed(
