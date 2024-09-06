@@ -152,14 +152,14 @@ def test_change_message_state_in_queue(namespace, vault_instance, postgres_insta
     assert status == f"{data['message_id']}: added to queue"
 
     # Check the change of the message state in the queue
-    status = database.update_message_state_in_queue(
+    updated_status = database.update_message_state_in_queue(
         message_id=data['message_id'],
-        state='downloaded',
+        state='processed',
         download_status='completed',
         upload_status='completed',
         post_owner='johndoe'
     )
-    assert status == f"{data['message_id']}: processed"
+    assert updated_status == f"{data['message_id']}: processed"
 
     # Check records in database
     cursor.execute(f"SELECT post_id FROM queue WHERE post_id = '{data['post_id']}'")
@@ -224,7 +224,7 @@ def test_get_user_queue(namespace, vault_instance):
             'post_url': 'https://www.example.com/p/qwerty123/',
             'post_owner': 'johndoe',
             'link_type': 'post',
-            'message_id': '111111',
+            'message_id': 'qwerty123',
             'chat_id': 'xyz',
             'scheduled_time': timestamp + timedelta(hours=1),
             'download_status': 'not started',
@@ -236,7 +236,7 @@ def test_get_user_queue(namespace, vault_instance):
             'post_url': 'https://www.example.com/p/qwerty456/',
             'post_owner': 'johndoe',
             'link_type': 'post',
-            'message_id': '222222',
+            'message_id': 'qwerty456',
             'chat_id': 'xyz',
             'scheduled_time': timestamp - timedelta(hours=2),
             'download_status': 'not started',
@@ -248,7 +248,7 @@ def test_get_user_queue(namespace, vault_instance):
             'post_url': 'https://www.example.com/p/qwerty789/',
             'post_owner': 'johndoe',
             'link_type': 'post',
-            'message_id': '333333',
+            'message_id': 'qwerty789',
             'chat_id': 'xyz',
             'scheduled_time': timestamp + timedelta(hours=3),
             'download_status': 'not started',
@@ -268,7 +268,8 @@ def test_get_user_queue(namespace, vault_instance):
             'post_id': entry['post_id'],
             'scheduled_time': entry['scheduled_time']
         })
-    expected_response = dict(expected_response)
+    for user_id, posts in expected_response.items():
+        expected_response[user_id] = sorted(posts, key=lambda x: x['scheduled_time'])
     assert user_queue is not None
     assert len(user_queue.get(user_id, [])) == len(data)
     assert user_queue == expected_response
