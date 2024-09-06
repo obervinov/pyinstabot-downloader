@@ -153,11 +153,11 @@ def test_change_message_state_in_queue(namespace, vault_instance, postgres_insta
 
     # Check the change of the message state in the queue
     updated_status = database.update_message_state_in_queue(
-        message_id=data['message_id'],
+        post_id=data['post_id'],
         state='processed',
         download_status='completed',
         upload_status='completed',
-        post_owner='johndoe'
+        post_owner=data['post_owner']
     )
     assert updated_status == f"{data['message_id']}: processed"
 
@@ -365,7 +365,7 @@ def test_service_messages(namespace, vault_instance):
 
     # Recreate exist message
     data['message_content'] = 'Recreated message'
-    status = database.keep_message(**data, recreate=True)
+    status = database.keep_message(**data, recreated=True)
     assert status == f"{data['message_id']} recreated"
     recreated_message = database.get_considered_message(message_type=data['message_type'], chat_id=data['chat_id'])
     assert recreated_message[0] == data['message_id']
