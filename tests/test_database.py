@@ -137,8 +137,8 @@ def test_change_message_state_in_queue(namespace, vault_instance, postgres_insta
     _, cursor = postgres_instance
     data = {
         'user_id': '12345',
-        'post_id': 'qwerty456',
-        'post_url': 'https://www.example.com/p/qwerty456/',
+        'post_id': 'qwerty222',
+        'post_url': 'https://www.example.com/p/qwerty222/',
         'post_owner': 'johndoe',
         'link_type': 'post',
         'message_id': '222222',
@@ -148,13 +148,8 @@ def test_change_message_state_in_queue(namespace, vault_instance, postgres_insta
         'upload_status': 'not started'
     }
     database = DatabaseClient(vault=vault_instance, db_role=namespace)
-    database.update_message_state_in_queue(
-        post_id='qwerty456',
-        state='processed',
-        download_status='completed',
-        upload_status='completed',
-        post_owner='johndoe'
-    )
+    status = database.add_message_to_queue(data=data)
+    assert status == f"{data['message_id']}: added to queue"
 
     # Check the change of the message state in the queue
     status = database.update_message_state_in_queue(
@@ -167,13 +162,13 @@ def test_change_message_state_in_queue(namespace, vault_instance, postgres_insta
     assert status == f"{data['message_id']}: processed"
 
     # Check records in database
-    cursor.execute("SELECT post_id FROM queue WHERE post_id = 'qwerty456'")
+    cursor.execute(f"SELECT post_id FROM queue WHERE post_id = '{data['post_id']}'")
     record_queue = cursor.fetchall()
     assert record_queue is None
-    cursor.execute("SELECT post_id, state, upload_status, download_status  FROM processed WHERE post_id = 'qwerty456'")
+    cursor.execute(f"SELECT post_id, state, upload_status, download_status  FROM processed WHERE post_id = '{data['post_id']}'")
     record_processed = cursor.fetchall()
     assert record_processed is not None
-    assert record_processed[0][0] == 'qwerty456'
+    assert record_processed[0][0] == data['post_id']
     assert record_processed[0][1] == 'processed'
     assert record_processed[0][2] == 'completed'
     assert record_processed[0][3] == 'completed'
