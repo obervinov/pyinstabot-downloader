@@ -103,7 +103,7 @@ def test_messages_queue(namespace, vault_instance):
         'post_url': 'https://www.example.com/p/qwerty123/',
         'post_owner': 'johndoe',
         'link_type': 'post',
-        'message_id': '111111',
+        'message_id': 'qwerty123',
         'chat_id': 'xyz',
         'scheduled_time': '2022-01-01 12:00:00',
         'download_status': 'not started',
@@ -164,10 +164,10 @@ def test_change_message_state_in_queue(namespace, vault_instance, postgres_insta
     # Check records in database
     cursor.execute(f"SELECT post_id FROM queue WHERE post_id = '{data['post_id']}'")
     record_queue = cursor.fetchall()
-    assert record_queue is None
+    assert record_queue == []
     cursor.execute(f"SELECT post_id, state, upload_status, download_status  FROM processed WHERE post_id = '{data['post_id']}'")
     record_processed = cursor.fetchall()
-    assert record_processed is not None
+    assert record_processed != []
     assert record_processed[0][0] == data['post_id']
     assert record_processed[0][1] == 'processed'
     assert record_processed[0][2] == 'completed'
