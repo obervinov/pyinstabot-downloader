@@ -10,6 +10,8 @@ import psycopg2
 from psycopg2 import sql
 # pylint: disable=E0401
 from vault import VaultClient
+from src.modules.database import DatabaseClient
+from src.modules.metrics import Metrics
 
 
 def pytest_configure(config):
@@ -338,6 +340,25 @@ def fixture_vault_configuration_data(vault_instance, namespace):
                 key=key,
                 value=value
             )
+
+
+@pytest.fixture(name="database_class", scope='session')
+def fixture_database_class(vault_instance, namespace):
+    """
+    Returns the database class
+
+    Returns:
+        object: The database class.
+    """
+    return DatabaseClient(vault=vault_instance, db_role=namespace)
+
+
+@pytest.fixture(name="metrics_class", scope='session')
+def fixture_metrics_class(vault_instance, database_class):
+    """
+    Returns the metrics class
+    """
+    return Metrics(port=8000, interval=1, metrics_prefix='pytest', vault=vault_instance, database=database_class)
 
 
 @pytest.fixture(name="postgres_messages_test_data", scope='session')
