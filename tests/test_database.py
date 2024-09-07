@@ -289,9 +289,15 @@ def test_get_user_processed_data(database_class):
     user_queue = database_class.get_user_queue(user_id=user_id)
     for item in mark_processed:
         if user_queue:
-            assert item not in user_queue.get(user_id, []).values()
+            for q_message in user_queue.get(user_id, []):
+                assert item != q_message['post_id']
         if user_processed:
-            assert item in user_processed.get(user_id, []).values()
+            found = False
+            for p_message in user_processed.get(user_id, []):
+                if item == p_message['post_id']:
+                    found = True
+            if not found:
+                assert False
         else:
             assert False
 

@@ -664,7 +664,7 @@ class DatabaseClient:
 
         Examples:
             >>> get_user_processed(user_id='12345')
-            {'12345': [{'post_id': '123456789', 'processed_time': '2022-01-01 12:00:00', 'state': 'completed'}]}
+            {'12345': [{'post_id': '123456789', 'timestamp': '2022-01-01 12:00:00', 'state': 'processed'}]}
         """
         result = {}
         processed = self._select(
