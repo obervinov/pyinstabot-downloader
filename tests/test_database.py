@@ -298,6 +298,8 @@ def test_get_user_processed_data(database_class):
             found = False
             if user_processed.get(user_id, []) == []:
                 assert False
+            else:
+                assert len(user_processed.get(user_id, [])) == len(mark_processed)
             for p_message in user_processed.get(user_id, []):
                 if item == p_message['post_id']:
                     found = True
