@@ -14,7 +14,6 @@ from src.modules.tools import get_hash
 from src.modules.database import DatabaseClient
 
 
-
 # pylint: disable=too-many-locals
 @pytest.mark.order(2)
 def test_init_database_client(vault_configuration_data, postgres_instance, database_class):
@@ -303,6 +302,7 @@ def test_get_user_processed_data(database_class):
                 if item == p_message['post_id']:
                     found = True
             if not found:
+                print(f"Message {item} not found in processed messages: {user_processed.get(user_id, [])}")
                 assert False
         else:
             assert False
