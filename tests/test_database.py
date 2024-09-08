@@ -98,11 +98,11 @@ def test_messages_queue(database_class):
     """
     data = {
         'user_id': '12345',
-        'post_id': 'qwerty123',
-        'post_url': 'https://www.example.com/p/qwerty123/',
+        'post_id': 'qwerty333',
+        'post_url': 'https://www.example.com/p/qwerty333/',
         'post_owner': 'johndoe',
         'link_type': 'post',
-        'message_id': 'qwerty123',
+        'message_id': 'qwerty333',
         'chat_id': 'xyz',
         'scheduled_time': '2022-01-01 12:00:00',
         'download_status': 'not started',
@@ -139,7 +139,7 @@ def test_change_message_state_in_queue(database_class, postgres_instance):
         'post_url': 'https://www.example.com/p/qwerty222/',
         'post_owner': 'johndoe',
         'link_type': 'post',
-        'message_id': '222222',
+        'message_id': 'qwerty222',
         'chat_id': 'xyz',
         'scheduled_time': '2022-01-01 12:00:00',
         'download_status': 'not started',
@@ -179,11 +179,11 @@ def test_change_message_schedule_time_in_queue(database_class, postgres_instance
     _, cursor = postgres_instance
     data = {
         'user_id': '12345',
-        'post_id': 'qwerty789',
-        'post_url': 'https://www.example.com/p/qwerty789/',
+        'post_id': 'qwerty444',
+        'post_url': 'https://www.example.com/p/qwerty444/',
         'post_owner': 'johndoe',
         'link_type': 'post',
-        'message_id': 'qwerty789',
+        'message_id': 'qwerty444',
         'chat_id': 'xyz',
         'scheduled_time': '2022-01-01 12:00:00',
         'download_status': 'not started',
@@ -194,7 +194,7 @@ def test_change_message_schedule_time_in_queue(database_class, postgres_instance
 
     # Check the change of the message schedule time in the queue
     status = database_class.update_schedule_time_in_queue(
-        post_id='qwerty789',
+        post_id='qwerty444',
         user_id='12345',
         scheduled_time='2022-01-02 13:00:00'
     )
@@ -321,7 +321,7 @@ def test_check_message_uniqueness(database_class):
     data = {
         'user_id': '123456',
         'post_id': 'qwerty1111',
-        'post_url': 'https://www.example.com/p/qwerty789/',
+        'post_url': 'https://www.example.com/p/qwerty1111/',
         'post_owner': 'johndoe',
         'link_type': 'post',
         'message_id': 'qwerty1111',
