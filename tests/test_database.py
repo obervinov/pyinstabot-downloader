@@ -201,7 +201,7 @@ def test_change_message_schedule_time_in_queue(database_class, postgres_instance
     assert status == f"{data['post_id']}: scheduled time updated"
 
     # Check records in database
-    cursor.execute("SELECT scheduled_time FROM queue WHERE post_id = 'qwerty789'")
+    cursor.execute("SELECT scheduled_time FROM queue WHERE post_id = 'qwerty444'")
     record_queue = cursor.fetchall()
     assert record_queue is not None
     assert record_queue[0][0] == datetime.strptime('2022-01-02 13:00:00', '%Y-%m-%d %H:%M:%S')

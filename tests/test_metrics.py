@@ -26,5 +26,5 @@ def test_metrics_users_stats(metrics_class):
     """
     Checking the collection of user statistics.
     """
-    response = requests.get(f"http://localhost:{metrics_class.port}/", timeout=10)
+    response = requests.get(f"http://0.0.0.0:{metrics_class.port}/", timeout=10)
     assert "pytest_thread_status" in response.text
