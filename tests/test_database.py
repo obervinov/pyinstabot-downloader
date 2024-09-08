@@ -11,6 +11,8 @@ import pytest
 import psycopg2
 from psycopg2 import pool
 from src.modules.tools import get_hash
+from src.modules.database import DatabaseClient
+
 
 
 # pylint: disable=too-many-locals
@@ -60,13 +62,15 @@ def test_init_database_client(vault_configuration_data, postgres_instance, datab
 
 
 @pytest.mark.order(4)
-def test_reset_stale_messages(postgres_instance, postgres_messages_test_data, database_class):
+def test_reset_stale_messages(postgres_instance, postgres_messages_test_data, vault_instance, namespace):
     """
     Checking the reset of stale messages when the database client is initialized
     """
     _, cursor = postgres_instance
     _ = postgres_messages_test_data
-    _ = database_class
+    # Reinitialize the database class for triggering the reset of stale messages
+    # Create new instance of the DatabaseClient class because private method _reset_stale_records() is launched only when the class is initialized
+    _ = DatabaseClient(vault=vault_instance, db_role=namespace)
 
     # Check the reset of stale messages
     cursor.execute("SELECT state FROM messages")

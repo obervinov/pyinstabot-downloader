@@ -11,7 +11,6 @@ def test_metrics_instance(metrics_class, database_class, vault_instance):
     Checking the creation of a metrics instance.
     """
     assert metrics_class.port == 8000
-    assert metrics_class.metrics_prefix == "pytest"
     assert metrics_class.interval == 1
     assert metrics_class.vault == vault_instance
     assert metrics_class.database == database_class
@@ -28,4 +27,4 @@ def test_metrics_users_stats(metrics_class):
     Checking the collection of user statistics.
     """
     response = requests.get(f"http://localhost:{metrics_class.port}/", timeout=10)
-    assert f"{metrics_class.metrics_prefix}_thread_status" in response.text
+    assert "pytest_thread_status" in response.text
