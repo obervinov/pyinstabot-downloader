@@ -287,6 +287,7 @@ def test_get_user_processed_data(database_class):
             upload_status='completed',
             post_owner='johndoe'
         )
+        print(status)
         assert status == f"{item}: processed"
     user_processed = database_class.get_user_processed(user_id=user_id)
     user_queue = database_class.get_user_queue(user_id=user_id)
