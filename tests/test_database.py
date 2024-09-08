@@ -276,7 +276,7 @@ def test_get_user_processed_data(database_class, postgres_instance):
     """
     Checking the extraction of the user processed data
     """
-    conn, cursor = postgres_instance
+    _, cursor = postgres_instance
     user_id = '111111'
     # Marked messages from previous tests
     mark_processed = ['qwerty123', 'qwerty456', 'qwerty789']
@@ -300,7 +300,7 @@ def test_get_user_processed_data(database_class, postgres_instance):
             if user_processed.get(user_id, []) == []:
                 assert False
             else:
-                items = cursor.select("SELECT * FROM processed")
+                items = cursor.execute("SELECT * FROM processed")
                 print(items.fetchall())
                 assert len(user_processed.get(user_id, [])) == len(mark_processed)
             for p_message in user_processed.get(user_id, []):
