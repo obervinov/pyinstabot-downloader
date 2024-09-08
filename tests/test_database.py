@@ -272,10 +272,11 @@ def test_get_user_queue(database_class):
 
 
 @pytest.mark.order(10)
-def test_get_user_processed_data(database_class):
+def test_get_user_processed_data(database_class, postgres_instance):
     """
     Checking the extraction of the user processed data
     """
+    conn, cursor = postgres_instance
     user_id = '111111'
     # Marked messages from previous tests
     mark_processed = ['qwerty123', 'qwerty456', 'qwerty789']
@@ -287,7 +288,6 @@ def test_get_user_processed_data(database_class):
             upload_status='completed',
             post_owner='johndoe'
         )
-        print(status)
         assert status == f"{item}: processed"
     user_processed = database_class.get_user_processed(user_id=user_id)
     user_queue = database_class.get_user_queue(user_id=user_id)
@@ -300,6 +300,8 @@ def test_get_user_processed_data(database_class):
             if user_processed.get(user_id, []) == []:
                 assert False
             else:
+                items = cursor.select("SELECT * FROM processed")
+                print(items.fetchall())
                 assert len(user_processed.get(user_id, [])) == len(mark_processed)
             for p_message in user_processed.get(user_id, []):
                 if item == p_message['post_id']:
