@@ -297,6 +297,8 @@ def test_get_user_processed_data(database_class):
                 assert item != q_message['post_id']
         if user_processed:
             found = False
+            if user_processed.get(user_id, []) == []:
+                assert False
             for p_message in user_processed.get(user_id, []):
                 if item == p_message['post_id']:
                     found = True
