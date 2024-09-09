@@ -674,10 +674,11 @@ class DatabaseClient:
             order_by='timestamp ASC',
             limit=10000
         )
-        for message in processed:
-            if user_id not in result:
-                result[user_id] = []
-            result[user_id].append({'post_id': message[0], 'timestamp': message[1], 'state': message[2]})
+        if processed:
+            for message in processed:
+                if user_id not in result:
+                    result[user_id] = []
+                result[user_id].append({'post_id': message[0], 'timestamp': message[1], 'state': message[2]})
         return result if result else None
 
     def check_message_uniqueness(

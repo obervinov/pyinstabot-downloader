@@ -470,7 +470,8 @@ def fixture_postgres_queue_test_data(postgres_instance):
     conn, cursor = postgres_instance
     for message in data:
         cursor.execute(
-            "INSERT INTO queue (user_id, post_id, post_url, post_owner, link_type, message_id, chat_id, scheduled_time, download_status, upload_status, state) "
+            "INSERT INTO queue "
+            "(user_id, post_id, post_url, post_owner, link_type, message_id, chat_id, scheduled_time, download_status, upload_status, state) "
             "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
             (
                 message['user_id'], message['post_id'], message['post_url'], message['post_owner'], message['link_type'],
