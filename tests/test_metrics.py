@@ -22,10 +22,11 @@ def test_metrics_instance(metrics_class, database_class, vault_instance):
 
 
 @pytest.mark.order(14)
-def test_metrics_users_stats(metrics_class):
+def test_metrics_users_stats(metrics_class, postgres_users_test_data):
     """
     Checking the collection of user statistics.
     """
+    _ = postgres_users_test_data
     response = requests.get(f"http://0.0.0.0:{metrics_class.port}/", timeout=10)
     assert "pytest_access_granted_total" in response.text
     assert "pytest_access_denied_total" in response.text

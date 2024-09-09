@@ -813,8 +813,9 @@ class DatabaseClient:
             columns=("user_id", "chat_id", "status"),
             limit=1000
         )
-        for user in users:
-            users_dict.append({'user_id': user[0], 'chat_id': user[1], 'status': user[2]})
+        if users:
+            for user in users:
+                users_dict.append({'user_id': user[0], 'chat_id': user[1], 'status': user[2]})
         return users_dict
 
     def get_considered_message(
