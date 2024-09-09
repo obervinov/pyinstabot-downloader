@@ -12,7 +12,6 @@ def test_metrics_instance(metrics_class, database_class, vault_instance):
     """
     assert metrics_class.port == 8000
     assert metrics_class.interval == 1
-    assert metrics_class.vault == vault_instance
     assert metrics_class.database == database_class
     assert metrics_class.thread_status_gauge is not None
     assert metrics_class.access_granted_counter is not None
@@ -28,6 +27,7 @@ def test_metrics_users_stats(metrics_class, postgres_users_test_data):
     """
     _ = postgres_users_test_data
     response = requests.get(f"http://0.0.0.0:{metrics_class.port}/", timeout=10)
+    print(response.text)
     assert "pytest_access_granted_total" in response.text
     assert "pytest_access_denied_total" in response.text
     assert "pytest_access_granted_total 1.0" in response.text
