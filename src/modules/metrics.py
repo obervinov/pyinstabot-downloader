@@ -50,12 +50,12 @@ class Metrics():
         users_dict = self.database.get_users()
         access_granted_count = 0
         access_denied_count = 0
-
-        for user in users_dict:
-            if user.get('status') == 'denied':
-                access_denied_count += 1
-            elif user.get('status') == 'allowed':
-                access_granted_count += 1
+        if users_dict:
+            for user in users_dict:
+                if user.get('status') == 'denied':
+                    access_denied_count += 1
+                elif user.get('status') == 'allowed':
+                    access_granted_count += 1
 
         self.access_granted_counter.set(access_granted_count)
         self.access_denied_counter.set(access_denied_count)

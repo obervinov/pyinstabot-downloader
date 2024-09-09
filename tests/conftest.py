@@ -379,3 +379,37 @@ def fixture_postgres_messages_test_data(postgres_instance):
         "VALUES ('123456', '123456', '2024-08-27 00:00:00', '2024-08-27 00:00:00', 'status_message', 'pytest', 'hash', 'updating')"
     )
     conn.commit()
+
+
+@pytest.fixture(name="postgres_users_test_data", scope='session')
+def fixture_postgres_users_test_data(postgres_instance):
+    """
+    This function sets up test data in the users table in the postgres database.
+
+    Args:
+        postgres_instance: A tuple containing the connection and cursor objects for the postgres database.
+    """
+    data = [
+        {
+            'user_id': '111111',
+            'chat_id': '111111',
+            'status': 'allowed'
+        },
+        {
+            'user_id': '222222',
+            'chat_id': '222222',
+            'status': 'denied'
+        },
+        {
+            'user_id': '333333',
+            'chat_id': '333333',
+            'status': 'denied'
+        }
+    ]
+    conn, cursor = postgres_instance
+    for user in data:
+        cursor.execute(
+            "INSERT INTO users (user_id, chat_id, status) VALUES (%s, %s, %s)",
+            (user['user_id'], user['chat_id'], user['status'])
+        )
+        conn.commit()
