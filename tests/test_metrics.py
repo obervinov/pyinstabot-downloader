@@ -6,7 +6,7 @@ import pytest
 
 
 @pytest.mark.order(13)
-def test_metrics_instance(metrics_class, database_class, vault_instance):
+def test_metrics_instance(metrics_class, database_class):
     """
     Checking the creation of a metrics instance.
     """
