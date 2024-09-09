@@ -5,6 +5,7 @@ import os
 import time
 import requests
 import pytest
+import threading
 import hvac
 import psycopg2
 from psycopg2 import sql
@@ -358,7 +359,10 @@ def fixture_metrics_class(vault_instance, database_class):
     """
     Returns the metrics class
     """
-    return Metrics(port=8000, interval=1, metrics_prefix='pytest', vault=vault_instance, database=database_class)
+    metrics = Metrics(port=8000, interval=3, metrics_prefix='pytest', vault=vault_instance, database=database_class)
+    threads_list = threading.enumerate()
+    metrics.run(threads=threads_list)
+    return metrics
 
 
 @pytest.fixture(name="postgres_messages_test_data", scope='session')
