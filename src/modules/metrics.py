@@ -9,6 +9,22 @@ from logger import log
 class Metrics():
     """
     This class provides a way to expose metrics to Prometheus for monitoring the application.
+
+    Attributes:
+        :attribute port (int): port for the metrics server.
+        :attribute interval (int): interval for collecting metrics.
+        :attribute database (Database): instance of the Database class.
+        :attribute running (bool): the status of the metrics server.
+        :attribute thread_status_gauge (Gauge): gauge for the thread status.
+        :attribute access_granted_counter (Gauge): gauge for the access granted counter.
+        :attribute access_denied_counter (Gauge): gauge for the access denied counter.
+        :attribute processed_messages_counter (Gauge): gauge for the processed messages counter.
+        :attribute queue_length_gauge (Gauge): gauge for the queue length.
+
+    Examples:
+        >>> metrics = Metrics(port=8000, interval=1, metrics_prefix='pytest')
+        >>> metrics.run(threads=[thread1, thread2])
+        >>> metrics.stop()
     """
     def __init__(
         self,
@@ -27,15 +43,13 @@ class Metrics():
 
         Keyword Args:
             :param database (Database): instance of the Database class.
-
-        Returns:
-            None
         """
         metrics_prefix = metrics_prefix.replace('-', '_')
 
         self.port = port
         self.interval = interval
         self.database = kwargs.get('database', None)
+        self.running = True
         self.thread_status_gauge = Gauge(f'{metrics_prefix}_thread_status', 'Thread status (1 = running, 0 = not running)', ['thread_name'])
         if self.database:
             self.access_granted_counter = Gauge(f'{metrics_prefix}_access_granted_total', 'Total number of users granted access')
@@ -86,10 +100,17 @@ class Metrics():
         """
         start_http_server(self.port)
         log.info('[Metrics]: Metrics server started on port %s', self.port)
-        while True:
+        while self.running:
             if self.database:
                 self.collect_users_stats()
                 self.collect_messages_stats()
             time.sleep(self.interval)
             for thread in threads:
                 self.update_thread_status(thread.name, thread.is_alive())
+
+    def stop(self) -> None:
+        """
+        The method stops the metrics server.
+        """
+        self.running = False
+        log.info('[Metrics]: Metrics server stopped')
