@@ -97,13 +97,13 @@ def test_messages_queue(database_class):
     Checking the addition of a message to the queue and extraction of a message from the queue
     """
     data = {
-        'user_id': '12345',
-        'post_id': 'qwerty333',
-        'post_url': 'https://www.example.com/p/qwerty333/',
-        'post_owner': 'johndoe',
+        'user_id': 'test_case_6',
+        'post_id': 'test_case_6',
+        'post_url': 'https://example.com/p/test_case_6',
+        'post_owner': 'test_case_6',
         'link_type': 'post',
-        'message_id': 'qwerty333',
-        'chat_id': 'xyz',
+        'message_id': 'test_case_6',
+        'chat_id': 'test_case_6',
         'scheduled_time': '2022-01-01 12:00:00',
         'download_status': 'not started',
         'upload_status': 'not started'
@@ -134,13 +134,13 @@ def test_change_message_state_in_queue(database_class, postgres_instance):
     """
     _, cursor = postgres_instance
     data = {
-        'user_id': '12345',
-        'post_id': 'qwerty222',
-        'post_url': 'https://www.example.com/p/qwerty222/',
-        'post_owner': 'johndoe',
+        'user_id': 'test_case_7',
+        'post_id': 'test_case_7',
+        'post_url': 'https://example.com/p/test_case_7',
+        'post_owner': 'test_case_7',
         'link_type': 'post',
-        'message_id': 'qwerty222',
-        'chat_id': 'xyz',
+        'message_id': 'test_case_7',
+        'chat_id': 'test_case_7',
         'scheduled_time': '2022-01-01 12:00:00',
         'download_status': 'not started',
         'upload_status': 'not started'
@@ -178,13 +178,13 @@ def test_change_message_schedule_time_in_queue(database_class, postgres_instance
     """
     _, cursor = postgres_instance
     data = {
-        'user_id': '12345',
-        'post_id': 'qwerty444',
-        'post_url': 'https://www.example.com/p/qwerty444/',
-        'post_owner': 'johndoe',
+        'user_id': 'test_case_8',
+        'post_id': 'test_case_8',
+        'post_url': 'https://example.com/p/test_case_8',
+        'post_owner': 'test_case_8',
         'link_type': 'post',
-        'message_id': 'qwerty444',
-        'chat_id': 'xyz',
+        'message_id': 'test_case_8',
+        'chat_id': 'test_case_8',
         'scheduled_time': '2022-01-01 12:00:00',
         'download_status': 'not started',
         'upload_status': 'not started'
@@ -194,14 +194,14 @@ def test_change_message_schedule_time_in_queue(database_class, postgres_instance
 
     # Check the change of the message schedule time in the queue
     status = database_class.update_schedule_time_in_queue(
-        post_id='qwerty444',
-        user_id='12345',
+        post_id=data['post_id'],
+        user_id=data['user_id'],
         scheduled_time='2022-01-02 13:00:00'
     )
     assert status == f"{data['post_id']}: scheduled time updated"
 
     # Check records in database
-    cursor.execute("SELECT scheduled_time FROM queue WHERE post_id = 'qwerty444'")
+    cursor.execute(f"SELECT scheduled_time FROM queue WHERE post_id = '{data['post_id']}'")
     record_queue = cursor.fetchall()
     assert record_queue is not None
     assert record_queue[0][0] == datetime.strptime('2022-01-02 13:00:00', '%Y-%m-%d %H:%M:%S')
@@ -212,41 +212,41 @@ def test_get_user_queue(database_class):
     """
     Checking the extraction of the user queue
     """
-    user_id = '111111'
+    user_id = 'test_case_9'
     timestamp = datetime.now()
     data = [
         {
             'user_id': user_id,
-            'post_id': 'qwerty123',
-            'post_url': 'https://www.example.com/p/qwerty123/',
-            'post_owner': 'johndoe',
+            'post_id': 'test_case_9_1',
+            'post_url': 'https://example.com/p/test_case_9_1',
+            'post_owner': 'test_case_9',
             'link_type': 'post',
-            'message_id': 'qwerty123',
-            'chat_id': 'xyz',
+            'message_id': 'test_case_9_1',
+            'chat_id': 'test_case_9',
             'scheduled_time': timestamp + timedelta(hours=1),
             'download_status': 'not started',
             'upload_status': 'not started'
         },
         {
             'user_id': user_id,
-            'post_id': 'qwerty456',
-            'post_url': 'https://www.example.com/p/qwerty456/',
-            'post_owner': 'johndoe',
+            'post_id': 'test_case_9_2',
+            'post_url': 'https://example.com/p/test_case_9_2',
+            'post_owner': 'test_case_9',
             'link_type': 'post',
-            'message_id': 'qwerty456',
-            'chat_id': 'xyz',
+            'message_id': 'test_case_9_2',
+            'chat_id': 'test_case_9',
             'scheduled_time': timestamp - timedelta(hours=2),
             'download_status': 'not started',
             'upload_status': 'not started'
         },
         {
             'user_id': user_id,
-            'post_id': 'qwerty789',
-            'post_url': 'https://www.example.com/p/qwerty789/',
-            'post_owner': 'johndoe',
+            'post_id': 'test_case_9_3',
+            'post_url': 'https://example.com/p/test_case_9_3',
+            'post_owner': 'test_case_9',
             'link_type': 'post',
-            'message_id': 'qwerty789',
-            'chat_id': 'xyz',
+            'message_id': 'test_case_9_3',
+            'chat_id': 'test_case_9',
             'scheduled_time': timestamp + timedelta(hours=3),
             'download_status': 'not started',
             'upload_status': 'not started'
@@ -257,7 +257,7 @@ def test_get_user_queue(database_class):
         assert status == f"{message['message_id']}: added to queue"
 
     # Validate the extraction of the user queue
-    user_queue = database_class.get_user_queue(user_id='111111')
+    user_queue = database_class.get_user_queue(user_id=user_id)
     expected_response = defaultdict(list)
     for entry in data:
         expected_response[entry['user_id']].append({
@@ -277,24 +277,65 @@ def test_get_user_processed_data(database_class, postgres_instance):
     Checking the extraction of the user processed data
     """
     _, cursor = postgres_instance
-    user_id = '111111'
-    # Marked messages from previous tests
-    mark_processed = ['qwerty123', 'qwerty456', 'qwerty789']
-    for item in mark_processed:
+    user_id = 'test_case_10'
+    timestamp = datetime.now()
+    data = [
+        {
+            'user_id': user_id,
+            'post_id': 'test_case_10_1',
+            'post_url': 'https://example.com/p/test_case_10_1',
+            'post_owner': 'test_case_10',
+            'link_type': 'post',
+            'message_id': 'test_case_10_1',
+            'chat_id': 'test_case_10',
+            'scheduled_time': timestamp + timedelta(hours=1),
+            'download_status': 'not started',
+            'upload_status': 'not started'
+        },
+        {
+            'user_id': user_id,
+            'post_id': 'test_case_10_2',
+            'post_url': 'https://example.com/p/test_case_10_2',
+            'post_owner': 'test_case_10',
+            'link_type': 'post',
+            'message_id': 'test_case_10_2',
+            'chat_id': 'test_case_10',
+            'scheduled_time': timestamp - timedelta(hours=2),
+            'download_status': 'not started',
+            'upload_status': 'not started'
+        },
+        {
+            'user_id': user_id,
+            'post_id': 'test_case_10_3',
+            'post_url': 'https://example.com/p/test_case_10_3',
+            'post_owner': 'test_case_10',
+            'link_type': 'post',
+            'message_id': 'test_case_10_3',
+            'chat_id': 'test_case_10',
+            'scheduled_time': timestamp + timedelta(hours=3),
+            'download_status': 'not started',
+            'upload_status': 'not started'
+        }
+    ]
+    for message in data:
+        status = database_class.add_message_to_queue(data=message)
+        assert status == f"{message['message_id']}: added to queue"
         status = database_class.update_message_state_in_queue(
-            post_id=item,
+            post_id=message['post_id'],
             state='processed',
             download_status='completed',
             upload_status='completed',
-            post_owner='johndoe'
+            post_owner=message['post_owner']
         )
-        assert status == f"{item}: processed"
+        assert status == f"{message['post_id']}: processed"
+
     user_processed = database_class.get_user_processed(user_id=user_id)
     user_queue = database_class.get_user_queue(user_id=user_id)
-    for item in mark_processed:
+
+    for message in data:
         if user_queue:
             for q_message in user_queue.get(user_id, []):
-                assert item != q_message['post_id']
+                assert message['post_id'] == q_message['post_id']
         if user_processed:
             found = False
             if user_processed.get(user_id, []) == []:
@@ -302,12 +343,12 @@ def test_get_user_processed_data(database_class, postgres_instance):
             else:
                 cursor.execute("SELECT * FROM processed")
                 print(cursor.fetchall())
-                assert len(user_processed.get(user_id, [])) == len(mark_processed)
+                assert len(user_processed.get(user_id, [])) == len(data)
             for p_message in user_processed.get(user_id, []):
-                if item == p_message['post_id']:
+                if message['post_id'] == p_message['post_id']:
                     found = True
             if not found:
-                print(f"Message {item} not found in processed messages: {user_processed.get(user_id, [])}")
+                print(f"Message {message['post_id']} not found in processed: {user_processed}")
                 assert False
         else:
             assert False
@@ -319,13 +360,13 @@ def test_check_message_uniqueness(database_class):
     Checking the uniqueness of the message
     """
     data = {
-        'user_id': '123456',
-        'post_id': 'qwerty1111',
-        'post_url': 'https://www.example.com/p/qwerty1111/',
-        'post_owner': 'johndoe',
+        'user_id': 'test_case_11',
+        'post_id': 'test_case_11',
+        'post_url': 'https://example.com/p/test_case_11',
+        'post_owner': 'test_case_11',
         'link_type': 'post',
-        'message_id': 'qwerty1111',
-        'chat_id': 'xyz',
+        'message_id': 'test_case_11',
+        'chat_id': 'test_case_11',
         'scheduled_time': '2022-01-02 13:00:00',
         'download_status': 'not started',
         'upload_status': 'not started'
@@ -345,9 +386,9 @@ def test_service_messages(database_class):
     Checking the registration of service messages
     """
     data = {
-        'message_id': '444444',
-        'chat_id': 'xyz',
-        'message_content': 'Test message',
+        'message_id': 'test_case_12',
+        'chat_id': 'test_case_12',
+        'message_content': 'Test case 12',
         'message_type': 'status_message',
         'state': 'updated'
     }
