@@ -64,7 +64,7 @@ class DatabaseClient:
         get_user_processed(user_id): Get last ten messages from the processed table for the specified user.
         check_message_uniqueness(post_id, user_id): Check if a message with the given post ID and chat ID already exists in the queue.
         keep_message(message_id, chat_id, message_content, **kwargs): Add a message to the messages table in the database.
-        get_users(): Get a list of all users in the database.
+        get_users(): Get a dict of users with their metadata from the users table.
         get_considered_message(message_type, chat_id): Get a message with specified type and
 
     Rises:
@@ -795,25 +795,27 @@ class DatabaseClient:
 
         return response
 
-    def get_users(self) -> list:
+    def get_users(self) -> dict:
         """
         This method will be deprecated after https://github.com/obervinov/users-package/issues/44 (users-package:v3.1.0).
-        Get a list of all users in the database.
+        Get a dictionary of all users with their metadata from the users table in the database.
 
         Returns:
-            list: A list of all users from the users table.
+            dict: A dictionary containing all users in the database and their metadata.
 
         Examples:
             >>> get_users()
-            # [('{user_id}', '{chat_id}')]
-            [('12345', '67890')]
+            [{'user_id': '12345', 'chat_id': '67890', 'status': 'denied'}, {'user_id': '12346', 'chat_id': '67891', 'status': 'allowed'}]
         """
+        users_dict = []
         users = self._select(
             table_name='users',
-            columns=("user_id", "chat_id"),
+            columns=("user_id", "chat_id", "status"),
             limit=1000
         )
-        return users if users else None
+        for user in users:
+            users_dict.append({'user_id': user[0], 'chat_id': user[1], 'status': user[2]})
+        return users_dict
 
     def get_considered_message(
         self,

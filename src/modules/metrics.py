@@ -27,7 +27,6 @@ class Metrics():
             :param metrics_prefix (str): prefix for the metrics.
 
         Keyword Args:
-            :param vault (Vault): instance of the Vault class.
             :param database (Database): instance of the Database class.
 
         Returns:
@@ -37,13 +36,11 @@ class Metrics():
 
         self.port = port
         self.interval = interval
-        self.vault = kwargs.get('vault', None)
         self.database = kwargs.get('database', None)
         self.thread_status_gauge = Gauge(f'{metrics_prefix}_thread_status', 'Thread status (1 = running, 0 = not running)', ['thread_name'])
-        if self.vault:
+        if self.database:
             self.access_granted_counter = Gauge(f'{metrics_prefix}_access_granted_total', 'Total number of users granted access')
             self.access_denied_counter = Gauge(f'{metrics_prefix}_access_denied_total', 'Total number of users denied access')
-        if self.database:
             self.processed_messages_counter = Gauge(f'{metrics_prefix}_processed_messages_total', 'Total number of processed messages')
             self.queue_length_gauge = Gauge(f'{metrics_prefix}_queue_length', 'Queue length')
 
@@ -51,15 +48,14 @@ class Metrics():
         """
         The method collects information about users access status and updates the gauge.
         """
-        users = self.vault.list_secrets(path='data/users')
+        users_dict = self.database.get_users()
         access_granted_count = 0
         access_denied_count = 0
 
-        for user in users:
-            user_status = json.loads(self.vault.read_secret(path=f'data/users/{user}')['authentication'])
-            if user_status.get('status') == 'denied':
+        for user in users_dict:
+            if user.get('status') == 'denied':
                 access_denied_count += 1
-            elif user_status.get('status') == 'allowed':
+            elif user.get('status') == 'allowed':
                 access_granted_count += 1
 
         self.access_granted_counter.set(access_granted_count)

@@ -491,16 +491,16 @@ def status_message_updater_thread() -> None:
     while True:
         time.sleep(STATUSES_MESSAGE_FREQUENCY)
         try:
-            if database.get_users():
-                for user in database.get_users():
-                    user_id = user[0]
-                    update_status_message(user_id=user_id)
+            users_dict = database.get_users()
+            if users_dict:
+                for user in users_dict:
+                    update_status_message(user_id=user['user_id'])
         # pylint: disable=broad-exception-caught
         except Exception as exception:
             exception_context = {
                 'call': threading.current_thread().name,
                 'message': 'Failed to update the message with the status of received messages',
-                'users': database.get_users(),
+                'users': users_dict,
                 'user': user,
                 'exception': exception
             }

@@ -3,9 +3,9 @@ This module stores fixtures for performing tests.
 """
 import os
 import time
+import threading
 import requests
 import pytest
-import threading
 import hvac
 import psycopg2
 from psycopg2 import sql
@@ -359,7 +359,7 @@ def fixture_metrics_class(vault_instance, database_class):
     """
     Returns the metrics class
     """
-    metrics = Metrics(port=8000, interval=3, metrics_prefix='pytest', vault=vault_instance, database=database_class)
+    metrics = Metrics(port=8000, interval=3, metrics_prefix='pytest', database=database_class)
     threads_list = threading.enumerate()
     metrics.run(threads=threads_list)
     return metrics
