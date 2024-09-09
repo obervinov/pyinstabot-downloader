@@ -53,11 +53,3 @@ def test_metrics_messages(metrics_class):
     assert "pytest_queue_length" in response.text
     assert "pytest_processed_messages_total 3.0" in response.text
     assert "pytest_queue_length 0.0" in response.text
-
-
-@pytest.mark.order(17)
-def test_stop_metric_server(metrics_class):
-    """
-    Stopping the metrics server.
-    """
-    metrics_class.stop()

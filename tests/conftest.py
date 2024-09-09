@@ -359,10 +359,13 @@ def fixture_metrics_class(database_class):
     """
     Returns the metrics class
     """
-    metrics = Metrics(port=8000, interval=3, metrics_prefix='pytest', database=database_class)
+    metrics = Metrics(port=8000, interval=1, metrics_prefix='pytest', database=database_class)
     threads_list = threading.enumerate()
-    metrics.run(threads=threads_list)
-    return metrics
+    metrics_thread = threading.Thread(target=metrics.run, args=(threads_list,))
+    metrics_thread.start()
+    yield metrics
+    metrics.stop()
+    metrics_thread.join()
 
 
 @pytest.fixture(name="postgres_messages_test_data", scope='session')

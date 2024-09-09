@@ -104,9 +104,9 @@ class Metrics():
             if self.database:
                 self.collect_users_stats()
                 self.collect_messages_stats()
-            time.sleep(self.interval)
             for thread in threads:
                 self.update_thread_status(thread.name, thread.is_alive())
+            time.sleep(self.interval)
 
     def stop(self) -> None:
         """
