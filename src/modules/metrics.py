@@ -1,6 +1,5 @@
 """This module provides a way to expose metrics to Prometheus for monitoring the application."""
 import time
-import json
 
 from prometheus_client import start_http_server, Gauge
 from logger import log
@@ -89,9 +88,8 @@ class Metrics():
         start_http_server(self.port)
         log.info('[Metrics]: Metrics server started on port %s', self.port)
         while True:
-            if self.vault:
-                self.collect_users_stats()
             if self.database:
+                self.collect_users_stats()
                 self.collect_messages_stats()
             time.sleep(self.interval)
             for thread in threads:

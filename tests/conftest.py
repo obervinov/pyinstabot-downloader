@@ -355,7 +355,7 @@ def fixture_database_class(vault_instance, namespace):
 
 
 @pytest.fixture(name="metrics_class", scope='session')
-def fixture_metrics_class(vault_instance, database_class):
+def fixture_metrics_class(database_class):
     """
     Returns the metrics class
     """
