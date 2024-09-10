@@ -24,15 +24,15 @@ from modules.metrics import Metrics
 
 
 # Vault client
-vault = VaultClient(namespace=TELEGRAM_BOT_NAME)
+vault = VaultClient()
 # Telegram instance
 telegram = TelegramBot(vault=vault)
 # Telegram bot for decorators
 bot = telegram.telegram_bot
 # Users module with rate limits option
-users_rl = Users(vault=vault)
+users_rl = Users(vault=vault, rate_limits=True, storage={'db_role': TELEGRAM_BOT_NAME})
 # Users module without rate limits option
-users = Users(vault=vault, rate_limits=False)
+users = Users(vault=vault, storage={'db_role': TELEGRAM_BOT_NAME})
 
 # Client for download content from supplier
 # If API disabled, the mock object will be used

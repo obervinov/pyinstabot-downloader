@@ -52,8 +52,10 @@ services:
         environment:
             - TELEGRAM_BOT_NAME=pyinstabot-downloader
             - VAULT_APPROLE_ID=${VAULT_APPROLE_ID}
-            - VAULT_APPROLE_SECRETID=${VAULT_APPROLE_SECRETID}
+            - VAULT_APPROLE_SECRET_ID=${VAULT_APPROLE_SECRET_ID}
             - VAULT_ADDR=${VAULT_ADDR}
+            - VAULT_AUTH_TYPE=approle
+            - VAULT_NAMESPACE=pyinstabot-downloader
             - LOGGER_LEVEL=DEBUG
             - MESSAGES_CONFIG=configs/messages.json
         volumes:

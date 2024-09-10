@@ -61,11 +61,9 @@ This project is a Telegram bot that allows you to upload posts from your Instagr
 | Variable  | Description | Default value |
 | ------------- | ------------- | ------------- |
 | `LOGGER_LEVEL` | [The logging level of the logging module](https://docs.python.org/3/library/logging.html#logging-levels) | `INFO` |
-| `BOT_NAME` | The name of the bot, used to determine the unique mount point in the vault | `pyinstabot-downloader` |
+| `TELEGRAM_BOT_NAME` | The name of the bot, used to determine the unique mount point in the vault | `pyinstabot-downloader` |
 | `MESSAGES_CONFIG` | The path to the message template file | `src/configs/messages.json` |
-| `VAULT_ADDR`  | The address at which the vault server will be available to the bot | `None` |
-| `VAULT_APPROLE_ID` | [Approle id created during vault setup](https://developer.hashicorp.com/vault/docs/auth/approle) | `None` |
-| `VAULT_APPROLE_SECRETID`  | [Approle secret id created during vault setup](https://developer.hashicorp.com/vault/docs/auth/approle) | `None` |
+| `VAULT_*` | All supported vault environment variables can be found [here](https://github.com/obervinov/vault-package/tree/v3.0.0?tab=readme-ov-file#-supported-environment-variables) | - |
 </br>
 
 ## <img src="https://github.com/obervinov/_templates/blob/v1.2.2/icons/config.png" width="25" title="config"> Prepare and configure environment
@@ -229,7 +227,7 @@ export PGDATABASE=postgres
 ## <img src="https://github.com/obervinov/_templates/blob/v1.2.2/icons/docker.png" width="25" title="docker"> How to run project locally
 ```sh
 export VAULT_APPROLE_ID={change_me}
-export VAULT_APPROLE_SECRETID={change_me}
+export VAULT_APPROLE_SECRET_ID={change_me}
 export VAULT_ADDR={change_me}
 docker compose -f docker-compose.yml up -d
 ```
