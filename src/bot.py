@@ -299,30 +299,24 @@ def get_user_messages(user_id: str = None) -> dict:
         >>> get_user_messages(user_id='1234567890')
         {'queue_list': '<code>queue is empty</code>', 'processed_list': '<code>processed is empty</code>', 'queue_count': 0, 'processed_count': 0}
     """
-    queue_dict = database.get_user_queue(user_id=user_id)
-    processed_dict = database.get_user_processed(user_id=user_id)
-
-    last_ten_queue = queue_dict.get(user_id, [])[:10] if queue_dict else []
-    last_ten_processed = processed_dict.get(user_id, [])[-10:] if processed_dict else []
-
-    queue_count = len(queue_dict.get(user_id, [])) if queue_dict else 0
-    processed_count = len(processed_dict.get(user_id, [])) if processed_dict else 0
+    queue = database.get_user_queue(user_id=user_id)
+    processed = database.get_user_processed(user_id=user_id)
 
     queue_string = ''
-    if last_ten_queue:
-        for item in last_ten_queue:
+    if queue[:10]:
+        for item in queue[:10]:
             queue_string += f"+ <code>{item['post_id']}: scheduled for {item['scheduled_time']}</code>\n"
     else:
         queue_string = '<code>queue is empty</code>'
 
     processed_string = ''
-    if last_ten_processed:
-        for item in last_ten_processed:
+    if processed[-10:]:
+        for item in processed[-10:]:
             processed_string += f"* <code>{item['post_id']}: {item['state']} at {item['timestamp']}</code>\n"
     else:
         processed_string = '<code>processed is empty</code>'
 
-    return {'queue_list': queue_string, 'processed_list': processed_string, 'queue_count': queue_count, 'processed_count': processed_count}
+    return {'queue_list': queue_string, 'processed_list': processed_string, 'queue_count': len(queue), 'processed_count': len(processed)}
 
 
 def message_parser(message: telegram.telegram_types.Message = None) -> dict:

@@ -256,18 +256,18 @@ def test_get_user_queue(database_class):
         status = database_class.add_message_to_queue(data=message)
         assert status == f"{message['message_id']}: added to queue"
 
-    # Validate the extraction of the user queue
+    # Validate the extraction of the user queue (now directly a list)
     user_queue = database_class.get_user_queue(user_id=user_id)
-    expected_response = defaultdict(list)
-    for entry in data:
-        expected_response[entry['user_id']].append({
+    expected_response = sorted([
+        {
             'post_id': entry['post_id'],
             'scheduled_time': entry['scheduled_time']
-        })
-    for user_id, posts in expected_response.items():
-        expected_response[user_id] = sorted(posts, key=lambda x: x['scheduled_time'])
+        }
+        for entry in data
+    ], key=lambda x: x['scheduled_time'])
+
     assert user_queue is not None
-    assert len(user_queue.get(user_id, [])) == len(data)
+    assert len(user_queue) == len(data)
     assert user_queue == expected_response
 
 
@@ -334,17 +334,17 @@ def test_get_user_processed_data(database_class, postgres_instance):
 
     for message in data:
         if user_queue:
-            for q_message in user_queue.get(user_id, []):
+            for q_message in user_queue:
                 assert message['post_id'] == q_message['post_id']
         if user_processed:
             found = False
-            if user_processed.get(user_id, []) == []:
+            if user_processed:
                 assert False
             else:
                 cursor.execute("SELECT * FROM processed")
                 print(cursor.fetchall())
-                assert len(user_processed.get(user_id, [])) == len(data)
-            for p_message in user_processed.get(user_id, []):
+                assert len(user_processed) == len(data)
+            for p_message in user_processed:
                 if message['post_id'] == p_message['post_id']:
                     found = True
             if not found:

@@ -362,6 +362,7 @@ def fixture_metrics_class(database_class, postgres_users_test_data, postgres_que
     _ = postgres_users_test_data
     _ = postgres_queue_test_data
     _ = postgres_processed_test_data
+
     metrics = Metrics(port=8000, interval=5, metrics_prefix='pytest', database=database_class)
     threads_list = threading.enumerate()
     metrics_thread = threading.Thread(target=metrics.run, args=(threads_list,))

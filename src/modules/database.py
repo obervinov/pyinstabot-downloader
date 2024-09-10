@@ -619,7 +619,7 @@ class DatabaseClient:
     def get_user_queue(
         self,
         user_id: str = None
-    ) -> Union[dict, None]:
+    ) -> dict:
         """
         Get messages from the queue table for the specified user.
 
@@ -627,13 +627,13 @@ class DatabaseClient:
             user_id (str): The ID of the user.
 
         Returns:
-            dict: A dictionary containing messages from the queue for the specified user.
+            dict: A list of dictionaries containing the messages from the queue table for the specified user.
 
         Examples:
             >>> get_user_queue(user_id='12345')
-            {'12345': [{'post_id': '123456789', 'scheduled_time': '2022-01-01 12:00:00'}]}
+            [{'post_id': '123456789', 'scheduled_time': '2022-01-01 12:00:00'}]
         """
-        result = {}
+        result = []
         queue = self._select(
             table_name='queue',
             columns=("post_id", "scheduled_time"),
@@ -643,15 +643,13 @@ class DatabaseClient:
         )
         if queue:
             for message in queue:
-                if user_id not in result:
-                    result[user_id] = []
-                result[user_id].append({'post_id': message[0], 'scheduled_time': message[1]})
-        return result if result else None
+                result.append({'post_id': message[0], 'scheduled_time': message[1]})
+        return result
 
     def get_user_processed(
         self,
         user_id: str = None
-    ) -> Union[dict, None]:
+    ) -> dict:
         """
         Get last ten messages from the processed table for the specified user.
         It is used to display the last messages sent by the bot to the user.
@@ -660,13 +658,13 @@ class DatabaseClient:
             user_id (str): The ID of the user.
 
         Returns:
-            dict: A dictionary containing the last five messages from the processed table for the specified user.
+            dict: A list of dictionaries containing the last ten messages from the processed table for the specified user.
 
         Examples:
             >>> get_user_processed(user_id='12345')
-            {'12345': [{'post_id': '123456789', 'timestamp': '2022-01-01 12:00:00', 'state': 'processed'}]}
+            [{'post_id': '123456789', 'timestamp': '2022-01-01 12:00:00', 'state': 'processed'}]
         """
-        result = {}
+        result = []
         processed = self._select(
             table_name='processed',
             columns=("post_id", "timestamp", "state"),
@@ -676,10 +674,8 @@ class DatabaseClient:
         )
         if processed:
             for message in processed:
-                if user_id not in result:
-                    result[user_id] = []
-                result[user_id].append({'post_id': message[0], 'timestamp': message[1], 'state': message[2]})
-        return result if result else None
+                result.append({'post_id': message[0], 'timestamp': message[1], 'state': message[2]})
+        return result
 
     def check_message_uniqueness(
         self,
