@@ -24,7 +24,7 @@ from modules.metrics import Metrics
 
 
 # Vault client
-vault = VaultClient()
+vault = VaultClient(dbengine={"mount_point": f"{TELEGRAM_BOT_NAME}-database"})
 # Telegram instance
 telegram = TelegramBot(vault=vault)
 # Telegram bot for decorators
