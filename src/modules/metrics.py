@@ -89,8 +89,10 @@ class Metrics():
         for user in users_dict:
             processed_messages = self.database.get_user_processed(user_id=user['user_id'])
             queue_messages = self.database.get_user_queue(user_id=user['user_id'])
-            processed_messages_count += len(processed_messages.get(user['user_id'], []))
-            queue_messages_count = len(queue_messages.get(user['user_id'], []))
+            if processed_messages:
+                processed_messages_count += len(processed_messages.get(user['user_id'], []))
+            if queue_messages:
+                queue_messages_count = len(queue_messages.get(user['user_id'], []))
         self.processed_messages_counter.set(processed_messages_count)
         self.queue_length_gauge.set(queue_messages_count)
 

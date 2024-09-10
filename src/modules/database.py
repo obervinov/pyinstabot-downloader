@@ -817,7 +817,6 @@ class DatabaseClient:
         if users:
             for user in users:
                 users_dict.append({'user_id': user[0], 'chat_id': user[1], 'status': user[2]})
-        log.info('[Database]: Users: %s', users_dict)
         return users_dict
 
     def get_considered_message(
