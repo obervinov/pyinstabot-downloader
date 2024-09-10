@@ -24,7 +24,7 @@ from modules.metrics import Metrics
 
 
 # Vault client
-vault = VaultClient(name=TELEGRAM_BOT_NAME)
+vault = VaultClient(namespace=TELEGRAM_BOT_NAME)
 # Telegram instance
 telegram = TelegramBot(vault=vault)
 # Telegram bot for decorators
