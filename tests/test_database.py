@@ -336,23 +336,26 @@ def test_get_user_processed_data(database_class, postgres_instance):
         if user_queue:
             for q_message in user_queue:
                 assert message['post_id'] == q_message['post_id']
+        else:
+            cursor.execute("SELECT * FROM queue")
+            print(cursor.fetchall())
+            assert False
+
         if user_processed:
             found = False
-            if user_processed:
-                assert False
-            else:
-                cursor.execute("SELECT * FROM processed")
-                print(cursor.fetchall())
-                assert len(user_processed) == len(data)
+            assert len(user_processed) == len(data)
             for p_message in user_processed:
                 if message['post_id'] == p_message['post_id']:
                     found = True
             if not found:
                 print(f"Message {message['post_id']} not found in processed: {user_processed}")
                 assert False
+            else:
+                assert True
         else:
+            cursor.execute("SELECT * FROM processed")
+            print(cursor.fetchall())
             assert False
-
 
 @pytest.mark.order(11)
 def test_check_message_uniqueness(database_class):
