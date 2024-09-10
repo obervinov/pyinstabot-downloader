@@ -367,6 +367,7 @@ def fixture_metrics_class(database_class, postgres_users_test_data, postgres_que
     threads_list = threading.enumerate()
     metrics_thread = threading.Thread(target=metrics.run, args=(threads_list,))
     metrics_thread.start()
+    time.sleep(10)
     yield metrics
     metrics.stop()
     metrics_thread.join()

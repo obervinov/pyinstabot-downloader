@@ -352,6 +352,7 @@ def test_get_user_processed_data(database_class, postgres_instance):
             print(cursor.fetchall())
             assert False
 
+
 @pytest.mark.order(11)
 def test_check_message_uniqueness(database_class):
     """
