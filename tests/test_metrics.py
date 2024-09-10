@@ -44,10 +44,12 @@ def test_metrics_threads_status(metrics_class):
 
 
 @pytest.mark.order(16)
-def test_metrics_messages(metrics_class):
+def test_metrics_messages(metrics_class, postgres_queue_test_data, postgres_processed_test_data):
     """
     Checking the collection of processed and queued messages statistics.
     """
+    _ = postgres_queue_test_data
+    _ = postgres_processed_test_data
     response = requests.get(f"http://0.0.0.0:{metrics_class.port}/", timeout=10)
     print(response.text)
     assert "pytest_processed_messages_total" in response.text
