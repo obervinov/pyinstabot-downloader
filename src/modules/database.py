@@ -119,7 +119,7 @@ class DatabaseClient:
 
         log.info(
             '[Database]: Creating a connection pool for the %s:%s/%s',
-            db_configuration['host'], db_configuration['port'], db_configuration['database']
+            db_configuration['host'], db_configuration['port'], db_configuration['dbname']
         )
         return pool.SimpleConnectionPool(
             minconn=1,
@@ -128,7 +128,7 @@ class DatabaseClient:
             port=db_configuration['port'],
             user=db_credentials['username'],
             password=db_credentials['password'],
-            database=db_configuration['database']
+            database=db_configuration['dbname']
         )
 
     def get_connection(self) -> psycopg2.extensions.connection:
