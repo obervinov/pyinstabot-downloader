@@ -975,7 +975,7 @@ socks = ["PySocks (>=1.5.6,!=1.5.7,<2.0)"]
 
 [[package]]
 name = "users"
-version = "3.0.1"
+version = "3.0.2"
 description = "This python module is a simple implementation of user management functionality for telegram bots, such as: authentication, authorization and requests limiting."
 optional = false
 python-versions = "^3.9 || ^3.10 || ^3.11"
@@ -990,8 +990,8 @@ vault = {git = "https://github.com/obervinov/vault-package.git", tag = "v3.0.0"}
 [package.source]
 type = "git"
 url = "https://github.com/obervinov/users-package.git"
-reference = "v3.0.1"
-resolved_reference = "c3d4a6cafc7a05861cdd5cb7dc1c56da3e50205d"
+reference = "v3.0.2"
+resolved_reference = "25cbde0ef24379f66557e0bb5dc27d9d43d8867e"
 
 [[package]]
 name = "vault"
@@ -1055,4 +1055,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "f1b46f0dc1e30d0a15241f6ff4fa152181523c6288969d953edaad0c5da7781e"
+content-hash = "60e533bec340da4685f73edf8483650533df2c4c5637a5d2b63589aa44bda0f9"

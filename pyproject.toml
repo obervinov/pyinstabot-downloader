@@ -27,7 +27,7 @@ webdavclient3 = "^3"
 prometheus-client = "^0"
 logger = { git = "https://github.com/obervinov/logger-package.git", tag = "v1.0.6" }
 vault  = { git = "https://github.com/obervinov/vault-package.git", tag = "v3.0.0" }
-users = { git = "https://github.com/obervinov/users-package.git", tag = "v3.0.1" }
+users = { git = "https://github.com/obervinov/users-package.git", tag = "v3.0.2" }
 telegram = { git = "https://github.com/obervinov/telegram-package.git", tag = "v2.0.1" }
 
 [build-system]

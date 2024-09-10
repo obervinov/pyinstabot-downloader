@@ -24,6 +24,7 @@ from modules.metrics import Metrics
 
 
 # Vault client
+# The need to explicitly specify a mount point will no longer be necessary after solving the https://github.com/obervinov/vault-package/issues/49
 vault = VaultClient(dbengine={"mount_point": f"{TELEGRAM_BOT_NAME}-database"})
 # Telegram instance
 telegram = TelegramBot(vault=vault)

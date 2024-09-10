@@ -29,7 +29,7 @@ path "pyinstabot-downloader/data/configuration/*" {
 }
 
 # Allowed to read and generate credentials in database engine
-path "pyinstabot-downloader-database/creds" {
+path "pyinstabot-downloader-database/creds/*" {
   capabilities = ["read", "list", "update"]
 }
 

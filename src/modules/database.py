@@ -105,7 +105,7 @@ class DatabaseClient:
         Returns:
             pool.SimpleConnectionPool: A connection pool for the PostgreSQL database.
         """
-        required_keys_configuration = {"host", "port", "database", "connections"}
+        required_keys_configuration = {"host", "port", "dbname", "connections"}
         required_keys_credentials = {"username", "password"}
         db_configuration = self.vault.kv2engine.read_secret(path='configuration/database')
         db_credentials = self.vault.dbengine.generate_credentials(role=self.db_role)
@@ -115,7 +115,7 @@ class DatabaseClient:
 
         missing_keys = (required_keys_configuration - set(db_configuration.keys())) | (required_keys_credentials - set(db_credentials.keys()))
         if missing_keys:
-            raise KeyError(f"Missing keys in the database configuration or credentials: {missing_keys}")
+            raise KeyError("Missing keys in the database configuration or credentials: {missing_keys}")
 
         log.info(
             '[Database]: Creating a connection pool for the %s:%s/%s',
