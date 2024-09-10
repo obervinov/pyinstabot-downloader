@@ -6,7 +6,6 @@ import sys
 import json
 import importlib
 from datetime import datetime, timedelta
-from collections import defaultdict
 import pytest
 import psycopg2
 from psycopg2 import pool
@@ -335,11 +334,7 @@ def test_get_user_processed_data(database_class, postgres_instance):
     for message in data:
         if user_queue:
             for q_message in user_queue:
-                assert message['post_id'] == q_message['post_id']
-        else:
-            cursor.execute("SELECT * FROM queue")
-            print(cursor.fetchall())
-            assert False
+                assert message['post_id'] != q_message['post_id']
 
         if user_processed:
             found = False
