@@ -87,14 +87,13 @@ This project is a Telegram bot that allows you to upload posts from your Instagr
 ### Bot configuration source and supported parameters
 <img src="https://github.com/obervinov/_templates/blob/v1.2.2/icons/vault.png" width="15" title="vault"> All bot configuration is stored in the `Vault Secrets`</br>
 _except for the part of the configuration that configures the connection to `Vault`_</br>
+- `pyinstabot-downloader-database` - vault database engine mount point (returns the temporary username and password for the database)
 - `configuration/database`: database connection parameters
   ```json
   {
-    "database": "pyinstabot-downloader",
+    "dbname": "pyinstabot-downloader",
     "host": "postgresql.example.com",
-    "password": "qwerty123",
     "port": "5432",
-    "user": "user1",
     "connections": "10"
   }
   ```

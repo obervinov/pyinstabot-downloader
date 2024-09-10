@@ -283,7 +283,7 @@ def fixture_vault_configuration_data(vault_instance, namespace):
     database = {
         'host': '0.0.0.0',
         'port': '5432',
-        'database': namespace,
+        'dbname': namespace,
         'connections': '10'
     }
     for key, value in database.items():
