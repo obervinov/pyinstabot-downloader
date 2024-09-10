@@ -30,8 +30,8 @@ def test_metrics_users_stats(metrics_class, postgres_users_test_data):
     print(response.text)
     assert "pytest_access_granted_total" in response.text
     assert "pytest_access_denied_total" in response.text
-    assert "pytest_access_granted_total 1.0" in response.text
-    assert "pytest_access_denied_total 2.0" in response.text
+    assert "pytest_access_granted_total 5.0" in response.text
+    assert "pytest_access_denied_total 1.0" in response.text
 
 
 @pytest.mark.order(15)

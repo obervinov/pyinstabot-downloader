@@ -411,8 +411,23 @@ def fixture_postgres_users_test_data(postgres_instance):
         {
             'user_id': 'test_user_3',
             'chat_id': 'test_chat_3',
-            'status': 'denied'
-        }
+            'status': 'allowed'
+        },
+        {
+            'user_id': 'test_user_4',
+            'chat_id': 'test_chat_4',
+            'status': 'allowed'
+        },
+        {
+            'user_id': 'test_user_5',
+            'chat_id': 'test_chat_5',
+            'status': 'allowed'
+        },
+        {
+            'user_id': 'test_user_6',
+            'chat_id': 'test_chat_6',
+            'status': 'allowed'
+        },
     ]
     conn, cursor = postgres_instance
     for user in data:
