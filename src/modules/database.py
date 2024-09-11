@@ -90,7 +90,7 @@ class DatabaseClient:
             >>> vault = Vault()
             >>> db = Database(vault=vault)
         """
-        self.json = json 
+        self.json = json
         self.vault = vault
         self.db_role = db_role
         self.errors = psycopg2.errors
