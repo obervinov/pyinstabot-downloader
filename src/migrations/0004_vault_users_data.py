@@ -55,7 +55,6 @@ def execute(obj):
             except Exception as migration_error:
                 print(
                     f"{NAME}: Migration cannot be completed due to an error: {migration_error}. "
-                    "Perhaps the history is empty or the Vault secrets path does not exist and migration isn't unnecessary."
                     "It's not a critical error, so the migration will be skipped."
                 )
         obj.close_connection(conn)

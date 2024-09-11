@@ -40,6 +40,7 @@ class DatabaseClient:
         vault (object): An object representing a HashiCorp Vault client for retrieving secrets.
         db_role (str): The role to use for generating database credentials.
         errors (psycopg2.errors): A collection of error classes for exceptions raised by the psycopg2 module.
+        json (json): A JSON encoder and decoder for working with JSON data in migrations.
 
     Methods:
         create_connection_pool(): Create a connection pool for the PostgreSQL database.
@@ -89,6 +90,7 @@ class DatabaseClient:
             >>> vault = Vault()
             >>> db = Database(vault=vault)
         """
+        self.json = json
         self.vault = vault
         self.db_role = db_role
         self.errors = psycopg2.errors
