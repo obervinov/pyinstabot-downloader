@@ -31,9 +31,9 @@ telegram = TelegramBot(vault=vault)
 # Telegram bot for decorators
 bot = telegram.telegram_bot
 # Users module with rate limits option
-users_rl = Users(vault=vault, rate_limits=True, storage={'db_role': TELEGRAM_BOT_NAME})
+users_rl = Users(vault=vault, rate_limits=True, storage={'db_role': f"{TELEGRAM_BOT_NAME}-users-rl"})
 # Users module without rate limits option
-users = Users(vault=vault, storage={'db_role': TELEGRAM_BOT_NAME})
+users = Users(vault=vault, storage={'db_role': f"{TELEGRAM_BOT_NAME}-users"})
 
 # Client for download content from supplier
 # If API disabled, the mock object will be used
@@ -63,7 +63,7 @@ else:
     uploader.run_transfers.return_value = 'completed'
 
 # Client for communication with the database
-database = DatabaseClient(vault=vault, db_role=TELEGRAM_BOT_NAME)
+database = DatabaseClient(vault=vault, db_role=f"{TELEGRAM_BOT_NAME}-bot")
 
 # Metrics exporter
 metrics = Metrics(port=METRICS_PORT, interval=METRICS_INTERVAL, metrics_prefix=TELEGRAM_BOT_NAME, vault=vault, database=database)

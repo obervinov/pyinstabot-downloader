@@ -46,12 +46,10 @@ def execute(obj):
                     values = f"'{user_id}', '{chat_id}', '{status}'"
 
                     print(f"{NAME}: Migrating user {user_id} to the {table_name} table...")
-                    conn = obj.get_connection()
                     with conn.cursor() as cursor:
                         cursor.execute(f"INSERT INTO {table_name} (user_id, chat_id, status) VALUES ({values})")
                         conn.commit()
                         print(f"{NAME}: User {user_id} has been added to the {table_name} table")
-                obj.close_connection(conn)
                 print(f"{NAME}: Migration has been completed")
             # pylint: disable=broad-exception-caught
             except Exception as migration_error:
@@ -60,3 +58,4 @@ def execute(obj):
                     "Perhaps the history is empty or the Vault secrets path does not exist and migration isn't unnecessary."
                     "It's not a critical error, so the migration will be skipped."
                 )
+obj.close_connection(conn)
