@@ -37,7 +37,7 @@ def execute(obj):
                 print(f"{NAME}: Founded {users_counter} users in users data")
 
                 for user in users:
-                    user_last_state = obj.json.loads(obj.vault.kv2engine.read_secret(path=f"data/users/{user}"))
+                    user_last_state = obj.vault.kv2engine.read_secret(path=f"data/users/{user}", key='authentication')
 
                     user_id = user
                     chat_id = 'unknown'
