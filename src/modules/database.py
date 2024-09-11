@@ -65,7 +65,7 @@ class DatabaseClient:
         get_user_processed(user_id): Get last ten messages from the processed table for the specified user.
         check_message_uniqueness(post_id, user_id): Check if a message with the given post ID and chat ID already exists in the queue.
         keep_message(message_id, chat_id, message_content, **kwargs): Add a message to the messages table in the database.
-        get_users(): Get a dict of users with their metadata from the users table.
+        get_users(only_allowed): Get a list of users from the users table in the database.
         get_considered_message(message_type, chat_id): Get a message with specified type and
 
     Rises:
@@ -794,10 +794,17 @@ class DatabaseClient:
 
         return response
 
-    def get_users(self) -> dict:
+    def get_users(
+        self,
+        only_allowed: bool = True
+    ) -> dict:
         """
         This method will be deprecated after https://github.com/obervinov/users-package/issues/44 (users-package:v3.1.0).
         Get a dictionary of all users with their metadata from the users table in the database.
+        By default, the method returns only allowed users.
+
+        Args:
+            only_allowed (bool): A flag indicating whether to return only allowed users. Default is True.
 
         Returns:
             dict: A dictionary containing all users in the database and their metadata.
@@ -807,11 +814,20 @@ class DatabaseClient:
             [{'user_id': '12345', 'chat_id': '67890', 'status': 'denied'}, {'user_id': '12346', 'chat_id': '67891', 'status': 'allowed'}]
         """
         users_dict = []
-        users = self._select(
-            table_name='users',
-            columns=("user_id", "chat_id", "status"),
-            limit=1000
-        )
+        if only_allowed:
+            users = self._select(
+                table_name='users',
+                columns=("user_id", "chat_id", "status"),
+                condition="status = 'allowed'",
+                limit=1000
+            )
+        else:
+            users = self._select(
+                table_name='users',
+                columns=("user_id", "chat_id", "status"),
+                limit=1000
+            )
+
         if users:
             for user in users:
                 users_dict.append({'user_id': user[0], 'chat_id': user[1], 'status': user[2]})

@@ -61,7 +61,7 @@ class Metrics():
         """
         The method collects information about users access status and updates the gauge.
         """
-        users_dict = self.database.get_users()
+        users_dict = self.database.get_users(only_allowed=False)
         access_granted_count = 0
         access_denied_count = 0
         for user in users_dict:
@@ -85,7 +85,7 @@ class Metrics():
         """
         processed_messages_count = 0
         queue_messages_count = 0
-        users_dict = self.database.get_users()
+        users_dict = self.database.get_users(only_allowed=False)
 
         for user in users_dict:
             processed_messages = self.database.get_user_processed(user_id=user['user_id'])
