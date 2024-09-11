@@ -58,4 +58,4 @@ def execute(obj):
                     "Perhaps the history is empty or the Vault secrets path does not exist and migration isn't unnecessary."
                     "It's not a critical error, so the migration will be skipped."
                 )
-obj.close_connection(conn)
+        obj.close_connection(conn)
