@@ -486,9 +486,10 @@ def status_message_updater_thread() -> None:
     while True:
         time.sleep(STATUSES_MESSAGE_FREQUENCY)
         try:
+            users_dict = []
             users_dict = database.get_users()
-            if users_dict:
-                for user in users_dict:
+            for user in users_dict:
+                if user['status'] == 'allowed':
                     update_status_message(user_id=user['user_id'])
         # pylint: disable=broad-exception-caught
         except Exception as exception:
