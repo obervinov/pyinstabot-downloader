@@ -6,7 +6,6 @@ https://github.com/obervinov/users-package/blob/v3.0.0/tests/postgres/tables.sql
 VERSION = '1.0'
 NAME = '0004_vault_users_data'
 
-import json
 
 def execute(obj):
     """
@@ -38,7 +37,7 @@ def execute(obj):
                 print(f"{NAME}: Founded {users_counter} users in users data")
 
                 for user in users:
-                    user_last_state = json.loads(obj.vault.kv2engine.read_secret(path=f"data/users/{user}"))
+                    user_last_state = obj.json.loads(obj.vault.kv2engine.read_secret(path=f"data/users/{user}"))
 
                     user_id = user
                     chat_id = 'unknown'
