@@ -32,12 +32,12 @@ def execute(obj):
 
         else:
             try:
-                users = obj.vault.kv2eninge.list_secrets(path='data/users')
+                users = obj.vault.kv2engine.list_secrets(path='data/users')
                 users_counter = len(users)
                 print(f"{NAME}: Founded {users_counter} users in users data")
 
                 for user in users:
-                    user_last_state = obj.vault.kv2eninge.read_secret(path=f"data/users/{user}")
+                    user_last_state = obj.vault.kv2engine.read_secret(path=f"data/users/{user}")
 
                     user_id = user
                     chat_id = 'unknown'
