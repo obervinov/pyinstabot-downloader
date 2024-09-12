@@ -14,7 +14,12 @@ from logger import log
 from telegram import TelegramBot, exceptions as TelegramExceptions
 from users import Users
 from vault import VaultClient
-from configs.constants import (TELEGRAM_BOT_NAME, ROLES_MAP, QUEUE_FREQUENCY, STATUSES_MESSAGE_FREQUENCY, METRICS_PORT, METRICS_INTERVAL)
+from configs.constants import (
+    TELEGRAM_BOT_NAME, ROLES_MAP,
+    QUEUE_FREQUENCY, STATUSES_MESSAGE_FREQUENCY,
+    METRICS_PORT, METRICS_INTERVAL,
+    VAULT_DBENGINE_MOUNT_POINT, VAULT_DB_ROLE_MAIN, VAULT_DB_ROLE_USERS, VAULT_DB_ROLE_USERS_RL
+)
 from modules.database import DatabaseClient
 from modules.exceptions import FailedMessagesStatusUpdater
 from modules.tools import get_hash
@@ -25,15 +30,15 @@ from modules.metrics import Metrics
 
 # Vault client
 # The need to explicitly specify a mount point will no longer be necessary after solving the https://github.com/obervinov/vault-package/issues/49
-vault = VaultClient(dbengine={"mount_point": f"{TELEGRAM_BOT_NAME}-database"})
+vault = VaultClient(dbengine={"mount_point": VAULT_DBENGINE_MOUNT_POINT})
 # Telegram instance
 telegram = TelegramBot(vault=vault)
 # Telegram bot for decorators
 bot = telegram.telegram_bot
 # Users module with rate limits option
-users_rl = Users(vault=vault, rate_limits=True, storage={'db_role': f"{TELEGRAM_BOT_NAME}-users-rl"})
+users_rl = Users(vault=vault, rate_limits=True, storage={'db_role': VAULT_DB_ROLE_USERS_RL})
 # Users module without rate limits option
-users = Users(vault=vault, storage={'db_role': f"{TELEGRAM_BOT_NAME}-users"})
+users = Users(vault=vault, storage={'db_role': VAULT_DB_ROLE_USERS})
 
 # Client for download content from supplier
 # If API disabled, the mock object will be used
@@ -63,7 +68,7 @@ else:
     uploader.run_transfers.return_value = 'completed'
 
 # Client for communication with the database
-database = DatabaseClient(vault=vault, db_role=f"{TELEGRAM_BOT_NAME}-bot")
+database = DatabaseClient(vault=vault, db_role=VAULT_DB_ROLE_MAIN)
 
 # Metrics exporter
 metrics = Metrics(port=METRICS_PORT, interval=METRICS_INTERVAL, metrics_prefix=TELEGRAM_BOT_NAME, vault=vault, database=database)
@@ -82,7 +87,8 @@ def start_command(message: telegram.telegram_types.Message = None) -> None:
     Returns:
         None
     """
-    if users.user_access_check(message.chat.id).get('access', None) == users.user_status_allow:
+    requestor = {'user_id': message.chat.id, 'chat_id': message.chat.id, 'message_id': message.message_id}
+    if users.user_access_check(**requestor).get('access', None) == users.user_status_allow:
         log.info('[Bot]: Processing "start" command for user %s...', message.chat.id)
         # Main message
         reply_markup = telegram.create_inline_markup(ROLES_MAP.keys())
@@ -121,7 +127,11 @@ def bot_callback_query_handler(call: telegram.callback_query = None) -> None:
         None
     """
     log.info('[Bot]: Processing button "%s" for user %s...', call.data, call.message.chat.id)
-    if users.user_access_check(call.message.chat.id, ROLES_MAP[call.data]).get('permissions', None) == users.user_status_allow:
+    requestor = {
+        'user_id': call.message.chat.id, 'role_id': ROLES_MAP[call.data],
+        'chat_id': call.message.chat.id, 'message_id': call.message.message_id
+    }
+    if users.user_access_check(**requestor).get('permissions', None) == users.user_status_allow:
         if call.data == "Post":
             help_message = telegram.send_styled_message(
                 chat_id=call.message.chat.id,
@@ -168,7 +178,8 @@ def unknown_command(message: telegram.telegram_types.Message = None) -> None:
     Returns:
         None
     """
-    if users.user_access_check(message.chat.id).get('access', None) == users.user_status_allow:
+    requestor = {'user_id': message.chat.id, 'chat_id': message.chat.id, 'message_id': message.message_id}
+    if users.user_access_check(**requestor).get('access', None) == users.user_status_allow:
         log.error('[Bot]: Invalid command "%s" from user %s', message.text, message.chat.id)
         telegram.send_styled_message(chat_id=message.chat.id, messages_template={'alias': 'unknown_command'})
     else:
@@ -374,8 +385,11 @@ def process_one_post(
     Returns:
         None
     """
-    # Check permissions
-    user = users_rl.user_access_check(message.chat.id, ROLES_MAP['Post'])
+    requestor = {
+        'user_id': message.chat.id, 'role_id': ROLES_MAP['Post'],
+        'chat_id': message.chat.id, 'message_id': message.message_id
+    }
+    user = users_rl.user_access_check(**requestor)
     if user.get('permissions', None) == users_rl.user_status_allow:
         data = message_parser(message)
         rate_limit = user.get('rate_limits', None)
@@ -414,7 +428,11 @@ def process_list_posts(
     Returns:
         None
     """
-    user = users.user_access_check(message.chat.id, ROLES_MAP['Posts List'])
+    requestor = {
+        'user_id': message.chat.id, 'role_id': ROLES_MAP['Posts List'],
+        'chat_id': message.chat.id, 'message_id': message.message_id
+    }
+    user = users.user_access_check(**requestor)
     if user.get('permissions', None) == users.user_status_allow:
         for link in message.text.split('\n'):
             message.text = link
@@ -442,7 +460,11 @@ def reschedule_queue(
     Returns:
         None
     """
-    user = users.user_access_check(message.chat.id, ROLES_MAP['Reschedule Queue'])
+    requestor = {
+        'user_id': message.chat.id, 'role_id': ROLES_MAP['Reschedule Queue'],
+        'chat_id': message.chat.id, 'message_id': message.message_id
+    }
+    user = users.user_access_check(**requestor)
     can_be_deleted = True
     if user.get('permissions', None) == users.user_status_allow:
         for item in message.text.split('\n'):

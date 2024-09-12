@@ -67,7 +67,7 @@
             "description": "The table stores the user ID and the chat ID for communication with the bot",
             "columns": [
                 "id SERIAL PRIMARY KEY, ",
-                "user_id VARCHAR(255) NOT NULL, ",
+                "user_id VARCHAR(255) UNIQUE NOT NULL, ",
                 "chat_id VARCHAR(255) NOT NULL, ",
                 "status VARCHAR(255) NOT NULL DEFAULT 'denied'"
             ]

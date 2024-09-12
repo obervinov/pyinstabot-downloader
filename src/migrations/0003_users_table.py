@@ -20,7 +20,8 @@ def execute(obj):
     # database settings
     table_name = 'users'
     add_columns = [('status', 'VARCHAR(255)', "'denied'")]
-    print(f"{NAME}: Start migration for the {table_name} table: Add columns {add_columns}...")
+    update_columns = [('user_id', 'VARCHAR(255)', 'UNIQUE NOT NULL')]
+    print(f"{NAME}: Start migration for the {table_name} table: Add columns {add_columns} and update columns {update_columns}...")
 
     # check if the table exists and has the necessary schema for execute the migration
     conn = obj.get_connection()
