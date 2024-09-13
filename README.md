@@ -20,7 +20,7 @@
   - [Target storage of the content](#target-storage-of-the-content)
   - [Bot configuration source and supported parameters](#bot-configuration-source-and-supported-parameters)
   - [Bot persistent data storage](#bot-persistent-data-storage)
-- [How to run project](#-how-to-run-project)
+- [How to run project locally](#-how-to-run-project-locally)
 
 
 ## <img src="https://github.com/obervinov/_templates/blob/v1.2.2/icons/book.png" width="25" title="about"> About this project
@@ -50,11 +50,20 @@ This project is a Telegram bot that allows you to upload posts from your Instagr
 </br>
 
 ## <img src="https://github.com/obervinov/_templates/blob/v1.2.2/icons/requirements.png" width="25" title="requirements"> Requirements
-- <img src="https://github.com/obervinov/_templates/blob/v1.2.2/icons/vault.png" width="15" title="vault"> Vault server - [a storage of secrets for bot with kv v2 engine](https://developer.hashicorp.com/vault/docs/secrets/kv/kv-v2)
-- <img src="https://github.com/obervinov/_templates/blob/v1.2.2/icons/dropbox.ico" width="15" title="dropbox"> Dropbox [api token](https://dropbox.tech/developers/generate-an-access-token-for-your-own-account)</img> or <img src="https://github.com/obervinov/_templates/blob/v1.2.2/icons/mega.png" width="15" title="mega"> Mega.nz [account](https://mega.nz)</img> or <img src="https://github.com/obervinov/_templates/blob/main/icons/file.png" width="15" title="webdav"> WebDav provider [url, username and password](https://docs.nextcloud.com/server/latest/user_manual/en/files/access_webdav.html)</img>
-- <img src="https://github.com/obervinov/_templates/blob/v1.2.2/icons/telegram.png" width="15" title="telegram"> Telegram bot api token - [instructions for creating bot and getting a token of api](https://learn.microsoft.com/en-us/azure/bot-service/bot-service-channel-connect-telegram?view=azure-bot-service-4.0)
-- <img src="https://github.com/obervinov/_templates/blob/v1.2.2/icons/instagram.png" width="15" title="instagram"> Instagram username/password - [login and password from the instagram account, it is advisable to create a new account](https://www.instagram.com/accounts/emailsignup/)
-- <img src="https://github.com/obervinov/_templates/blob/v1.2.2/icons/postgres.png" width="15" title="postgresql"> Postgresql - [a storage of project persistent data](https://www.postgresql.org/download/)
+- <img src="https://github.com/obervinov/_templates/blob/v1.2.2/icons/vault.png" width="15" title="vault"> **Vault server**
+   - [store the project configuration in kv2](https://developer.hashicorp.com/vault/docs/secrets/kv/kv-v2)
+   - [generate access credentials in the database](https://developer.hashicorp.com/vault/docs/secrets/databases)
+   - [prepare the vault server](scripts/vault-init.sh)
+- <img src="https://github.com/obervinov/_templates/blob/v1.2.2/icons/mega.png" width="15" title="mega"> **Cloud Storage** (choose one)
+   - dropbox: [api token](https://dropbox.tech/developers/generate-an-access-token-for-your-own-account)
+   - mega: [account](https://mega.nz)
+   - webdav: [url, username and password](https://docs.nextcloud.com/server/latest/user_manual/en/files/access_webdav.html)
+- <img src="https://github.com/obervinov/_templates/blob/v1.2.2/icons/telegram.png" width="15" title="telegram"> **Telegram**
+   - bot: [api token](https://learn.microsoft.com/en-us/azure/bot-service/bot-service-channel-connect-telegram?view=azure-bot-service-4.0)
+- <img src="https://github.com/obervinov/_templates/blob/v1.2.2/icons/instagram.png" width="15" title="instagram"> **Instagram** (choose one)
+   - account: [username/password](https://www.instagram.com/accounts/emailsignup/) or [a ready uploaded session from the browser](https://raw.githubusercontent.com/instaloader/instaloader/master/docs/codesnippets/615_import_firefox_session.py)
+- <img src="https://github.com/obervinov/_templates/blob/v1.2.2/icons/postgres.png" width="15" title="postgresql"> **Postgresql**
+   - database: [empty database](scripts/psql-init.sh)
 </br>
 
 ## <img src="https://github.com/obervinov/_templates/blob/v1.2.2/icons/build.png" width="25" title="build"> Environment variables
@@ -85,9 +94,12 @@ This project is a Telegram bot that allows you to upload posts from your Instagr
 </br>
 
 ### Bot configuration source and supported parameters
-<img src="https://github.com/obervinov/_templates/blob/v1.2.2/icons/vault.png" width="15" title="vault"> All bot configuration is stored in the `Vault Secrets`</br>
-_except for the part of the configuration that configures the connection to `Vault`_</br>
-- `pyinstabot-downloader-database` - vault database engine mount point (returns the temporary username and password for the database)
+<img src="https://github.com/obervinov/_templates/blob/v1.2.2/icons/vault.png" width="15" title="vault"> All bot configuration is stored in the `Vault Secrets` (_except for the part of the configuration that configures the connection to `Vault`_)
+</br>
+
+- `pyinstabot-downloader-database` - vault database engine mount point, returns the temporary username and password for the database. More information about the database engine can be found [here](https://developer.hashicorp.com/vault/docs/secrets/databases/postgresql) and [here](https://developer.hashicorp.com/vault/tutorials/db-credentials/database-secrets)
+  </br>
+
 - `configuration/database`: database connection parameters
   ```json
   {
@@ -98,7 +110,22 @@ _except for the part of the configuration that configures the connection to `Vau
   }
   ```
   </br>
+
+- `configuration/telegram`: telegram bot configuration
+  ```json
+  {
+    "token": "123456:qwerty"
+  }
+  ```
+  </br>
+
 - `configuration/downloader-api`: downloader module configuration (for downloading content from instagram)
+
+  Clarification of non-obvious parameters
+  - `fatal-status-codes`: a list of status codes that are considered fatal and stop downloader module work
+  - `iphone-support`: if `True` the downloader module will use the iphone user-agent
+  - `login-method`: the method of logging into the instagram account (`session`, `password`, `anonymous`)
+  - `session-base64`: the session file content in base64 format (only for `session` login method)
   ```json
   {
     "enabled": "True",
@@ -112,24 +139,20 @@ _except for the part of the configuration that configures the connection to `Vau
     "username": "username1"
   }
   ```
-  Clarification of non-obvious parameters
-  - `fatal-status-codes`: a list of status codes that are considered fatal and stop downloader module work
-  - `iphone-support`: if `True`, the downloader module will use the iphone user-agent
-  - `login-method`: the method of logging into the instagram account (`session`, `password`, `anonymous`)
-  - `session-base64`: the session file content in base64 format
   </br>
-- `configuration/telegram`: telegram bot configuration
-  ```json
-  {
-    "token": "123456:qwerty"
-  }
-  ```
-  </br>
+
 - `configuration/uploader-api`: uploader module configuration (for upload content to the target storage)
+
+  Clarification of non-obvious parameters
+  - `destination-directory`: the directory in the target storage where the content will be uploaded
+  - `exclude-types`: a list of file extensions that will be excluded from the upload (for example, `.txt` - text from the post)
+  - `source-directory`: the directory where the content will be stored before uploading (temporary directory)
+  - `storage-type`: the type of storage where the content will be uploaded (`dropbox`, `mega`, `webdav`)
+  - `url`: the url of the target webdav directory (only for `webdav` storage)
   ```json
   {
-    "destination-directory": "cloud-directory/",
     "enabled": "True",
+    "destination-directory": "cloud-directory/",
     "exclude-types": "[\".txt\", \".tmp\"]",
     "password": "qwerty123",
     "source-directory": "data/",
@@ -138,14 +161,14 @@ _except for the part of the configuration that configures the connection to `Vau
     "url": "https://webdav.example.com/directory"
   }
   ```
-  Clarification of non-obvious parameters
-  - `destination-directory`: the directory in the target storage where the content will be uploaded
-  - `exclude-types`: a list of file extensions that will be excluded from the upload (for example, `.txt` - text from the post)
-  - `source-directory`: the directory where the content will be stored before uploading (temporary directory)
-  - `storage-type`: the type of storage where the content will be uploaded (`dropbox`, `mega`, `webdav`)
-  - `url`: the url of the target webdav directory (only for `webdav` storage)
   </br>
-- `configuration/users/<telegram_user_id>`: user permissions configuration
+
+- `configuration/users/<telegram_user_id>`: users permissions and attributes
+
+  Clarification of non-obvious parameters
+  - `requests`: the number of requests that the user can make per day and per hour, as well as the random shift in minutes (scheduling of message processing from the queue works on the basis of this parameter)
+  - `roles`: list of roles that allow to use the corresponding functionality ([available roles](src/configs/constants.py#L11-L15)).
+  - `status`: allowed or denied user access to the bot
   ```json
   {
     "requests": "{\"requests_per_day\": 10, \"requests_per_hour\": 1, \"random_shift_minutes\": 60}",
@@ -153,10 +176,6 @@ _except for the part of the configuration that configures the connection to `Vau
     "status": "allowed"
   }
   ```
-  Clarification of non-obvious parameters
-  - `requests`: the number of requests that the user can make per day and per hour, as well as the random shift in minutes (scheduling of message processing from the queue works on the basis of this parameter)
-  - `roles`: list of roles that allow to use the corresponding functionality ([available roles](src/configs/constants.py#L19-L23)).
-  - `status`: allowed or denied user access to the bot
 
 #### You can use an existing vault-server or launch a new one using docker-compose
 Scripts for configuring the vault-server are located in the [vault-init.sh](scripts/vault-init.sh)
@@ -170,11 +189,11 @@ cd pyinstabot-downloader
 docker-compose -f docker-compose.yml up vault-server -d
 
 # Initialize and unseal new vault-server
+export VAULT_ADDR=http://0.0.0.0:8200
 vault operator init
 vault operator unseal
 
 # Run the script for configuring the vault-server for this bot project
-export VAULT_ADDR=http://localhost:8200
 export VAULT_TOKEN=hvs.123456qwerty
 ./scripts/vault-init.sh
 ```
@@ -193,15 +212,16 @@ export VAULT_TOKEN=hvs.123456qwerty
 </br>
 
 ### Bot persistent data storage
-<img src="https://github.com/obervinov/_templates/blob/v1.2.2/icons/postgres.png" width="15" title="postgres"> Persistent data storage is implemented using `Postgresql`</br>
-You can familiarize yourself with the
+<img src="https://github.com/obervinov/_templates/blob/v1.2.2/icons/postgres.png" width="15" title="postgres"> Persistent data storage is implemented using `Postgresql`
 - data structure, tables and assignment of tables [here](src/configs/databases.json)
 - migrations [here](src/migrations/)
 
-The database structure is created automatically when the bot starts. Bot checks the database structure and creates missing tables if necessary.
-After checking the database structure, the bot executes the migrations in the order of their numbering.</br>
-All that is required is a database and the rights of the owner of this data database.
-To quickly prepare an instance, you can execute the[psql-init.sh](scripts/psql-init.sh) script
+The database structure is created automatically when the bot starts:
+  1. bot checks the database structure and creates missing tables if necessary
+  2. after checking the database structure, the bot executes the migrations in the order of their numbering
+
+To quickly prepare an instance, you can execute the [psql-init.sh](scripts/psql-init.sh) script
+
 ```bash
 git clone https://github.com/obervinov/pyinstabot-downloader.git
 cd pyinstabot-downloader
@@ -218,9 +238,10 @@ export PGDATABASE=postgres
 **What data is stored in tables:**
 - users requests queue
 - users metadata
-- history of processed users requests 
-- migration history
-- messages sent by the bot
+- history of users requests
+- history of processed messages
+- migrations history
+- service messages by the bot
 </br>
 
 ## <img src="https://github.com/obervinov/_templates/blob/v1.2.2/icons/docker.png" width="25" title="docker"> How to run project locally
@@ -235,4 +256,4 @@ docker compose -f docker-compose.yml up -d
 ## <img src="https://github.com/obervinov/_templates/blob/v1.2.2/icons/github-actions.png" width="25" title="github-actions"> GitHub Actions
 | Name  | Version |
 | ------------------------ | ----------- |
-| GitHub Actions Templates | [v1.2.8](https://github.com/obervinov/_templates/tree/v1.2.8) |
+| GitHub Actions Templates | [v1.2.9](https://github.com/obervinov/_templates/tree/v1.2.9) |
