@@ -1,6 +1,5 @@
 """
-This module contains the main code for the bot
-to work and contains the main logic linking the additional modules.
+This module contains the main code for the bot to work and contains the main logic linking the additional modules.
 """
 from datetime import datetime, timedelta
 import re
@@ -40,30 +39,30 @@ users_rl = Users(vault=vault, rate_limits=True, storage={'db_role': VAULT_DB_ROL
 # Users module without rate limits option
 users = Users(vault=vault, storage={'db_role': VAULT_DB_ROLE_USERS})
 
-# Client for download content from supplier
+# Client for download content from instagram
 # If API disabled, the mock object will be used
 downloader_api_enabled = vault.kv2engine.read_secret(path='configuration/downloader-api').get('enabled', False)
 if downloader_api_enabled == 'True':
-    log.info('[Bot]: downloader API is enabled: %s', downloader_api_enabled)
+    log.info('[Bot]: Downloader api is enabled: %s', downloader_api_enabled)
     downloader = Downloader(vault=vault)
 else:
-    log.warning('[Bot]: downloader API is disabled, using mock object, because enabled flag is %s', downloader_api_enabled)
+    log.warning('[Bot]: Downloader api is disabled, using mock object, because enabled flag is %s', downloader_api_enabled)
     downloader = MagicMock()
     downloader.get_post_content.return_value = {
         'post': f"mock_{''.join(random.choices(string.ascii_letters + string.digits, k=10))}",
-        'owner': 'undefined',
+        'owner': 'mock',
         'type': 'fake',
         'status': 'completed'
     }
 
-# Client for upload content to the cloud storage
+# Client for upload content to the target storage
 # If API disabled, the mock object will be used
 uploader_api_enabled = vault.kv2engine.read_secret(path='configuration/uploader-api').get('enabled', False)
 if uploader_api_enabled == 'True':
-    log.info('[Bot]: uploader API is enabled: %s', uploader_api_enabled)
+    log.info('[Bot]: Uploader API is enabled: %s', uploader_api_enabled)
     uploader = Uploader(vault=vault)
 else:
-    log.warning('[Bot]: uploader API is disabled, using mock object, because enabled flag is %s', uploader_api_enabled)
+    log.warning('[Bot]: Uploader API is disabled, using mock object, because enabled flag is %s', uploader_api_enabled)
     uploader = MagicMock()
     uploader.run_transfers.return_value = 'completed'
 
@@ -83,14 +82,11 @@ def start_command(message: telegram.telegram_types.Message = None) -> None:
 
     Args:
         message (telegram.telegram_types.Message): The message object containing information about the chat.
-
-    Returns:
-        None
     """
     requestor = {'user_id': message.chat.id, 'chat_id': message.chat.id, 'message_id': message.message_id}
     if users.user_access_check(**requestor).get('access', None) == users.user_status_allow:
-        log.info('[Bot]: Processing "start" command for user %s...', message.chat.id)
-        # Main message
+        log.info('[Bot]: Processing start command for user %s...', message.chat.id)
+        # Main pinned message
         reply_markup = telegram.create_inline_markup(ROLES_MAP.keys())
         start_message = telegram.send_styled_message(
             chat_id=message.chat.id,
@@ -122,11 +118,8 @@ def bot_callback_query_handler(call: telegram.callback_query = None) -> None:
 
     Args:
         call (telegram.callback_query): The callback query object.
-
-    Returns:
-        None
     """
-    log.info('[Bot]: Processing button "%s" for user %s...', call.data, call.message.chat.id)
+    log.info('[Bot]: Processing button %s for user %s...', call.data, call.message.chat.id)
     requestor = {
         'user_id': call.message.chat.id, 'role_id': ROLES_MAP[call.data],
         'chat_id': call.message.chat.id, 'message_id': call.message.message_id
@@ -154,7 +147,7 @@ def bot_callback_query_handler(call: telegram.callback_query = None) -> None:
             bot.register_next_step_handler(call.message, reschedule_queue, help_message)
 
         else:
-            log.error('[Bot]: Handler for button "%s" not found', call.data)
+            log.error('[Bot]: Handler for button %s not found', call.data)
 
     else:
         telegram.send_styled_message(
@@ -174,13 +167,10 @@ def unknown_command(message: telegram.telegram_types.Message = None) -> None:
 
     Args:
         message (telegram.telegram_types.Message): The message object containing the unrecognized command.
-
-    Returns:
-        None
     """
     requestor = {'user_id': message.chat.id, 'chat_id': message.chat.id, 'message_id': message.message_id}
     if users.user_access_check(**requestor).get('access', None) == users.user_status_allow:
-        log.error('[Bot]: Invalid command "%s" from user %s', message.text, message.chat.id)
+        log.error('[Bot]: Invalid command %s from user %s', message.text, message.chat.id)
         telegram.send_styled_message(chat_id=message.chat.id, messages_template={'alias': 'unknown_command'})
     else:
         telegram.send_styled_message(
@@ -200,9 +190,6 @@ def update_status_message(user_id: str = None) -> None:
 
     Args:
         user_id (str): The user id.
-
-    Returns:
-        None
     """
     try:
         diff_between_messages = False
