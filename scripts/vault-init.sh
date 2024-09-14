@@ -26,7 +26,19 @@ vault write pyinstabot-downloader-database/config/postgresql \
     connection_url="postgresql://{{username}}:{{password}}@localhost:5432/pyinstabot-downloader?sslmode=disable" \
     username="postgres" \
     password="changeme"
-vault write pyinstabot-downloader-database/roles/pyinstabot-downloader \
+vault write pyinstabot-downloader-database/roles/pyinstabot-downloader-bot \
+    db_name=postgresql \
+    creation_statements="CREATE ROLE \"{{name}}\" WITH LOGIN PASSWORD '{{password}}' VALID UNTIL '{{expiration}}'; GRANT ALL PRIVILEGES ON SCHEMA public TO \"{{name}}\"; GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO \"{{name}}\"; GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO \"{{name}}\";" \
+    revocation_statements="REVOKE ALL PRIVILEGES ON SCHEMA public FROM \"{{name}}\"; REVOKE ALL PRIVILEGES ON ALL TABLES IN SCHEMA public FROM \"{{name}}\"; REVOKE ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public FROM \"{{name}}\"; DROP ROLE \"{{name}}\";" \
+    default_ttl="24h" \
+    max_ttl="72h"
+vault write pyinstabot-downloader-database/roles/pyinstabot-downloader-users \
+    db_name=postgresql \
+    creation_statements="CREATE ROLE \"{{name}}\" WITH LOGIN PASSWORD '{{password}}' VALID UNTIL '{{expiration}}'; GRANT ALL PRIVILEGES ON SCHEMA public TO \"{{name}}\"; GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO \"{{name}}\"; GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO \"{{name}}\";" \
+    revocation_statements="REVOKE ALL PRIVILEGES ON SCHEMA public FROM \"{{name}}\"; REVOKE ALL PRIVILEGES ON ALL TABLES IN SCHEMA public FROM \"{{name}}\"; REVOKE ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public FROM \"{{name}}\"; DROP ROLE \"{{name}}\";" \
+    default_ttl="24h" \
+    max_ttl="72h"
+vault write pyinstabot-downloader-database/roles/pyinstabot-downloader-users-rl \
     db_name=postgresql \
     creation_statements="CREATE ROLE \"{{name}}\" WITH LOGIN PASSWORD '{{password}}' VALID UNTIL '{{expiration}}'; GRANT ALL PRIVILEGES ON SCHEMA public TO \"{{name}}\"; GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO \"{{name}}\"; GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO \"{{name}}\";" \
     revocation_statements="REVOKE ALL PRIVILEGES ON SCHEMA public FROM \"{{name}}\"; REVOKE ALL PRIVILEGES ON ALL TABLES IN SCHEMA public FROM \"{{name}}\"; REVOKE ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public FROM \"{{name}}\"; DROP ROLE \"{{name}}\";" \
