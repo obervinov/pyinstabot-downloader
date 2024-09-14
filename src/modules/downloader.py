@@ -90,7 +90,7 @@ class Downloader:
         )
         auth_status = self._login()
         if auth_status == 'logged_in':
-            log.info('[Downloader]: Instance created successfully with account ', self.configuration['username'])
+            log.info('[Downloader]: Instance created successfully with account %s', self.configuration['username'])
         else:
             raise FailedAuthInstaloader("Failed to authenticate the Instaloader instance.")
 
