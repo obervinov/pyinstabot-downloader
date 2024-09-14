@@ -41,6 +41,7 @@ def test_metrics_threads_status(metrics_class):
     """
     response = requests.get(f"http://0.0.0.0:{metrics_class.port}/", timeout=10)
     assert "pytest_thread_status" in response.text
+    assert 'pytest_thread_status{thread_name="MainThread"} 1.0' in response.text
 
 
 @pytest.mark.order(16)
