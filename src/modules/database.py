@@ -403,7 +403,9 @@ class DatabaseClient:
                         values="state = 'updated'",
                         condition=f"id = '{message[0]}'"
                     )
-            log.info('[Database]: Stale status messages have been reset')
+                    log.info('[Database]: Stale status messages have been reset')
+                else:
+                    log.info('[Database]: No stale status messages found')
 
     def add_message_to_queue(
         self,
