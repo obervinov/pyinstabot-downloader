@@ -106,17 +106,17 @@ class Uploader:
         Returns:
             None
         """
-        log.info('[Uploader]: Checking incomplete transfers...', __class__.__name__)
+        log.info('[Uploader]: Checking incomplete transfers...')
         for root, dirs, _ in os.walk(self.configuration['source-directory']):
             for dir_name in dirs:
                 sub_directory = os.path.join(root, dir_name)
                 # Check the subdirectory for files
                 sub_files = [f for f in os.listdir(sub_directory) if os.path.isfile(os.path.join(sub_directory, f))]
                 if sub_files:
-                    log.warning('[Uploader]: An unloaded artifact was found: %s', __class__.__name__, sub_directory)
+                    log.warning('[Uploader]: An unloaded artifact was found: %s', sub_directory)
                     self.run_transfers(sub_directory=sub_directory)
                 else:
-                    log.info('[Uploader]: Remove of an empty directory %s', __class__.__name__, sub_directory)
+                    log.info('[Uploader]: Remove of an empty directory %s', sub_directory)
                     os.rmdir(sub_directory)
 
     def run_transfers(
@@ -137,7 +137,7 @@ class Uploader:
         """
         transfers = {}
         result = ""
-        log.info('[Uploader]: Preparing media files for transfer to the %s...', __class__.__name__, self.configuration['storage-type'])
+        log.info('[Uploader]: Preparing media files for transfer to the %s...', self.configuration['storage-type'])
         for root, _, files in os.walk(f"{self.configuration['source-directory']}{sub_directory}"):
             for file in files:
                 if file.split('.')[-1] in self.configuration.get('exclude-types', None):
@@ -152,7 +152,7 @@ class Uploader:
                         result = 'completed'
                     else:
                         result = 'not_completed'
-        log.info('[Uploader]: List of all transfers %s', __class__.__name__, transfers)
+        log.info('[Uploader]: List of all transfers %s', transfers)
         return result
 
     def upload_to_cloud(
@@ -172,20 +172,20 @@ class Uploader:
                 or
             None
         """
-        log.info('[Uploader]: Starting upload file %s to %s://%s', __class__.__name__, source, self.configuration['storage-type'], destination)
+        log.info('[Uploader]: Starting upload file %s to %s://%s', source, self.configuration['storage-type'], destination)
         response = None
         result = None
 
         if self.configuration['storage-type'] == 'mega':
             directory = f"{self.configuration['destination-directory']}/{destination}"
-            log.info('[Uploader]: Trying found mega folder %s...', __class__.__name__, directory)
+            log.info('[Uploader]: Trying found mega folder %s...', directory)
             mega_folder = self.storage.find(directory, exclude_deleted=True)
             if not mega_folder:
                 self.storage.create_folder(directory)
                 mega_folder = self.storage.find(directory, exclude_deleted=True)
-                log.info('[Uploader]: Mega folder not found, created new folder %s', __class__.__name__, mega_folder)
+                log.info('[Uploader]: Mega folder not found, created new folder %s', mega_folder)
             else:
-                log.info('[Uploader]: Mega folder %s was found', __class__.__name__, mega_folder)
+                log.info('[Uploader]: Mega folder %s was found', mega_folder)
             response = self.storage.upload(filename=source, dest=mega_folder[0])
             result = "uploaded"
 
@@ -205,5 +205,5 @@ class Uploader:
             response = self.storage.info(f"{self.configuration['destination-directory']}/{destination}/{source.split('/')[-1]}")['etag']
             result = "uploaded"
 
-        log.info('[Uploader]: %s successful transferred', __class__.__name__, response)
+        log.info('[Uploader]: %s successful transferred', response)
         return result
