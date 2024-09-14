@@ -124,7 +124,7 @@ class Downloader:
                 self.configuration['password']
             )
             self.instaloader.save_session_to_file(self.configuration['session-file'])
-            log.info('[Downloader]: Login with password was successful. Save session in %s', self.configuration['sessionfile'])
+            log.info('[Downloader]: Login with password was successful. Saved session in %s', self.configuration['sessionfile'])
             return 'logged_in'
 
         if self.configuration['login-method'] == 'anonymous':
