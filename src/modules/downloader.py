@@ -2,12 +2,14 @@
 """
 This module interacts with the instagram api and uploads content to a temporary directory.
 Supports downloading the content of the post by link and getting information about the account.
-https://instaloader.github.io/module/instaloader.html
+https://github.com/subzeroid/instagrapi
 """
+import os
+import time
+import random
 from typing import Union
-from ast import literal_eval
-import base64
-import instaloader
+from pathlib import Path
+from instagrapi import Client
 from logger import log
 from .exceptions import WrongVaultInstance, FailedCreateDownloaderInstance, FailedAuthInstaloader
 
@@ -30,12 +32,7 @@ class Downloader:
             :param configuration (dict): dictionary with configuration parameters for Instagram API communication.
                 :param username (str): username for authentication in the instagram api.
                 :param password (str): password for authentication in the instagram api.
-                :param login-method (str): method for authentication in the instagram api. Can be: 'session', 'password', 'anonymous'.
-                :param session-file (str): the path for saving the session file.
-                :param user-agent (str): user-agent header.
-                :param fatal-status-codes (list): list of fatal status codes, this causes the thread executing this module's code to crash.
-                :param iphone-support (bool): enable or disable iphone http headers.
-                :param session-base64 (str): base64 encoded session file.
+                :param delay-requests (int): delay between requests.
             :param vault (object): instance of vault for reading configuration downloader-api.
 
         Returns:
@@ -69,26 +66,11 @@ class Downloader:
                 "Failed to initialize the Downloader instance."
                 "Please check the configuration in class argument or the secret with the configuration in the Vault."
             )
+
         log.info('[Downloader]: Creating a new instance...')
-        self.instaloader = instaloader.Instaloader(
-            quiet=True,
-            user_agent=self.configuration.get('user-agent', None),
-            iphone_support=self.configuration.get('iphone-support', None),
-            dirname_pattern='data/{profile}',
-            filename_pattern='{profile}_{shortcode}_{filename}',
-            download_pictures=True,
-            download_videos=True,
-            download_video_thumbnails=False,
-            download_geotags=False,
-            download_comments=False,
-            save_metadata=False,
-            compress_json=False,
-            post_metadata_txt_pattern=None,
-            storyitem_metadata_txt_pattern=None,
-            check_resume_bbd=True,
-            fatal_status_codes=literal_eval(self.configuration.get('fatal-status-codes', '[]'))
-        )
+        self.client = Client()
         auth_status = self._login()
+
         if auth_status == 'logged_in':
             log.info('[Downloader]: Instance created successfully with account %s', self.configuration['username'])
         else:
@@ -105,33 +87,10 @@ class Downloader:
                 or
             None
         """
-        if self.configuration['login-method'] == 'session':
-            # If session-base64 defined in the configuration, then decode and save the session file.
-            if self.configuration.get('session-base64', None):
-                with open(self.configuration['session-file'], 'wb') as file:
-                    file.write(base64.b64decode(self.configuration['session-base64']))
-            # Otherwise, it expects the session file to be in the specified path.
-            self.instaloader.load_session_from_file(
-                self.configuration['username'],
-                self.configuration['session-file']
-            )
-            log.info('[Downloader]: Session file %s was saved successfully', self.configuration['session-file'])
-            return 'logged_in'
-
-        if self.configuration['login-method'] == 'password':
-            self.instaloader.login(
-                self.configuration['username'],
-                self.configuration['password']
-            )
-            self.instaloader.save_session_to_file(self.configuration['session-file'])
-            log.info('[Downloader]: Login with password was successful. Saved session in %s', self.configuration['sessionfile'])
-            return 'logged_in'
-
-        if self.configuration['login-method'] == 'anonymous':
-            log.warning('[Downloader]: Initialization without authentication into an account (anonymous)')
-            return None
-
-        raise FailedAuthInstaloader("Failed to authenticate the Instaloader instance.")
+        log.info('[Downloader]: Authentication in the Instagram API...')
+        self.client.login(username=self.configuration['username'], password=self.configuration['password'])
+        log.info('[Downloader]: Authentication in the Instagram API was successful.')
+        return 'logged_in'
 
     def get_post_content(
         self,
@@ -153,25 +112,45 @@ class Downloader:
         """
         log.info('[Downloader]: Downloading the contents of the post %s...', shortcode)
         try:
-            post = instaloader.Post.from_shortcode(self.instaloader.context, shortcode)
-            self.instaloader.download_post(post, '')
-            log.info('[Downloader]: The contents of the post %s have been successfully downloaded', shortcode)
-            status = 'completed'
-            owner = post.owner_username
-            typename = post.typename
-        except instaloader.exceptions.BadResponseException as error:
-            log.error('[Downloader]: Error downloading post content: %s', error)
-            if "Fetching Post metadata failed" in str(error):
-                status = 'source_not_found'
-                owner = 'undefined'
-                typename = 'undefined'
-                log.warning('[Downloader]: Post %s not found, perhaps it was deleted. Message will be marked as processed.', shortcode)
-            else:
-                raise instaloader.exceptions.BadResponseException(error)
+            media_pk = self.client.media_pk_from_code(code=shortcode)
+            media_info = self.client.media_info(media_pk=media_pk).dict()
 
-        return {
-            'post': shortcode,
-            'owner': owner,
-            'type': typename,
-            'status': status
-        }
+            path = Path(f"data/{media_info['user']['username']}")
+            os.makedirs(path, exist_ok=True)
+
+            for resource in media_info['resources']:
+                time.sleep(random.randint(1, self.configuration['delay-requests']))
+                if resource['media_type'] == 1:
+                    path = self.client.photo_download(media_pk=media_pk, folder=path)
+                elif resource['media_type'] == 2 and media_info['product_type'] == 'feed':
+                    path = self.client.video_download(media_pk=media_pk, folder=path)
+                elif resource['media_type'] == 2 and media_info['product_type'] == 'igtv':
+                    path = self.client.igtv_download(media_pk=media_pk, folder=path)
+                elif resource['media_type'] == 2 and media_info['product_type'] == 'clips':
+                    path = self.client.clip_download(media_pk=media_pk, folder=path)
+                else:
+                    log.warning('[Downloader]: The media type is not supported for download: %s', media_info)
+                    path = None
+
+                if path:
+                    log.info('[Downloader]: The contents of the post %s have been successfully downloaded', shortcode)
+                    response = {
+                        'post': shortcode,
+                        'owner': media_info['user']['username'],
+                        'type': {media_info['product_type'] if media_info['product_type'] else 'photo'},
+                        'status': 'completed'
+                    }
+                else:
+                    log.error('[Downloader]: Error downloading post content: %s', media_info)
+                    response = {
+                        'post': shortcode,
+                        'owner': media_info['user']['username'],
+                        'type': {media_info['product_type'] if media_info['product_type'] else 'photo'},
+                        'status': 'failed'
+                    }
+            return response
+
+        # pylint: disable=broad-except
+        except Exception as error:
+            log.error('[Downloader]: Error downloading post content: %s', error)
+            return None
