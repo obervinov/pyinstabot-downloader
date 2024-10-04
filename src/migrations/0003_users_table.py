@@ -62,7 +62,8 @@ def execute(obj):
                         cursor.execute(f"ALTER TABLE {table_name} ADD CONSTRAINT {column[0]}_unique UNIQUE ({column[0]});")
                         conn.commit()
                         print(f"{NAME}: Column {column[0]} has been updated to {column[2]}.")
-                    except obj.errors as error:
+                    # pylint: disable=broad-exception-caught
+                    except Exception as error:
                         print(f"{NAME}: Failed to update column {column[0]}: {error}")
                         conn.rollback()
                 else:
