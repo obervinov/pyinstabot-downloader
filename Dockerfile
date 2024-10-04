@@ -1,4 +1,4 @@
-FROM python:3.9.19-alpine3.20
+FROM python:3.9.20-alpine3.20
 
 ### External argumetns ###
 ARG PROJECT_DESCRIPTION

@@ -19,9 +19,31 @@ path "auth/token/lookup-self" {
 
 # Operations for pytest
 # Allow read, create or update operations on the pytest path
-path "sys/mounts/pyinstabot-downloader" {
+path "sys/mounts/pytest" {
   capabilities = ["read", "create", "update"]
 }
+
+# Operations for pytest
+# Allow reading database credentials for a role 
+path "database/creds/pytest" {
+  capabilities = ["read"]
+}
+
+# Operations for pytest
+# Allow reading database credentials for a role 
+path "pytest/config" {
+  capabilities = ["read", "list", "update"]
+}
+
+# Operations for pytest
+# Allow reading database credentials for a role 
+path "pytest/data/configuration/*" {
+  capabilities = ["create", "read", "update", "list"]
+}
+
+
+###############################################################
+
 
 # Operations for the module
 # Read and update namespace configuration
@@ -54,4 +76,9 @@ path "pyinstabot-downloader/data/history/*" {
 # Allowed to read and list of user configurations
 path "pyinstabot-downloader/metadata/configuration/users" {
   capabilities = ["read", "list"]
+}
+
+# Allow reading database credentials for a role 
+path "database/creds/pyinstabot-downloader"{
+  capabilities = ["read"]
 }

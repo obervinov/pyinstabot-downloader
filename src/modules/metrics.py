@@ -1,6 +1,5 @@
 """This module provides a way to expose metrics to Prometheus for monitoring the application."""
 import time
-import json
 
 from prometheus_client import start_http_server, Gauge
 from logger import log
@@ -10,6 +9,22 @@ from logger import log
 class Metrics():
     """
     This class provides a way to expose metrics to Prometheus for monitoring the application.
+
+    Attributes:
+        :attribute port (int): port for the metrics server.
+        :attribute interval (int): interval for collecting metrics.
+        :attribute database (Database): instance of the Database class.
+        :attribute running (bool): the status of the metrics server.
+        :attribute thread_status_gauge (Gauge): gauge for the thread status.
+        :attribute access_granted_counter (Gauge): gauge for the access granted counter.
+        :attribute access_denied_counter (Gauge): gauge for the access denied counter.
+        :attribute processed_messages_counter (Gauge): gauge for the processed messages counter.
+        :attribute queue_length_gauge (Gauge): gauge for the queue length.
+
+    Examples:
+        >>> metrics = Metrics(port=8000, interval=1, metrics_prefix='pytest')
+        >>> metrics.run(threads=[thread1, thread2])
+        >>> metrics.stop()
     """
     def __init__(
         self,
@@ -27,23 +42,18 @@ class Metrics():
             :param metrics_prefix (str): prefix for the metrics.
 
         Keyword Args:
-            :param vault (Vault): instance of the Vault class.
             :param database (Database): instance of the Database class.
-
-        Returns:
-            None
         """
         metrics_prefix = metrics_prefix.replace('-', '_')
 
         self.port = port
         self.interval = interval
-        self.vault = kwargs.get('vault', None)
         self.database = kwargs.get('database', None)
+        self.running = True
         self.thread_status_gauge = Gauge(f'{metrics_prefix}_thread_status', 'Thread status (1 = running, 0 = not running)', ['thread_name'])
-        if self.vault:
+        if self.database:
             self.access_granted_counter = Gauge(f'{metrics_prefix}_access_granted_total', 'Total number of users granted access')
             self.access_denied_counter = Gauge(f'{metrics_prefix}_access_denied_total', 'Total number of users denied access')
-        if self.database:
             self.processed_messages_counter = Gauge(f'{metrics_prefix}_processed_messages_total', 'Total number of processed messages')
             self.queue_length_gauge = Gauge(f'{metrics_prefix}_queue_length', 'Queue length')
 
@@ -51,15 +61,13 @@ class Metrics():
         """
         The method collects information about users access status and updates the gauge.
         """
-        users = self.vault.list_secrets(path='data/users')
+        users_dict = self.database.get_users(only_allowed=False)
         access_granted_count = 0
         access_denied_count = 0
-
-        for user in users:
-            user_status = json.loads(self.vault.read_secret(path=f'data/users/{user}')['authentication'])
-            if user_status.get('status') == 'denied':
+        for user in users_dict:
+            if user.get('status') == 'denied':
                 access_denied_count += 1
-            elif user_status.get('status') == 'allowed':
+            elif user.get('status') == 'allowed':
                 access_granted_count += 1
 
         self.access_granted_counter.set(access_granted_count)
@@ -77,12 +85,15 @@ class Metrics():
         """
         processed_messages_count = 0
         queue_messages_count = 0
-        for user in self.database.get_users():
-            user_id = user[0]
-            processed_messages = self.database.get_user_processed(user_id=user_id)
-            queue_messages = self.database.get_user_queue(user_id=user_id)
-            processed_messages_count += len(processed_messages.get(user_id, []))
-            queue_messages_count = len(queue_messages.get(user_id, []))
+        users_dict = self.database.get_users(only_allowed=False)
+
+        for user in users_dict:
+            processed_messages = self.database.get_user_processed(user_id=user['user_id'])
+            queue_messages = self.database.get_user_queue(user_id=user['user_id'])
+            if processed_messages:
+                processed_messages_count += len(processed_messages)
+            if queue_messages:
+                queue_messages_count += len(queue_messages)
         self.processed_messages_counter.set(processed_messages_count)
         self.queue_length_gauge.set(queue_messages_count)
 
@@ -92,11 +103,17 @@ class Metrics():
         """
         start_http_server(self.port)
         log.info('[Metrics]: Metrics server started on port %s', self.port)
-        while True:
-            if self.vault:
-                self.collect_users_stats()
+        while self.running:
             if self.database:
+                self.collect_users_stats()
                 self.collect_messages_stats()
-            time.sleep(self.interval)
             for thread in threads:
                 self.update_thread_status(thread.name, thread.is_alive())
+            time.sleep(self.interval)
+
+    def stop(self) -> None:
+        """
+        The method stops the metrics server.
+        """
+        self.running = False
+        log.info('[Metrics]: Metrics server stopped')

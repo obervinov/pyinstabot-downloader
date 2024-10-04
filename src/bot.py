@@ -1,6 +1,5 @@
 """
-This module contains the main code for the bot
-to work and contains the main logic linking the additional modules.
+This module contains the main code for the bot to work and contains the main logic linking the additional modules.
 """
 from datetime import datetime, timedelta
 import re
@@ -14,55 +13,64 @@ from logger import log
 from telegram import TelegramBot, exceptions as TelegramExceptions
 from users import Users
 from vault import VaultClient
-from configs.constants import (TELEGRAM_BOT_NAME, ROLES_MAP, QUEUE_FREQUENCY, STATUSES_MESSAGE_FREQUENCY, METRICS_PORT, METRICS_INTERVAL)
+from configs.constants import (
+    TELEGRAM_BOT_NAME, ROLES_MAP,
+    QUEUE_FREQUENCY, STATUSES_MESSAGE_FREQUENCY,
+    METRICS_PORT, METRICS_INTERVAL,
+    VAULT_DBENGINE_MOUNT_POINT, VAULT_DB_ROLE_MAIN, VAULT_DB_ROLE_USERS, VAULT_DB_ROLE_USERS_RL
+)
 from modules.database import DatabaseClient
 from modules.exceptions import FailedMessagesStatusUpdater
-from modules.tools import get_hash
+from modules.tools import get_hash, check_proxy
 from modules.downloader import Downloader
 from modules.uploader import Uploader
 from modules.metrics import Metrics
 
 
 # Vault client
-vault = VaultClient(name=TELEGRAM_BOT_NAME)
+# The need to explicitly specify a mount point will no longer be necessary after solving the https://github.com/obervinov/vault-package/issues/49
+vault = VaultClient(dbengine={"mount_point": VAULT_DBENGINE_MOUNT_POINT})
 # Telegram instance
 telegram = TelegramBot(vault=vault)
 # Telegram bot for decorators
 bot = telegram.telegram_bot
 # Users module with rate limits option
-users_rl = Users(vault=vault)
+users_rl = Users(vault=vault, rate_limits=True, storage={'db_role': VAULT_DB_ROLE_USERS_RL})
 # Users module without rate limits option
-users = Users(vault=vault, rate_limits=False)
+users = Users(vault=vault, storage={'db_role': VAULT_DB_ROLE_USERS})
 
-# Client for download content from supplier
+# Detected connection type
+check_proxy()
+
+# Client for download content from instagram
 # If API disabled, the mock object will be used
-downloader_api_enabled = vault.read_secret(path='configuration/downloader-api').get('enabled', False)
+downloader_api_enabled = vault.kv2engine.read_secret(path='configuration/downloader-api').get('enabled', False)
 if downloader_api_enabled == 'True':
-    log.info('[Bot]: downloader API is enabled: %s', downloader_api_enabled)
+    log.info('[Bot]: Downloader api is enabled: %s', downloader_api_enabled)
     downloader = Downloader(vault=vault)
 else:
-    log.warning('[Bot]: downloader API is disabled, using mock object, because enabled flag is %s', downloader_api_enabled)
+    log.warning('[Bot]: Downloader api is disabled, using mock object, because enabled flag is %s', downloader_api_enabled)
     downloader = MagicMock()
     downloader.get_post_content.return_value = {
         'post': f"mock_{''.join(random.choices(string.ascii_letters + string.digits, k=10))}",
-        'owner': 'undefined',
+        'owner': 'mock',
         'type': 'fake',
         'status': 'completed'
     }
 
-# Client for upload content to the cloud storage
+# Client for upload content to the target storage
 # If API disabled, the mock object will be used
-uploader_api_enabled = vault.read_secret(path='configuration/uploader-api').get('enabled', False)
+uploader_api_enabled = vault.kv2engine.read_secret(path='configuration/uploader-api').get('enabled', False)
 if uploader_api_enabled == 'True':
-    log.info('[Bot]: uploader API is enabled: %s', uploader_api_enabled)
+    log.info('[Bot]: Uploader API is enabled: %s', uploader_api_enabled)
     uploader = Uploader(vault=vault)
 else:
-    log.warning('[Bot]: uploader API is disabled, using mock object, because enabled flag is %s', uploader_api_enabled)
+    log.warning('[Bot]: Uploader API is disabled, using mock object, because enabled flag is %s', uploader_api_enabled)
     uploader = MagicMock()
     uploader.run_transfers.return_value = 'completed'
 
 # Client for communication with the database
-database = DatabaseClient(vault=vault)
+database = DatabaseClient(vault=vault, db_role=VAULT_DB_ROLE_MAIN)
 
 # Metrics exporter
 metrics = Metrics(port=METRICS_PORT, interval=METRICS_INTERVAL, metrics_prefix=TELEGRAM_BOT_NAME, vault=vault, database=database)
@@ -77,18 +85,11 @@ def start_command(message: telegram.telegram_types.Message = None) -> None:
 
     Args:
         message (telegram.telegram_types.Message): The message object containing information about the chat.
-
-    Returns:
-        None
     """
-    if users.user_access_check(message.chat.id).get('access', None) == users.user_status_allow:
-        log.info('[Bot]: Processing "start" command for user %s...', message.chat.id)
-
-        # Add user to the database
-        response = database.add_user(user_id=message.chat.id, chat_id=message.chat.id)
-        log.info('[Bot]: user %s added to the database: %s', message.chat.id, response)
-
-        # Main message
+    requestor = {'user_id': message.chat.id, 'chat_id': message.chat.id, 'message_id': message.message_id}
+    if users.user_access_check(**requestor).get('access', None) == users.user_status_allow:
+        log.info('[Bot]: Processing start command for user %s...', message.chat.id)
+        # Main pinned message
         reply_markup = telegram.create_inline_markup(ROLES_MAP.keys())
         start_message = telegram.send_styled_message(
             chat_id=message.chat.id,
@@ -120,12 +121,13 @@ def bot_callback_query_handler(call: telegram.callback_query = None) -> None:
 
     Args:
         call (telegram.callback_query): The callback query object.
-
-    Returns:
-        None
     """
-    log.info('[Bot]: Processing button "%s" for user %s...', call.data, call.message.chat.id)
-    if users.user_access_check(call.message.chat.id, ROLES_MAP[call.data]).get('permissions', None) == users.user_status_allow:
+    log.info('[Bot]: Processing button %s for user %s...', call.data, call.message.chat.id)
+    requestor = {
+        'user_id': call.message.chat.id, 'role_id': ROLES_MAP[call.data],
+        'chat_id': call.message.chat.id, 'message_id': call.message.message_id
+    }
+    if users.user_access_check(**requestor).get('permissions', None) == users.user_status_allow:
         if call.data == "Post":
             help_message = telegram.send_styled_message(
                 chat_id=call.message.chat.id,
@@ -148,7 +150,7 @@ def bot_callback_query_handler(call: telegram.callback_query = None) -> None:
             bot.register_next_step_handler(call.message, reschedule_queue, help_message)
 
         else:
-            log.error('[Bot]: Handler for button "%s" not found', call.data)
+            log.error('[Bot]: Handler for button %s not found', call.data)
 
     else:
         telegram.send_styled_message(
@@ -168,12 +170,10 @@ def unknown_command(message: telegram.telegram_types.Message = None) -> None:
 
     Args:
         message (telegram.telegram_types.Message): The message object containing the unrecognized command.
-
-    Returns:
-        None
     """
-    if users.user_access_check(message.chat.id).get('access', None) == users.user_status_allow:
-        log.error('[Bot]: Invalid command "%s" from user %s', message.text, message.chat.id)
+    requestor = {'user_id': message.chat.id, 'chat_id': message.chat.id, 'message_id': message.message_id}
+    if users.user_access_check(**requestor).get('access', None) == users.user_status_allow:
+        log.error('[Bot]: Invalid command %s from user %s', message.text, message.chat.id)
         telegram.send_styled_message(chat_id=message.chat.id, messages_template={'alias': 'unknown_command'})
     else:
         telegram.send_styled_message(
@@ -193,9 +193,6 @@ def update_status_message(user_id: str = None) -> None:
 
     Args:
         user_id (str): The user id.
-
-    Returns:
-        None
     """
     try:
         diff_between_messages = False
@@ -304,30 +301,24 @@ def get_user_messages(user_id: str = None) -> dict:
         >>> get_user_messages(user_id='1234567890')
         {'queue_list': '<code>queue is empty</code>', 'processed_list': '<code>processed is empty</code>', 'queue_count': 0, 'processed_count': 0}
     """
-    queue_dict = database.get_user_queue(user_id=user_id)
-    processed_dict = database.get_user_processed(user_id=user_id)
-
-    last_ten_queue = queue_dict.get(user_id, [])[:10] if queue_dict else []
-    last_ten_processed = processed_dict.get(user_id, [])[-10:] if processed_dict else []
-
-    queue_count = len(queue_dict.get(user_id, [])) if queue_dict else 0
-    processed_count = len(processed_dict.get(user_id, [])) if processed_dict else 0
+    queue = database.get_user_queue(user_id=user_id)
+    processed = database.get_user_processed(user_id=user_id)
 
     queue_string = ''
-    if last_ten_queue:
-        for item in last_ten_queue:
+    if queue[:10]:
+        for item in queue[:10]:
             queue_string += f"+ <code>{item['post_id']}: scheduled for {item['scheduled_time']}</code>\n"
     else:
         queue_string = '<code>queue is empty</code>'
 
     processed_string = ''
-    if last_ten_processed:
-        for item in last_ten_processed:
+    if processed[-10:]:
+        for item in processed[-10:]:
             processed_string += f"* <code>{item['post_id']}: {item['state']} at {item['timestamp']}</code>\n"
     else:
         processed_string = '<code>processed is empty</code>'
 
-    return {'queue_list': queue_string, 'processed_list': processed_string, 'queue_count': queue_count, 'processed_count': processed_count}
+    return {'queue_list': queue_string, 'processed_list': processed_string, 'queue_count': len(queue), 'processed_count': len(processed)}
 
 
 def message_parser(message: telegram.telegram_types.Message = None) -> dict:
@@ -384,11 +375,14 @@ def process_one_post(
     Returns:
         None
     """
-    # Check permissions
-    user = users_rl.user_access_check(message.chat.id, ROLES_MAP['Post'])
+    requestor = {
+        'user_id': message.chat.id, 'role_id': ROLES_MAP['Post'],
+        'chat_id': message.chat.id, 'message_id': message.message_id
+    }
+    user = users_rl.user_access_check(**requestor)
     if user.get('permissions', None) == users_rl.user_status_allow:
         data = message_parser(message)
-        rate_limit = user.get('rate_limits', {}).get('end_time', None)
+        rate_limit = user.get('rate_limits', None)
 
         # Define time to process the message in queue
         if rate_limit:
@@ -424,7 +418,11 @@ def process_list_posts(
     Returns:
         None
     """
-    user = users.user_access_check(message.chat.id, ROLES_MAP['Posts List'])
+    requestor = {
+        'user_id': message.chat.id, 'role_id': ROLES_MAP['Posts List'],
+        'chat_id': message.chat.id, 'message_id': message.message_id
+    }
+    user = users.user_access_check(**requestor)
     if user.get('permissions', None) == users.user_status_allow:
         for link in message.text.split('\n'):
             message.text = link
@@ -452,7 +450,11 @@ def reschedule_queue(
     Returns:
         None
     """
-    user = users.user_access_check(message.chat.id, ROLES_MAP['Reschedule Queue'])
+    requestor = {
+        'user_id': message.chat.id, 'role_id': ROLES_MAP['Reschedule Queue'],
+        'chat_id': message.chat.id, 'message_id': message.message_id
+    }
+    user = users.user_access_check(**requestor)
     can_be_deleted = True
     if user.get('permissions', None) == users.user_status_allow:
         for item in message.text.split('\n'):
@@ -496,16 +498,16 @@ def status_message_updater_thread() -> None:
     while True:
         time.sleep(STATUSES_MESSAGE_FREQUENCY)
         try:
-            if database.get_users():
-                for user in database.get_users():
-                    user_id = user[0]
-                    update_status_message(user_id=user_id)
+            users_dict = []
+            users_dict = database.get_users()
+            for user in users_dict:
+                update_status_message(user_id=user['user_id'])
         # pylint: disable=broad-exception-caught
         except Exception as exception:
             exception_context = {
                 'call': threading.current_thread().name,
                 'message': 'Failed to update the message with the status of received messages',
-                'users': database.get_users(),
+                'users': users_dict,
                 'user': user,
                 'exception': exception
             }

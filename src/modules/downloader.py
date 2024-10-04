@@ -63,13 +63,13 @@ class Downloader:
         if configuration:
             self.configuration = configuration
         elif not configuration:
-            self.configuration = vault.read_secret(path='configuration/downloader-api')
+            self.configuration = vault.kv2engine.read_secret(path='configuration/downloader-api')
         else:
             raise FailedCreateDownloaderInstance(
                 "Failed to initialize the Downloader instance."
                 "Please check the configuration in class argument or the secret with the configuration in the Vault."
             )
-        log.info('[Downloader]: creating a new instance of the Downloader...')
+        log.info('[Downloader]: Creating a new instance...')
         self.instaloader = instaloader.Instaloader(
             quiet=True,
             user_agent=self.configuration.get('user-agent', None),
@@ -89,10 +89,10 @@ class Downloader:
             fatal_status_codes=literal_eval(self.configuration.get('fatal-status-codes', '[]'))
         )
         auth_status = self._login()
-        log.info(
-            '[Downloader]: downloader instance created successfully: %s in %s',
-            auth_status, self.configuration['username']
-        )
+        if auth_status == 'logged_in':
+            log.info('[Downloader]: Instance created successfully with account %s', self.configuration['username'])
+        else:
+            raise FailedAuthInstaloader("Failed to authenticate the Instaloader instance.")
 
     def _login(self) -> Union[str, None]:
         """
@@ -115,7 +115,7 @@ class Downloader:
                 self.configuration['username'],
                 self.configuration['session-file']
             )
-            log.info('[Downloader]: session file %s was load success', self.configuration['session-file'])
+            log.info('[Downloader]: Session file %s was saved successfully', self.configuration['session-file'])
             return 'logged_in'
 
         if self.configuration['login-method'] == 'password':
@@ -124,19 +124,14 @@ class Downloader:
                 self.configuration['password']
             )
             self.instaloader.save_session_to_file(self.configuration['session-file'])
-            log.info(
-                '[Downloader]: login with password was successful. Save session in %s',
-                self.configuration['sessionfile']
-            )
+            log.info('[Downloader]: Login with password was successful. Saved session in %s', self.configuration['sessionfile'])
             return 'logged_in'
 
         if self.configuration['login-method'] == 'anonymous':
-            log.warning('[Downloader]: initialization without authentication into an account (anonymous)')
+            log.warning('[Downloader]: Initialization without authentication into an account (anonymous)')
             return None
 
-        raise FailedAuthInstaloader(
-            "Failed to authenticate the Instaloader instance. Please check the configuration in the Vault or the class argument."
-        )
+        raise FailedAuthInstaloader("Failed to authenticate the Instaloader instance.")
 
     def get_post_content(
         self,
@@ -156,21 +151,21 @@ class Downloader:
                     'status': 'completed'
                 }
         """
-        log.info('[Downloader]: downloading the contents of the post %s...', shortcode)
+        log.info('[Downloader]: Downloading the contents of the post %s...', shortcode)
         try:
             post = instaloader.Post.from_shortcode(self.instaloader.context, shortcode)
             self.instaloader.download_post(post, '')
-            log.info('[Downloader]: the contents of the post %s have been successfully downloaded', shortcode)
+            log.info('[Downloader]: The contents of the post %s have been successfully downloaded', shortcode)
             status = 'completed'
             owner = post.owner_username
             typename = post.typename
         except instaloader.exceptions.BadResponseException as error:
-            log.error('[Downloader]: error downloading post content: %s', error)
+            log.error('[Downloader]: Error downloading post content: %s', error)
             if "Fetching Post metadata failed" in str(error):
                 status = 'source_not_found'
                 owner = 'undefined'
                 typename = 'undefined'
-                log.warning('[Downloader]: post %s not found, perhaps it was deleted. Message will be marked as processed.', shortcode)
+                log.warning('[Downloader]: Post %s not found, perhaps it was deleted. Message will be marked as processed.', shortcode)
             else:
                 raise instaloader.exceptions.BadResponseException(error)
 

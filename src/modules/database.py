@@ -38,12 +38,14 @@ class DatabaseClient:
     Attributes:
         database_connections (psycopg2.extensions.connection): A connection to the PostgreSQL database.
         vault (object): An object representing a HashiCorp Vault client for retrieving secrets.
+        db_role (str): The role to use for generating database credentials.
         errors (psycopg2.errors): A collection of error classes for exceptions raised by the psycopg2 module.
+        json (json): A JSON encoder and decoder for working with JSON data to execute database migrations.
 
     Methods:
-        _create_connection_pool(): Create a connection pool for the PostgreSQL database.
-        _get_connection(): Get a connection from the connection pool.
-        _close_connection(connection): Close the connection and return it to the connection pool.
+        create_connection_pool(): Create a connection pool for the PostgreSQL database.
+        get_connection(): Get a connection from the connection pool.
+        close_connection(connection): Close the connection and return it to the connection pool.
         _prepare_db(): Prepare the database by creating and initializing the necessary tables.
         _migrations(): Execute database migrations to update the database schema or data.
         _is_migration_executed(migration_name): Check if a migration has already been executed.
@@ -63,8 +65,7 @@ class DatabaseClient:
         get_user_processed(user_id): Get last ten messages from the processed table for the specified user.
         check_message_uniqueness(post_id, user_id): Check if a message with the given post ID and chat ID already exists in the queue.
         keep_message(message_id, chat_id, message_content, **kwargs): Add a message to the messages table in the database.
-        add_user(user_id, chat_id): Add a user to the users table in the database.
-        get_users(): Get a list of all users in the database.
+        get_users(only_allowed): Get a list of users from the users table in the database.
         get_considered_message(message_type, chat_id): Get a message with specified type and
 
     Rises:
@@ -72,13 +73,15 @@ class DatabaseClient:
     """
     def __init__(
         self,
-        vault: object = None
+        vault: object = None,
+        db_role: str = None
     ) -> None:
         """
         Initializes a new instance of the Database client.
 
         Args:
             vault (object): An object representing a HashiCorp Vault client for retrieving secrets with the database configuration.
+            db_role (str): The role to use for generating database credentials.
 
         Examples:
             To create a new instance of the Database class:
@@ -87,7 +90,9 @@ class DatabaseClient:
             >>> vault = Vault()
             >>> db = Database(vault=vault)
         """
+        self.json = json
         self.vault = vault
+        self.db_role = db_role
         self.errors = psycopg2.errors
         self.database_connections = self.create_connection_pool()
 
@@ -102,22 +107,33 @@ class DatabaseClient:
         Returns:
             pool.SimpleConnectionPool: A connection pool for the PostgreSQL database.
         """
-        db_configuration = self.vault.read_secret(path='configuration/database')
+        required_keys_configuration = {"host", "port", "dbname", "connections"}
+        required_keys_credentials = {"username", "password"}
+        db_configuration = self.vault.kv2engine.read_secret(path='configuration/database')
+        db_credentials = self.vault.dbengine.generate_credentials(role=self.db_role)
+
+        if not db_configuration or not db_credentials:
+            raise ValueError('Database configuration or credentials are missing')
+
+        missing_keys = (required_keys_configuration - set(db_configuration.keys())) | (required_keys_credentials - set(db_credentials.keys()))
+        if missing_keys:
+            raise KeyError("Missing keys in the database configuration or credentials: {missing_keys}")
+
         log.info(
             '[Database]: Creating a connection pool for the %s:%s/%s',
-            db_configuration['host'], db_configuration['port'], db_configuration['database']
+            db_configuration['host'], db_configuration['port'], db_configuration['dbname']
         )
         return pool.SimpleConnectionPool(
             minconn=1,
             maxconn=db_configuration['connections'],
             host=db_configuration['host'],
             port=db_configuration['port'],
-            user=db_configuration['user'],
-            password=db_configuration['password'],
-            database=db_configuration['database']
+            user=db_credentials['username'],
+            password=db_credentials['password'],
+            database=db_configuration['dbname']
         )
 
-    def _get_connection(self) -> psycopg2.extensions.connection:
+    def get_connection(self) -> psycopg2.extensions.connection:
         """
         Get a connection from the connection pool.
 
@@ -126,7 +142,7 @@ class DatabaseClient:
         """
         return self.database_connections.getconn()
 
-    def _close_connection(self, connection: psycopg2.extensions.connection) -> None:
+    def close_connection(self, connection: psycopg2.extensions.connection) -> None:
         """
         Close the cursor and return it to the connection pool.
 
@@ -172,8 +188,10 @@ class DatabaseClient:
         # Migrations directory
         migrations_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../migrations'))
         sys.path.append(migrations_dir)
+        migration_files = [f for f in os.listdir(migrations_dir) if f.endswith('.py')]
+        migration_files.sort()
 
-        for migration_file in os.listdir(migrations_dir):
+        for migration_file in migration_files:
             if migration_file.endswith('.py'):
                 migration_module_name = migration_file[:-3]
 
@@ -185,6 +203,8 @@ class DatabaseClient:
                     self._mark_migration_as_executed(migration_name=migration_module_name, version=version)
                 else:
                     log.info('[Database] Migrations: the %s has already been executed and was skipped', migration_module_name)
+            else:
+                log.error('[Database]: Migrations: the %s is not a valid migration file', migration_file)
 
     def _is_migration_executed(
         self,
@@ -230,11 +250,11 @@ class DatabaseClient:
             To create a new table called 'users' with columns 'id' and 'name', you can call the method like this:
             >>> _create_table('users', 'id INTEGER PRIMARY KEY, name TEXT')
         """
-        conn = self._get_connection()
+        conn = self.get_connection()
         with conn.cursor() as cursor:
             cursor.execute(f"CREATE TABLE IF NOT EXISTS {table_name} ({columns})")
         conn.commit()
-        self._close_connection(conn)
+        self.close_connection(conn)
 
     @reconnect_on_exception
     def _insert(
@@ -260,11 +280,11 @@ class DatabaseClient:
         """
         try:
             sql_query = f"INSERT INTO {table_name} ({', '.join(columns)}) VALUES ({', '.join(['%s'] * len(columns))})"
-            conn = self._get_connection()
+            conn = self.get_connection()
             with conn.cursor() as cursor:
                 cursor.execute(sql_query, values)
             conn.commit()
-            self._close_connection(conn)
+            self.close_connection(conn)
         except (psycopg2.Error, IndexError) as error:
             log.error(
                 '[Database]: An error occurred while inserting a row into the table %s: %s\nColumns: %s\nValues: %s\nQuery: %s',
@@ -309,11 +329,11 @@ class DatabaseClient:
         if kwargs.get('limit', None):
             sql_query += f" LIMIT {kwargs.get('limit')}"
 
-        conn = self._get_connection()
+        conn = self.get_connection()
         with conn.cursor() as cursor:
             cursor.execute(sql_query)
             response = cursor.fetchall()
-        self._close_connection(conn)
+        self.close_connection(conn)
         return response if response else None
 
     @reconnect_on_exception
@@ -334,11 +354,11 @@ class DatabaseClient:
         Examples:
             >>> _update('users', "username='new_username', password='new_password'", "id=1")
         """
-        conn = self._get_connection()
+        conn = self.get_connection()
         with conn.cursor() as cursor:
             cursor.execute(f"UPDATE {table_name} SET {values} WHERE {condition}")
         conn.commit()
-        self._close_connection(conn)
+        self.close_connection(conn)
 
     @reconnect_on_exception
     def _delete(
@@ -357,11 +377,11 @@ class DatabaseClient:
             To delete all rows from the 'users' table where the 'username' column is 'john':
             >>> db._delete('users', "username='john'")
         """
-        conn = self._get_connection()
+        conn = self.get_connection()
         with conn.cursor() as cursor:
             cursor.execute(f"DELETE FROM {table_name} WHERE {condition}")
         conn.commit()
-        self._close_connection(conn)
+        self.close_connection(conn)
 
     def _reset_stale_records(self) -> None:
         """
@@ -375,14 +395,17 @@ class DatabaseClient:
             columns=("id", "state"),
             condition="message_type = 'status_message'",
         )
-        for message in status_messages:
-            if message[1] != 'updated':
-                self._update(
-                    table_name='messages',
-                    values="state = 'updated'",
-                    condition=f"id = '{message[0]}'"
-                )
-        log.info('[Database]: Stale status messages have been reset')
+        if status_messages:
+            for message in status_messages:
+                if message[1] != 'updated':
+                    self._update(
+                        table_name='messages',
+                        values="state = 'updated'",
+                        condition=f"id = '{message[0]}'"
+                    )
+                    log.info('[Database]: Stale status messages have been reset')
+                else:
+                    log.info('[Database]: No stale status messages found')
 
     def add_message_to_queue(
         self,
@@ -413,12 +436,12 @@ class DatabaseClient:
             >>> data = {
             ...     'user_id': '12345',
             ...     'post_id': '67890',
-            ...     'post_url': 'https://www.instagram.com/p/67890/',
+            ...     'post_url': 'https://www.example.com/p/67890/',
             ...     'post_owner': 'johndoe',
             ...     'link_type': 'profile',
             ...     'message_id': 'abcde',
             ...     'chat_id': 'xyz',
-            ...     'scheduled_time': '2022-01-01 12:00:00'
+            ...     'scheduled_time': '2022-01-01 12:00:00',
             ...     'download_status': 'not started',
             ...     'upload_status': 'not started'
             ... }
@@ -470,7 +493,7 @@ class DatabaseClient:
 
         Examples:
             >>> database.get_message_from_queue('2022-01-01 12:00:00')
-            (1, '123456789', 'vahj5AN8aek', 'https://www.instagram.com/p/vahj5AN8aek', 'johndoe', 'post', '12345', '12346', '123456789',
+            (1, '123456789', 'vahj5AN8aek', 'https://www.example.com/p/vahj5AN8aek', 'johndoe', 'post', '12345', '12346', '123456789',
             datetime.datetime(2023, 11, 14, 21, 21, 22, 603440), 'None', 'None', datetime.datetime(2023, 11, 14, 21, 14, 26, 680024), 'waiting')
         """
         message = self._select(
@@ -600,7 +623,7 @@ class DatabaseClient:
     def get_user_queue(
         self,
         user_id: str = None
-    ) -> Union[dict, None]:
+    ) -> dict:
         """
         Get messages from the queue table for the specified user.
 
@@ -608,30 +631,29 @@ class DatabaseClient:
             user_id (str): The ID of the user.
 
         Returns:
-            dict: A dictionary containing messages from the queue for the specified user.
+            dict: A list of dictionaries containing the messages from the queue table for the specified user.
 
         Examples:
             >>> get_user_queue(user_id='12345')
-            {'12345': [{'post_id': '123456789', 'scheduled_time': '2022-01-01 12:00:00'}]}
+            [{'post_id': '123456789', 'scheduled_time': '2022-01-01 12:00:00'}]
         """
-        result = {}
+        result = []
         queue = self._select(
             table_name='queue',
             columns=("post_id", "scheduled_time"),
             condition=f"user_id = '{user_id}'",
             order_by='scheduled_time ASC',
-            limit=1000
+            limit=10000
         )
-        for message in queue:
-            if user_id not in result:
-                result[user_id] = []
-            result[user_id].append({'post_id': message[0], 'scheduled_time': message[1]})
-        return result if result else None
+        if queue:
+            for message in queue:
+                result.append({'post_id': message[0], 'scheduled_time': message[1]})
+        return result
 
     def get_user_processed(
         self,
         user_id: str = None
-    ) -> Union[dict, None]:
+    ) -> dict:
         """
         Get last ten messages from the processed table for the specified user.
         It is used to display the last messages sent by the bot to the user.
@@ -640,25 +662,24 @@ class DatabaseClient:
             user_id (str): The ID of the user.
 
         Returns:
-            dict: A dictionary containing the last five messages from the processed table for the specified user.
+            dict: A list of dictionaries containing the last ten messages from the processed table for the specified user.
 
         Examples:
             >>> get_user_processed(user_id='12345')
-            {'12345': [{'post_id': '123456789', 'processed_time': '2022-01-01 12:00:00', 'state': 'completed'}]}
+            [{'post_id': '123456789', 'timestamp': '2022-01-01 12:00:00', 'state': 'processed'}]
         """
-        result = {}
+        result = []
         processed = self._select(
             table_name='processed',
             columns=("post_id", "timestamp", "state"),
             condition=f"user_id = '{user_id}'",
             order_by='timestamp ASC',
-            limit=5000
+            limit=10000
         )
-        for message in processed:
-            if user_id not in result:
-                result[user_id] = []
-            result[user_id].append({'post_id': message[0], 'timestamp': message[1], 'state': message[2]})
-        return result if result else None
+        if processed:
+            for message in processed:
+                result.append({'post_id': message[0], 'timestamp': message[1], 'state': message[2]})
+        return result
 
     def check_message_uniqueness(
         self,
@@ -760,6 +781,7 @@ class DatabaseClient:
                 condition=f"id = '{check_exist_message_type[0][0]}'"
             )
             response = f"{message_id} updated"
+
         elif not check_exist_message_type:
             self._insert(
                 table_name='messages',
@@ -767,63 +789,51 @@ class DatabaseClient:
                 values=(message_id, chat_id, message_type, message_content_hash, 'bot')
             )
             response = f"{message_id} kept"
+
         else:
             log.warning('[Database]: Message with ID %s already exists in the messages table and cannot be updated', message_id)
             response = f"{message_id} already exists"
+
         return response
 
-    def add_user(
+    def get_users(
         self,
-        user_id: str = None,
-        chat_id: str = None
-    ) -> str:
+        only_allowed: bool = True
+    ) -> dict:
         """
-        Add a user to the users table in the database.
-        It is used to store the user ID and chat ID for sending messages to the user.
+        This method will be deprecated after https://github.com/obervinov/users-package/issues/44 (users-package:v3.1.0).
+        Get a dictionary of all users with their metadata from the users table in the database.
+        By default, the method returns only allowed users.
 
         Args:
-            user_id (str): The ID of the user.
-            chat_id (str): The ID of the chat.
+            only_allowed (bool): A flag indicating whether to return only allowed users. Default is True.
 
         Returns:
-            str: A message indicating that the user was added to the users table or that the user already exists.
-
-        Examples:
-            >>> add_user(user_id='12345', chat_id='67890')
-            '12345 added'
-                or
-            '12345 already exists'
-        """
-        exist_user = self._select(table_name='users', columns=("user_id",), condition=f"user_id = '{user_id}'")
-        if exist_user:
-            result = f"{user_id} already exists"
-        else:
-            self._insert(
-                table_name='users',
-                columns=("chat_id", "user_id"),
-                values=(chat_id, user_id)
-            )
-            result = f"{user_id} added"
-        return result
-
-    def get_users(self) -> list:
-        """
-        Get a list of all users in the database.
-
-        Returns:
-            list: A list of all users from the messages table.
+            dict: A dictionary containing all users in the database and their metadata.
 
         Examples:
             >>> get_users()
-            # [('{user_id}', '{chat_id}')]
-            [('12345', '67890')]
+            [{'user_id': '12345', 'chat_id': '67890', 'status': 'denied'}, {'user_id': '12346', 'chat_id': '67891', 'status': 'allowed'}]
         """
-        users = self._select(
-            table_name='users',
-            columns=("user_id", "chat_id"),
-            limit=1000
-        )
-        return users if users else None
+        users_dict = []
+        if only_allowed:
+            users = self._select(
+                table_name='users',
+                columns=("user_id", "chat_id", "status"),
+                condition="status = 'allowed'",
+                limit=1000
+            )
+        else:
+            users = self._select(
+                table_name='users',
+                columns=("user_id", "chat_id", "status"),
+                limit=1000
+            )
+
+        if users:
+            for user in users:
+                users_dict.append({'user_id': user[0], 'chat_id': user[1], 'status': user[2]})
+        return users_dict
 
     def get_considered_message(
         self,
