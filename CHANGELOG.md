@@ -12,7 +12,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 #### 🚀 Features
 * bump workflow version to `1.2.9`
 * bump vault-package to major version `3.0.0`
-* bump users-package to major version `3.0.3`
+* bump users-package to major version `3.0.2`
 * bump telegram-package to major version `2.0.1`
 * add tests for database and metrics modules
 * add proxy support for all dependencies with `requests` library
