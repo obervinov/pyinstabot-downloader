@@ -21,7 +21,7 @@ from configs.constants import (
 )
 from modules.database import DatabaseClient
 from modules.exceptions import FailedMessagesStatusUpdater
-from modules.tools import get_hash
+from modules.tools import get_hash, check_proxy
 from modules.downloader import Downloader
 from modules.uploader import Uploader
 from modules.metrics import Metrics
@@ -38,6 +38,9 @@ bot = telegram.telegram_bot
 users_rl = Users(vault=vault, rate_limits=True, storage={'db_role': VAULT_DB_ROLE_USERS_RL})
 # Users module without rate limits option
 users = Users(vault=vault, storage={'db_role': VAULT_DB_ROLE_USERS})
+
+# Detected connection type
+check_proxy()
 
 # Client for download content from instagram
 # If API disabled, the mock object will be used

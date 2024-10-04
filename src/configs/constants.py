@@ -14,7 +14,7 @@ ROLES_MAP = {
     'Reschedule Queue': 'reschedule_queue',
 }
 
-# Queue handler
+# Other constants
 QUEUE_FREQUENCY = 60
 STATUSES_MESSAGE_FREQUENCY = 15
 METRICS_PORT = 8000

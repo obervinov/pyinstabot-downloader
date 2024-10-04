@@ -3,7 +3,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/) and this project adheres to [Semantic Versioning](http://semver.org/).
 
 
-## v2.3.0 - 2024-09-14
+## v2.3.0 - 2024-10-04
 ### What's Changed
 **Full Changelog**: https://github.com/obervinov/pyinstabot-downloader/compare/v2.2.1...v2.3.0 by @obervinov in https://github.com/obervinov/pyinstabot-downloader/pull/95
 #### 💥 Breaking Changes
@@ -15,6 +15,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 * bump users-package to major version `3.0.3`
 * bump telegram-package to major version `2.0.1`
 * add tests for database and metrics modules
+* add proxy support for all dependencies with `requests` library
 * [Switch reading of the database connection configuration to db engine](https://github.com/obervinov/pyinstabot-downloader/issues/33)
 #### 🐛 Bug Fixes
 * general bug fixes and improvements

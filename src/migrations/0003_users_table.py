@@ -37,9 +37,6 @@ def execute(obj):
         if not table:
             print(f"{NAME}: The {table_name} table does not exist. Skip the migration.")
 
-        elif len(columns) < 1:
-            print(f"{NAME}: The {table_name} table does not have the necessary columns to execute the migration. Skip the migration.")
-
         else:
             for column in add_columns:
                 if column[0] in columns:
@@ -56,3 +53,17 @@ def execute(obj):
                     except obj.errors.FeatureNotSupported as error:
                         print(f"{NAME}: Columns in the {table_name} table have not been added. Skip adding: {error}")
                         conn.rollback()
+
+            for column in update_columns:
+                if column[0] in columns:
+                    try:
+                        print(f"{NAME}: Alter column {column[0]} to {column[2]}...")
+                        cursor.execute(f"ALTER TABLE {table_name} ALTER COLUMN {column[0]} SET NOT NULL;")
+                        cursor.execute(f"ALTER TABLE {table_name} ADD CONSTRAINT {column[0]}_unique UNIQUE ({column[0]});")
+                        conn.commit()
+                        print(f"{NAME}: Column {column[0]} has been updated to {column[2]}.")
+                    except obj.errors as error:
+                        print(f"{NAME}: Failed to update column {column[0]}: {error}")
+                        conn.rollback()
+                else:
+                    print(f"{NAME}: The {table_name} table does not have the {column[0]} column. Skip updating.")
