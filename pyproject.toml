@@ -17,9 +17,9 @@ packages = [{include = "src"}]
 "Bug Tracker" = "https://github.com/obervinov/pyinstabot-downloader/issues"
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = "^3.10"
 instagrapi = "^2"
-pillow = "8.1.1"
+pillow = "^8"
 dropbox = "^12"
 'mega.py' = "^1.0.8"
 psycopg2-binary = "^2"
