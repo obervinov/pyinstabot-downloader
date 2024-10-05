@@ -32,6 +32,7 @@ class Downloader:
             :param configuration (dict): dictionary with configuration parameters for Instagram API communication.
                 :param username (str): username for authentication in the instagram api.
                 :param password (str): password for authentication in the instagram api.
+                :param session-file (str): path to the session file for authentication in the instagram api.
                 :param delay-requests (int): delay between requests.
             :param vault (object): instance of vault for reading configuration downloader-api.
 
@@ -88,7 +89,12 @@ class Downloader:
             None
         """
         log.info('[Downloader]: Authentication in the Instagram API...')
-        self.client.login(username=self.configuration['username'], password=self.configuration['password'])
+        if os.path.exists(self.configuration['session-file']):
+            self.client.load_settings(self.configuration['session-file'])
+            self.client.login(username=self.configuration['username'], password=self.configuration['password'])
+        else:
+            self.client.login(username=self.configuration['username'], password=self.configuration['password'])
+            self.client.dump_settings(self.configuration['session-file'])
         log.info('[Downloader]: Authentication in the Instagram API was successful.')
         return 'logged_in'
 
