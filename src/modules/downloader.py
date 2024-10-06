@@ -34,6 +34,7 @@ class Downloader:
                 :param password (str): password for authentication in the instagram api.
                 :param session-file (str): path to the session file for authentication in the instagram api.
                 :param delay-requests (int): delay between requests.
+                :param 2fa-code (str): two-factor authentication code.
             :param vault (object): instance of vault for reading configuration downloader-api.
 
         Returns:
@@ -89,11 +90,22 @@ class Downloader:
             None
         """
         log.info('[Downloader]: Authentication in the Instagram API...')
+        if self.configuration['2fa-code']:
+            login_args = {
+                'username': self.configuration['username'],
+                'password': self.configuration['password'],
+                'verification_code': self.configuration['2fa-code']
+            }
+        else:
+            login_args = {
+                'username': self.configuration['username'],
+                'password': self.configuration['password']
+            }
         if os.path.exists(self.configuration['session-file']):
             self.client.load_settings(self.configuration['session-file'])
-            self.client.login(username=self.configuration['username'], password=self.configuration['password'])
+            self.client.login(**login_args)
         else:
-            self.client.login(username=self.configuration['username'], password=self.configuration['password'])
+            self.client.login(**login_args)
             self.client.dump_settings(self.configuration['session-file'])
         log.info('[Downloader]: Authentication in the Instagram API was successful.')
         return 'logged_in'
