@@ -70,7 +70,7 @@ class Downloader:
 
         log.info('[Downloader]: Creating a new instance...')
         self.client = Client()
-        self.client.delay_range = [1, self.configuration['delay-requests']]
+        self.client.delay_range = [1, int(self.configuration['delay-requests'])]
         auth_status = self._login()
 
         if auth_status == 'logged_in':
