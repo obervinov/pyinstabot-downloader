@@ -93,8 +93,8 @@ class Downloader:
         log.info('[Downloader]: Authentication in the Instagram API...')
 
         if self.configuration['2fa-enabled']:
-            log.info('[Downloader]: Two-factor authentication is enabled.')
             totp_code = self.client.totp_generate_code(seed=self.configuration['2fa-seed'])
+            log.info('[Downloader]: Two-factor authentication is enabled. TOTP code: %s', totp_code)
             login_args = {
                 'username': self.configuration['username'],
                 'password': self.configuration['password'],
