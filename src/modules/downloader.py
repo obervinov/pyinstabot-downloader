@@ -5,11 +5,10 @@ Supports downloading the content of the post by link and getting information abo
 https://github.com/subzeroid/instagrapi
 """
 import os
-import time
-import random
 from typing import Union
 from pathlib import Path
 from instagrapi import Client
+from instagrapi.exceptions import LoginRequired
 from logger import log
 from .exceptions import WrongVaultInstance, FailedCreateDownloaderInstance, FailedAuthInstaloader
 
@@ -71,6 +70,7 @@ class Downloader:
 
         log.info('[Downloader]: Creating a new instance...')
         self.client = Client()
+        self.client.delay_range = [1, self.configuration['delay-requests']]
         auth_status = self._login()
 
         if auth_status == 'logged_in':
@@ -90,7 +90,9 @@ class Downloader:
             None
         """
         log.info('[Downloader]: Authentication in the Instagram API...')
+
         if self.configuration['2fa-code']:
+            log.info('[Downloader]: Two-factor authentication is enabled.')
             login_args = {
                 'username': self.configuration['username'],
                 'password': self.configuration['password'],
@@ -101,12 +103,23 @@ class Downloader:
                 'username': self.configuration['username'],
                 'password': self.configuration['password']
             }
+
         if os.path.exists(self.configuration['session-file']):
             self.client.load_settings(self.configuration['session-file'])
             self.client.login(**login_args)
         else:
             self.client.login(**login_args)
             self.client.dump_settings(self.configuration['session-file'])
+
+        try:
+            self.client.get_timeline_feed()
+        except LoginRequired:
+            log.error('[Downloader]: Authentication in the Instagram API failed.')
+            old_session = self.client.get_settings()
+            self.client.set_settings({})
+            self.client.set_uuids(old_session["uuids"])
+            self.client.login(**login_args)
+
         log.info('[Downloader]: Authentication in the Instagram API was successful.')
         return 'logged_in'
 
@@ -137,7 +150,6 @@ class Downloader:
             os.makedirs(path, exist_ok=True)
 
             for resource in media_info['resources']:
-                time.sleep(random.randint(1, self.configuration['delay-requests']))
                 if resource['media_type'] == 1:
                     path = self.client.photo_download(media_pk=media_pk, folder=path)
                 elif resource['media_type'] == 2 and media_info['product_type'] == 'feed':
