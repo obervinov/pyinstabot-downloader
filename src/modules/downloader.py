@@ -33,7 +33,8 @@ class Downloader:
                 :param password (str): password for authentication in the instagram api.
                 :param session-file (str): path to the session file for authentication in the instagram api.
                 :param delay-requests (int): delay between requests.
-                :param 2fa-code (str): two-factor authentication code.
+                :param 2fa-enabled (bool): two-factor authentication enabled.
+                :param 2fa-seed (str): seed for two-factor authentication (secret key).
             :param vault (object): instance of vault for reading configuration downloader-api.
 
         Returns:
@@ -91,12 +92,13 @@ class Downloader:
         """
         log.info('[Downloader]: Authentication in the Instagram API...')
 
-        if self.configuration['2fa-code']:
+        if self.configuration['2fa-enabled']:
             log.info('[Downloader]: Two-factor authentication is enabled.')
+            totp_code = self.client.totp_generate_code(seed=self.configuration['2fa-seed'])
             login_args = {
                 'username': self.configuration['username'],
                 'password': self.configuration['password'],
-                'verification_code': self.configuration['2fa-code']
+                'verification_code': totp_code
             }
         else:
             login_args = {
