@@ -202,5 +202,5 @@ class Downloader:
 
         # pylint: disable=broad-except
         except Exception as error:
-            log.error('[Downloader]: Error downloading post content: %s', error)
+            log.error('[Downloader]: Error downloading post content: %s\n%s', error, media_info)
             return None
