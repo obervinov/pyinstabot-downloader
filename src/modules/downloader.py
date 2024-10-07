@@ -171,17 +171,16 @@ class Downloader:
             path = Path(f"data/{media_info['user']['username']}")
             os.makedirs(path, exist_ok=True)
 
-            for resource in media_info['resources']:
-                if resource['media_type'] == 1:
-                    self.client.photo_download(media_pk=resource['pk'], folder=path)
-                elif resource['media_type'] == 2 and media_info['product_type'] == 'feed':
-                    self.client.video_download(media_pk=resource['pk'], folder=path)
-                elif resource['media_type'] == 2 and media_info['product_type'] == 'clips':
-                    self.client.clip_download(media_pk=resource['pk'], folder=path)
-                elif resource['media_type'] == 8:
-                    self.client.album_download(media_pk=resource['pk'], folder=path)
-                else:
-                    log.warning('[Downloader]: The media type is not supported for download: %s', media_info)
+            if media_info['media_type'] == 1:
+                self.client.photo_download(media_pk=media_info['pk'], folder=path)
+            elif media_info['media_type'] == 2 and media_info['product_type'] == 'feed':
+                self.client.video_download(media_pk=media_info['pk'], folder=path)
+            elif media_info['media_type'] == 2 and media_info['product_type'] == 'clips':
+                self.client.clip_download(media_pk=media_info['pk'], folder=path)
+            elif media_info['media_type'] == 8:
+                self.client.album_download(media_pk=media_info['pk'], folder=path)
+            else:
+                log.warning('[Downloader]: The media type is not supported for download: %s', media_info)
 
             if os.listdir(path):
                 log.info('[Downloader]: The contents of the post %s have been successfully downloaded', shortcode)
@@ -192,7 +191,7 @@ class Downloader:
                     'status': 'completed'
                 }
             else:
-                log.error('[Downloader]: Error downloading post content: %s', media_info)
+                log.error('[Downloader]: Temporary directory is empty: %s', path)
                 response = {
                     'post': shortcode,
                     'owner': media_info['user']['username'],
