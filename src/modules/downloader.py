@@ -173,33 +173,32 @@ class Downloader:
 
             for resource in media_info['resources']:
                 if resource['media_type'] == 1:
-                    path = self.client.photo_download(media_pk=resource['pk'], folder=path)
+                    self.client.photo_download(media_pk=resource['pk'], folder=path)
                 elif resource['media_type'] == 2 and media_info['product_type'] == 'feed':
-                    path = self.client.video_download(media_pk=resource['pk'], folder=path)
+                    self.client.video_download(media_pk=resource['pk'], folder=path)
                 elif resource['media_type'] == 2 and media_info['product_type'] == 'clips':
-                    path = self.client.clip_download(media_pk=resource['pk'], folder=path)
+                    self.client.clip_download(media_pk=resource['pk'], folder=path)
                 elif resource['media_type'] == 8:
-                    path = self.client.album_download(media_pk=resource['pk'], folder=path)
+                    self.client.album_download(media_pk=resource['pk'], folder=path)
                 else:
                     log.warning('[Downloader]: The media type is not supported for download: %s', media_info)
-                    path = None
 
-                if path:
-                    log.info('[Downloader]: The contents of the post %s have been successfully downloaded', shortcode)
-                    response = {
-                        'post': shortcode,
-                        'owner': media_info['user']['username'],
-                        'type': {media_info['product_type'] if media_info['product_type'] else 'photo'},
-                        'status': 'completed'
-                    }
-                else:
-                    log.error('[Downloader]: Error downloading post content: %s', media_info)
-                    response = {
-                        'post': shortcode,
-                        'owner': media_info['user']['username'],
-                        'type': {media_info['product_type'] if media_info['product_type'] else 'photo'},
-                        'status': 'failed'
-                    }
+            if os.listdir(path):
+                log.info('[Downloader]: The contents of the post %s have been successfully downloaded', shortcode)
+                response = {
+                    'post': shortcode,
+                    'owner': media_info['user']['username'],
+                    'type': {media_info['product_type'] if media_info['product_type'] else 'photo'},
+                    'status': 'completed'
+                }
+            else:
+                log.error('[Downloader]: Error downloading post content: %s', media_info)
+                response = {
+                    'post': shortcode,
+                    'owner': media_info['user']['username'],
+                    'type': {media_info['product_type'] if media_info['product_type'] else 'photo'},
+                    'status': 'failed'
+                }
             return response
 
         # pylint: disable=broad-except
