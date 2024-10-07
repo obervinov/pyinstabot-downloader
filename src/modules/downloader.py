@@ -83,7 +83,7 @@ class Downloader:
             locale=self.configuration['locale']
         )
         self.client.set_country_code(
-            country_code=int(self.configuration['country-code'])
+            country_code=self.configuration['country-code']
         )
         self.client.set_timezone_offset(
             seconds=int(self.configuration['timezone-offset'])
