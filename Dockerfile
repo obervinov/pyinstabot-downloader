@@ -36,8 +36,7 @@ RUN apt-get update && apt-get upgrade -y && \
     apt-get install -y --no-install-recommends \
         git curl && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
-RUN pip3 install --upgrade pip setuptools && \
-    curl -sSL https://install.python-poetry.org | python -
+RUN pip3 install --upgrade pip setuptools
 
 ### Switching context ###
 USER ${PROJECT_NAME}
@@ -51,7 +50,8 @@ COPY poetry.lock .
 COPY *.md ./
 COPY LICENSE ./
 
-### Installing python dependeces ###
+### Installing poetry and python dependeces ###
+RUN curl -sSL https://install.python-poetry.org | python -
 RUN poetry install
 ENV PYTHONPATH=/home/${PROJECT_NAME}/app/src:/home/${PROJECT_NAME}/app/.venv/lib/python3.10/site-packages
 
