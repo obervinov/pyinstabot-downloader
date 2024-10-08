@@ -10,7 +10,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 * replacement of [instaloder](https://github.com/instaloader/instaloader) module with [instagrapi](https://github.com/subzeroid/instagrapi) module
 * module `proxying` configuration moved to Vault
 * remove the outdated storage types: `Dropbox` and `Mega` (Support for individual cloud providers removed in favour of `webdav` compatible providers)
-* change of parameter configuration for `downloader-api` and `uploader-api` functions. Please, check the new parameters in [README.md](README.md#bot-configuration-source-and-supported-parameters)
+* change of parameter configuration for `downloader-api` and `uploader-api` in the Vault. Please, check the new parameters in [README.md](README.md#bot-configuration-source-and-supported-parameters)
 #### 🚀 Features
 * replacement of [instaloder](https://github.com/instaloader/instaloader) module with [instagrapi](https://github.com/subzeroid/instagrapi) module
 * replace the base image of project with `python:3.9.20` (Ubuntu instead of Alpine)
