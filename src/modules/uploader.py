@@ -58,7 +58,7 @@ class Uploader:
                 "Please check the configuration in class argument or the secret with the configuration in the Vault."
             )
 
-        log.info('[Uploader]: Initializing connection to the %s...', self.configuration['storage-type'])
+        log.info('[Uploader]: Initializing connection to the WebDav remote directory...')
         self.local_directory = f"{os.getcwd()}/{self.configuration['source-directory']}"
         options = {
             'webdav_hostname': self.configuration['url'],
@@ -66,7 +66,7 @@ class Uploader:
             'webdav_password': self.configuration['password']
         }
         self.storage = WebDavClient(options)
-        log.info('[Uploader]: Connection to the %s is successful', self.configuration['storage-type'])
+        log.info('[Uploader]: Connection to the WebDav remote directory is established')
 
         self._check_incomplete_transfers()
 
@@ -111,7 +111,7 @@ class Uploader:
         """
         transfers = {}
         result = ""
-        log.info('[Uploader]: Preparing media files for transfer to the %s...', self.configuration['storage-type'])
+        log.info('[Uploader]: Preparing media files for transfer to the cloud...')
         for root, _, files in os.walk(f"{self.configuration['source-directory']}{sub_directory}"):
             for file in files:
                 transfers[file] = self.upload_to_cloud(
