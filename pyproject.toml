@@ -20,8 +20,6 @@ packages = [{include = "src"}]
 python = "^3.9"
 instagrapi = "^2"
 pillow = "8.1.1"
-dropbox = "^12"
-'mega.py' = "^1.0.8"
 psycopg2-binary = "^2"
 mock = "^5"
 webdavclient3 = "^3"

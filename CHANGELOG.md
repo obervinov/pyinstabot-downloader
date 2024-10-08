@@ -3,15 +3,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/) and this project adheres to [Semantic Versioning](http://semver.org/).
 
 
-## v3.0.0 - 2024-10-07
+## v3.0.0-beta-instagrapi - 2024-10-08
 ### What's Changed
-**Full Changelog**: https://github.com/obervinov/pyinstabot-downloader/compare/v2.3.0...v3.0.0 by @obervinov in https://github.com/obervinov/pyinstabot-downloader/pull/101
+**Full Changelog**: https://github.com/obervinov/pyinstabot-downloader/compare/v2.3.0...v3.0.0-beta by @obervinov in https://github.com/obervinov/pyinstabot-downloader/pull/101
 #### 💥 Breaking Changes
-* 
+* replacement of [instaloder](https://github.com/instaloader/instaloader) module with [instagrapi](https://github.com/subzeroid/instagrapi) module
+* module `proxying` configuration moved to Vault
+* remove the outdated storage types: `Dropbox` and `Mega` (Support for individual cloud providers removed in favour of `webdav` compatible providers)
+* change of parameter configuration for `downloader-api` and `uploader-api` functions. Please, check the new parameters in [README.md](README.md#bot-configuration-source-and-supported-parameters
 #### 🚀 Features
-* 
-#### 🐛 Bug Fixes
-* 
+* replacement of [instaloder](https://github.com/instaloader/instaloader) module with [instagrapi](https://github.com/subzeroid/instagrapi) module
 
 
 ## v2.3.0 - 2024-10-04

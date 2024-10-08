@@ -10,7 +10,7 @@ from pathlib import Path
 from instagrapi import Client
 from instagrapi.exceptions import LoginRequired
 from logger import log
-from .exceptions import WrongVaultInstance, FailedCreateDownloaderInstance, FailedAuthInstaloader
+from .exceptions import WrongVaultInstance, FailedCreateDownloaderInstance, FailedAuthInstagram
 
 
 # pylint: disable=too-few-public-methods
@@ -38,6 +38,8 @@ class Downloader:
                 :param locale (str): locale for requests.
                 :param country-code (str): country code for requests.
                 :param timezone-offset (int): timezone offset for requests.
+                :param user-agent (str): user agent for requests.
+                :param proxy-dsn (str): proxy dsn for requests.
             :param vault (object): instance of vault for reading configuration downloader-api.
 
         Returns:
@@ -45,16 +47,21 @@ class Downloader:
 
         Attributes:
             :attribute configuration (dict): dictionary with configuration parameters for instagram api communication.
-            :attribute instaloader (object): instance of the instaloader class for working
+            :attribute client (object): instance of the instagram api client.
 
         Examples:
             >>> configuration = {
             ...     'username': 'my_username',
             ...     'password': 'my_password',
-            ...     'login-method': 'session',
-            ...     'session-file': '/path/to/session/file',
-            ...     'session-base64': '<base64_encoded_session_file>',
-            ...     'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'
+            ...     'session-file': 'data/session.json',
+            ...     'delay-requests': 1,
+            ...     '2fa-enabled': False,
+            ...     '2fa-seed': 'my_seed_secret',
+            ...     'locale': 'en_US',
+            ...     'country-code': '1',
+            ...     'timezone-offset': 10800,
+            ...     'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+            ...     'proxy-dsn': 'http://localhost:8080'
             ... }
             >>> vault = Vault()
             >>> downloader = Downloader(configuration, vault)
@@ -75,7 +82,7 @@ class Downloader:
         log.info('[Downloader]: Creating a new instance...')
         self.client = Client()
 
-        log.info('[Downloader]: Setting up the client...')
+        log.info('[Downloader]: Configuring client settings...')
         self.client.delay_range = [
             1, int(self.configuration['delay-requests'])
         ]
@@ -91,13 +98,15 @@ class Downloader:
         self.client.set_user_agent(
             user_agent=self.configuration['user-agent']
         )
+        self.client.set_proxy(
+            dsn=self.configuration['proxy-dsn']
+        )
 
         auth_status = self._login()
-
         if auth_status == 'logged_in':
             log.info('[Downloader]: Instance created successfully with account %s', self.configuration['username'])
         else:
-            raise FailedAuthInstaloader("Failed to authenticate the Instaloader instance.")
+            raise FailedAuthInstagram("Failed to authenticate the Instaloader instance.")
 
     def _login(self) -> Union[str, None]:
         """
@@ -173,12 +182,16 @@ class Downloader:
 
             if media_info['media_type'] == 1:
                 self.client.photo_download(media_pk=media_info['pk'], folder=path)
+
             elif media_info['media_type'] == 2 and media_info['product_type'] == 'feed':
                 self.client.video_download(media_pk=media_info['pk'], folder=path)
+
             elif media_info['media_type'] == 2 and media_info['product_type'] == 'clips':
                 self.client.clip_download(media_pk=media_info['pk'], folder=path)
+
             elif media_info['media_type'] == 8:
                 self.client.album_download(media_pk=media_info['pk'], folder=path)
+
             else:
                 log.warning('[Downloader]: The media type is not supported for download: %s', media_info)
 
@@ -190,6 +203,7 @@ class Downloader:
                     'type': {media_info['product_type'] if media_info['product_type'] else 'photo'},
                     'status': 'completed'
                 }
+
             else:
                 log.error('[Downloader]: Temporary directory is empty: %s', path)
                 response = {
@@ -198,9 +212,12 @@ class Downloader:
                     'type': {media_info['product_type'] if media_info['product_type'] else 'photo'},
                     'status': 'failed'
                 }
+
             return response
 
         # pylint: disable=broad-except
+        # Temporary general exception for migration to the new module.
+        # Will be replaced by specific exceptions after v3.0.0
         except Exception as error:
             log.error('[Downloader]: Error downloading post content: %s\n%s', error, media_info)
             return None
