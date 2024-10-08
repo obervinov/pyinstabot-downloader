@@ -83,24 +83,13 @@ class Downloader:
         self.client = Client()
 
         log.info('[Downloader]: Configuring client settings...')
-        self.client.delay_range = [
-            1, int(self.configuration['delay-requests'])
-        ]
-        self.client.set_locale(
-            locale=self.configuration['locale']
-        )
-        self.client.set_country_code(
-            country_code=int(self.configuration['country-code'])
-        )
-        self.client.set_timezone_offset(
-            seconds=int(self.configuration['timezone-offset'])
-        )
-        self.client.set_user_agent(
-            user_agent=self.configuration['user-agent']
-        )
-        self.client.set_proxy(
-            dsn=self.configuration['proxy-dsn']
-        )
+        self.client.delay_range = [1, int(self.configuration['delay-requests'])]
+        self.client.set_locale(locale=self.configuration['locale'])
+        self.client.set_country_code(country_code=int(self.configuration['country-code']))
+        self.client.set_timezone_offset(seconds=int(self.configuration['timezone-offset']))
+        self.client.set_user_agent(user_agent=self.configuration['user-agent'])
+        if self.configuration['proxy-dsn']:
+            self.client.set_proxy(dsn=self.configuration['proxy-dsn'])
 
         auth_status = self._login()
         if auth_status == 'logged_in':
