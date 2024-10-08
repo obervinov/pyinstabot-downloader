@@ -33,9 +33,11 @@ RUN useradd -m -d /home/${PROJECT_NAME} -s /bin/bash ${PROJECT_NAME} && \
 
 ### Prepare tools and fix vulnerabilities ###
 RUN apt-get update && apt-get upgrade -y && \
-    apt-get install -y --no-install-recommends git curl && \
+    apt-get install -y --no-install-recommends \
+        git curl && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
-RUN pip3 install --upgrade pip setuptools
+RUN pip3 install --upgrade pip setuptools && \
+    curl -sSL https://install.python-poetry.org | python -
 
 ### Switching context ###
 USER ${PROJECT_NAME}
@@ -49,8 +51,7 @@ COPY poetry.lock .
 COPY *.md ./
 COPY LICENSE ./
 
-### Installing poetry and python dependeces ###
-RUN curl -sSL https://install.python-poetry.org | python -
+### Installing python dependeces ###
 RUN poetry install
 ENV PYTHONPATH=/home/${PROJECT_NAME}/app/src:/home/${PROJECT_NAME}/app/.venv/lib/python3.10/site-packages
 
