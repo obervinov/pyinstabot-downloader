@@ -88,8 +88,7 @@ class Downloader:
         self.client.set_country_code(country_code=int(self.configuration['country-code']))
         self.client.set_timezone_offset(seconds=int(self.configuration['timezone-offset']))
         self.client.set_user_agent(user_agent=self.configuration['user-agent'])
-        if self.configuration['proxy-dsn']:
-            self.client.set_proxy(dsn=self.configuration['proxy-dsn'])
+        self.client.set_proxy(dsn=self.configuration.get('proxy-dsn', None))
 
         auth_status = self._login()
         if auth_status == 'logged_in':
