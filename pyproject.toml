@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pyinstabot-downloader"
-version = "2.3.0"
+version = "3.0.0"
 description = "This project is a Telegram bot that allows you to upload posts from your Instagram profile to clouds like Dropbox, Mega or any WebDav compatible cloud storage."
 authors = ["Bervinov Oleg <bervinov.ob@gmail.com>"]
 maintainers = ["Bervinov Oleg <bervinov.ob@gmail.com>"]
@@ -18,9 +18,8 @@ packages = [{include = "src"}]
 
 [tool.poetry.dependencies]
 python = "^3.9"
-instaloader = "^4"
-dropbox = "^12"
-'mega.py' = "^1.0.8"
+instagrapi = "^2"
+pillow = "8.1.1"
 psycopg2-binary = "^2"
 mock = "^5"
 webdavclient3 = "^3"

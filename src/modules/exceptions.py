@@ -39,18 +39,9 @@ class WrongVaultInstance(Exception):
         super().__init__(self.message)
 
 
-class FailedAuthInstaloader(Exception):
+class FailedAuthInstagram(Exception):
     """
     Exception raised when the authentication of the Instaloader instance failed.
-    """
-    def __init__(self, message):
-        self.message = message
-        super().__init__(self.message)
-
-
-class WrongStorageType(Exception):
-    """
-    Exception raised when the storage type is not correct.
     """
     def __init__(self, message):
         self.message = message
