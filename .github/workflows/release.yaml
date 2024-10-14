@@ -10,7 +10,7 @@ on:
 
 jobs:
   create-release:
-    uses: obervinov/_templates/.github/workflows/release.yaml@v1.2.9
+    uses: obervinov/_templates/.github/workflows/release.yaml@v2.0.1
 
   cleanup-untagged-images:
     runs-on: ubuntu-latest
