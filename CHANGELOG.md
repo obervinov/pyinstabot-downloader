@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 ## v3.0.1 - 2024-10-14
 ### What's Changed
 **Full Changelog**: https://github.com/obervinov/pyinstabot-downloader/compare/v3.0.0...v3.0.1 by @obervinov in https://github.com/obervinov/pyinstabot-downloader/pull/106
+#### 🚀 Features
+* bump docker workflow version to `v2.0.0`
 #### 🐛 Bug Fixes
 * fix not enough condition for `igtv` type of content for `Downloader()` class
 * fix infinite loop in the `Downloader()` class when type of content not supported in condition
