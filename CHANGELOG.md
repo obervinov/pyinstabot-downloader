@@ -3,6 +3,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/) and this project adheres to [Semantic Versioning](http://semver.org/).
 
 
+## v3.0.1 - 2024-10-14
+### What's Changed
+**Full Changelog**: https://github.com/obervinov/pyinstabot-downloader/compare/v3.0.0...v3.0.1 by @obervinov in https://github.com/obervinov/pyinstabot-downloader/pull/106
+#### 🚀 Features
+* bump docker workflow version to `v2.0.0`
+#### 🐛 Bug Fixes
+* fix not enough condition for `igtv` type of content for `Downloader()` class
+* fix infinite loop in the `Downloader()` class when type of content not supported in condition
+* [Bug: Do not start the release creation process when closing a PR](https://github.com/obervinov/pyinstabot-downloader/issues/104)
+
+
 ## v3.0.0 - 2024-10-09
 ### What's Changed
 **Full Changelog**: https://github.com/obervinov/pyinstabot-downloader/compare/v2.3.0...v3.0.0 by @obervinov in https://github.com/obervinov/pyinstabot-downloader/pull/102

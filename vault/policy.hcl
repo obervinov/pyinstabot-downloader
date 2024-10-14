@@ -32,13 +32,3 @@ path "pyinstabot-downloader/data/configuration/*" {
 path "pyinstabot-downloader-database/creds/*" {
   capabilities = ["read", "list", "update"]
 }
-
-# Allowed read and write of bot data (!!! deprecated after https://github.com/obervinov/users-package/issues/41)
-path "pyinstabot-downloader/data/data/*" {
-  capabilities = ["read", "list", "create", "update"]
-}
-
-# Allow read users data for metric-server (!!! deprecated after v2.3.0 because it will be transferred to the database)
-path "pyinstabot-downloader/metadata/data/users" {
-  capabilities = ["list"]
-}

@@ -177,11 +177,15 @@ class Downloader:
             elif media_info['media_type'] == 2 and media_info['product_type'] == 'clips':
                 self.client.clip_download(media_pk=media_info['pk'], folder=path)
 
+            elif media_info['media_type'] == 2 and media_info['product_type'] == 'igtv':
+                self.client.igtv_download(media_pk=media_info['pk'], folder=path)
+
             elif media_info['media_type'] == 8:
                 self.client.album_download(media_pk=media_info['pk'], folder=path)
 
             else:
-                log.warning('[Downloader]: The media type is not supported for download: %s', media_info)
+                log.error('[Downloader]: The media type is not supported for download: %s', media_info)
+                status = "not_supported"
 
             if os.listdir(path):
                 log.info('[Downloader]: The contents of the post %s have been successfully downloaded', shortcode)
@@ -189,7 +193,7 @@ class Downloader:
                     'post': shortcode,
                     'owner': media_info['user']['username'],
                     'type': {media_info['product_type'] if media_info['product_type'] else 'photo'},
-                    'status': 'completed'
+                    'status': {status if status else 'completed'}
                 }
 
             else:
@@ -198,7 +202,7 @@ class Downloader:
                     'post': shortcode,
                     'owner': media_info['user']['username'],
                     'type': {media_info['product_type'] if media_info['product_type'] else 'photo'},
-                    'status': 'failed'
+                    'status': {status if status else 'failed'}
                 }
 
             return response

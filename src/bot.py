@@ -539,7 +539,7 @@ def queue_handler_thread() -> None:
 
             log.info('[Queue-handler-thread] starting handler for post %s...', message[2])
             # download the contents of an instagram post to a temporary folder
-            if download_status not in ['completed', 'source_not_found']:
+            if download_status not in ['completed', 'source_not_found', 'not_supported']:
                 download_metadata = downloader.get_post_content(shortcode=post_id)
                 owner_id = download_metadata['owner']
                 download_status = download_metadata['status']
@@ -557,6 +557,15 @@ def queue_handler_thread() -> None:
                     state='processed',
                     download_status=download_status,
                     upload_status=download_status,
+                    post_owner=owner_id
+                )
+            # downloader couldn't download the post for some reason
+            if download_status == 'not_supported':
+                database.update_message_state_in_queue(
+                    post_id=post_id,
+                    state='not_supported',
+                    download_status='not_supported',
+                    upload_status='not_supported',
                     post_owner=owner_id
                 )
             # upload the received content to the destination storage
@@ -581,6 +590,8 @@ def queue_handler_thread() -> None:
                 log.info('[Queue-handler-thread] the post %s has been processed successfully', post_id)
             elif download_status == 'source_not_found' and upload_status == 'source_not_found':
                 log.warning('[Queue-handler-thread] the post %s not found, message was marked as processed', post_id)
+            elif download_status == 'not_supported' and upload_status == 'not_supported':
+                log.errors('[Queue-handler-thread] the post %s is not supported, message was excluded from processing', post_id)
             else:
                 log.warning(
                     '[Queue-handler-thread] the post %s has not been processed yet (download: %s, uploader: %s)',
