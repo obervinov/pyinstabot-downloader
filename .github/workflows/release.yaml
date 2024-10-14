@@ -9,22 +9,10 @@ on:
       - closed
 
 jobs:
-  create-release:
-    uses: obervinov/_templates/.github/workflows/release.yaml@v1.2.9
+  release:
+    if: github.event.pull_request.merged == true
+    uses: obervinov/_templates/.github/workflows/release.yaml@v2.0.0
 
-  cleanup-untagged-images:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Delete untagged images from GitHub Container Registry
-        continue-on-error: true
-        uses: Chizkiyahu/delete-untagged-ghcr-action@v4
-        with:
-          token: ${{ secrets.PAT_GHCR_CLEANUP }}
-          package_name: 'pyinstabot-downloader'
-          untagged_only: true
-          except_untagged_multiplatform: false
-          owner_type: 'user'
-
-  # milestone:
-  #   uses: obervinov/_templates/.github/workflows/milestone.yaml@v1.2.9
-  #   needs: [create-release]
+  build-pr-image:
+    if: github.event.pull_request.merged == true
+    uses: obervinov/_templates/.github/workflows/docker.yaml@v2.0.0

@@ -57,22 +57,6 @@ path "pyinstabot-downloader/data/configuration/*" {
   capabilities = ["create", "read", "update", "list"]
 }
 
-# Operations for the module
-# Work with secret event data
-path "pyinstabot-downloader/data/data/*" {
-  capabilities = ["create", "read", "update", "list"]
-}
-
-# Allowed to read bot history
-path "pyinstabot-downloader/metadata/history/*" {
-  capabilities = ["read", "list"]
-}
-
-# Allowed to create, read, update, and list bot history
-path "pyinstabot-downloader/data/history/*" {
-  capabilities = ["create", "read", "list", "update"]
-}
-
 # Allowed to read and list of user configurations
 path "pyinstabot-downloader/metadata/configuration/users" {
   capabilities = ["read", "list"]

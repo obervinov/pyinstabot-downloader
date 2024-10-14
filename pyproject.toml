@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "pyinstabot-downloader"
-version = "3.0.0"
-description = "This project is a Telegram bot that allows you to upload posts from your Instagram profile to clouds like Dropbox, Mega or any WebDav compatible cloud storage."
+version = "3.0.1"
+description = "This project is a Telegram bot that allows you to upload posts from your Instagram profile to clouds like any WebDav compatible cloud storage."
 authors = ["Bervinov Oleg <bervinov.ob@gmail.com>"]
 maintainers = ["Bervinov Oleg <bervinov.ob@gmail.com>"]
 license = "MIT"
@@ -9,7 +9,7 @@ readme = "README.md"
 homepage = "https://github.com/obervinov/pyinstabot-downloader"
 repository = "https://github.com/obervinov/pyinstabot-downloader"
 documentation = "https://github.com/obervinov/pyinstabot-downloader/blob/main/README.md"
-keywords = ["telegram", "bot", "telebot", "telegram-bot", "instagram", "meganz", "dropbox", "webdav", "backup", "pyinstabot", "pyinstabot-downloader"]
+keywords = ["telegram", "bot", "telebot", "telegram-bot", "instagram", "webdav", "backup", "pyinstabot", "pyinstabot-downloader"]
 include = ["CHANGELOG.md"]
 packages = [{include = "src"}]
 
