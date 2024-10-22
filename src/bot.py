@@ -1,6 +1,7 @@
 """
 This module contains the main code for the bot to work and contains the main logic linking the additional modules.
 """
+from typing import Union
 from datetime import datetime, timedelta
 import re
 import threading
@@ -318,7 +319,7 @@ def get_user_messages(user_id: str = None) -> dict:
     return {'queue_list': queue_string, 'processed_list': processed_string, 'queue_count': len(queue), 'processed_count': len(processed)}
 
 
-def message_parser(message: telegram.telegram_types.Message = None) -> dict:
+def message_parser(message: telegram.telegram_types.Message = None) -> Union[dict, None]:
     """
     Parses the message containing the Instagram post link and returns the data.
 
@@ -327,6 +328,8 @@ def message_parser(message: telegram.telegram_types.Message = None) -> dict:
 
     Returns:
         dict: The data containing the user id, post url, post id, post owner, link type, message id, and chat id.
+            or
+        None: If the post link is incorrect.
     """
     data = {}
     if re.match(r'^https://www.instagram.com/(p|reel)/.*', message.text):
@@ -343,8 +346,9 @@ def message_parser(message: telegram.telegram_types.Message = None) -> dict:
             log.error('[Bot]: post id %s from user %s is wrong', post_id, message.chat.id)
             telegram.send_styled_message(
                 chat_id=message.chat.id,
-                messages_template={'alias': 'url_error'}
+                messages_template={'alias': 'url_error', 'kwargs': {'url': message.text}}
             )
+        data = None
     else:
         log.error('[Bot]: post link %s from user %s is incorrect', message.text, message.chat.id)
         telegram.send_styled_message(
@@ -379,20 +383,24 @@ def process_one_post(
     user = users_rl.user_access_check(**requestor)
     if user.get('permissions', None) == users_rl.user_status_allow:
         data = message_parser(message)
-        rate_limit = user.get('rate_limits', None)
+        if not data:
+            log.error('[Bot]: link %s cannot be processed', message.text)
 
-        # Define time to process the message in queue
-        if rate_limit:
-            data['scheduled_time'] = rate_limit
         else:
-            data['scheduled_time'] = datetime.now()
+            rate_limit = user.get('rate_limits', None)
 
-        # Check if the message is unique
-        if database.check_message_uniqueness(data['post_id'], data['user_id']):
-            status = database.add_message_to_queue(data)
-            log.info('[Bot]: %s from user %s', status, message.chat.id)
-        else:
-            log.info('[Bot]: post %s from user %s already exist in the database', data['post_id'], message.chat.id)
+            # Define time to process the message in queue
+            if rate_limit:
+                data['scheduled_time'] = rate_limit
+            else:
+                data['scheduled_time'] = datetime.now()
+
+            # Check if the message is unique
+            if database.check_message_uniqueness(data['post_id'], data['user_id']):
+                status = database.add_message_to_queue(data)
+                log.info('[Bot]: %s from user %s', status, message.chat.id)
+            else:
+                log.info('[Bot]: post %s from user %s already exist in the database', data['post_id'], message.chat.id)
 
         # If it is not a list of posts - delete users message
         if mode == 'single':

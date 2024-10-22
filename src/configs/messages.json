@@ -37,8 +37,8 @@
             "args": [":warning:"]
         },
         "url_error": {
-            "text": "{0} Validation error. The link is incorrect.",
-            "args": [":warning:", ":link:"]
+            "text": "{0} Validation error. The link is incorrect: <code>{1}</code>",
+            "args": [":warning:", "url"]
         }
     }
 }

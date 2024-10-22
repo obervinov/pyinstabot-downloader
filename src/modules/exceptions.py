@@ -46,3 +46,12 @@ class FailedAuthInstagram(Exception):
     def __init__(self, message):
         self.message = message
         super().__init__(self.message)
+
+
+class FailedDownloadPost(Exception):
+    """
+    Exception raised when the post could not be downloaded.
+    """
+    def __init__(self, message):
+        self.message = message
+        super().__init__(self.message)
