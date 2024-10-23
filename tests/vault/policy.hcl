@@ -25,7 +25,7 @@ path "sys/mounts/pytest" {
 
 # Operations for pytest
 # Allow reading database credentials for a role 
-path "database/creds/pytest" {
+path "pytest-database/creds/pytest" {
   capabilities = ["read"]
 }
 
