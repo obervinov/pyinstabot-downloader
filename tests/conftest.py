@@ -213,7 +213,7 @@ def fixture_prepare_vault(vault_url, namespace, policy_path, postgres_url, postg
     # Prepare database engine configuration
     client.sys.enable_secrets_engine(
         backend_type='database',
-        path='database'
+        path='pytest-database'
     )
 
     # Configure database engine
