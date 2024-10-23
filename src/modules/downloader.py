@@ -7,7 +7,6 @@ https://github.com/subzeroid/instagrapi
 import os
 import time
 import random
-from typing import Union
 from pathlib import Path
 from urllib3.exceptions import ReadTimeoutError
 from requests.exceptions import ConnectionError as RequestsConnectionError
@@ -111,7 +110,7 @@ class Downloader:
             (8, 'any'): self.client.album_download
         }
 
-    def _login(self) -> Union[str, None]:
+    def _login(self) -> str | None:
         """
         The method for authentication in Instagram API.
 
@@ -157,7 +156,7 @@ class Downloader:
         log.info('[Downloader]: Authentication in the Instagram API was successful.')
         return 'logged_in'
 
-    def get_post_content(self, shortcode: str = None, error_count: int = 0) -> Union[dict, None]:
+    def get_post_content(self, shortcode: str = None, error_count: int = 0) -> dict | None:
         """
         The method for getting the content of a post from a specified Post ID.
 

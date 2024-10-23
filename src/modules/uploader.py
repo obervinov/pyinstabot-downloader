@@ -4,7 +4,6 @@ This module processes the content uploaded from Instagram
 and uploads the found media files (image, video) to the destination storage.
 """
 import os
-from typing import Union
 from webdav3.client import Client as WebDavClient
 from logger import log
 from .exceptions import WrongVaultInstance, FailedInitUploaderInstance
@@ -130,7 +129,7 @@ class Uploader:
         self,
         source: str = None,
         destination: str = None
-    ) -> Union[str, None]:
+    ) -> str | None:
         """
         The method of uploading the contents of the source directory to the target cloud storage.
 

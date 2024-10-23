@@ -4,7 +4,6 @@ import sys
 import importlib
 import json
 import time
-from typing import Union
 import psycopg2
 from psycopg2 import pool
 from logger import log
@@ -297,7 +296,7 @@ class DatabaseClient:
         table_name: str = None,
         columns: tuple = None,
         **kwargs
-    ) -> Union[list, None]:
+    ) -> list | None:
         """
         Selects rows from the specified table with the given columns based on the specified condition.
 
@@ -720,7 +719,7 @@ class DatabaseClient:
         self,
         message_id: str = None,
         chat_id: str = None,
-        message_content: Union[str, dict] = None,
+        message_content: str | dict = None,
         **kwargs
     ) -> str:
         """
@@ -730,7 +729,7 @@ class DatabaseClient:
         Args:
             message_id (str): The ID of the message.
             chat_id (str): The ID of the chat.
-            message_content (Union[str, dict]): The content of the message.
+            message_content (str | dict): The content of the message.
 
         Keyword Args:
             message_type (str): The type of the message.
