@@ -1,7 +1,6 @@
 """
 This module contains the main code for the bot to work and contains the main logic linking the additional modules.
 """
-from typing import Union
 from datetime import datetime, timedelta
 import re
 import threading
@@ -15,7 +14,9 @@ from telegram import TelegramBot, exceptions as TelegramExceptions
 from users import Users
 from vault import VaultClient
 from configs.constants import (
-    TELEGRAM_BOT_NAME, ROLES_MAP, QUEUE_FREQUENCY, STATUSES_MESSAGE_FREQUENCY, METRICS_PORT, METRICS_INTERVAL, VAULT_DBENGINE_MOUNT_POINT, VAULT_DB_ROLE
+    TELEGRAM_BOT_NAME, ROLES_MAP, QUEUE_FREQUENCY, STATUSES_MESSAGE_FREQUENCY,
+    METRICS_PORT, METRICS_INTERVAL,
+    VAULT_DBENGINE_MOUNT_POINT, VAULT_DB_ROLE
 )
 from modules.database import DatabaseClient
 from modules.exceptions import FailedMessagesStatusUpdater
