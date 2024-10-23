@@ -19,7 +19,7 @@ packages = [{include = "src"}]
 [tool.poetry.dependencies]
 python = "^3.12"
 instagrapi = "^2"
-pillow = "^8"
+pillow = "^11"
 psycopg2-binary = "^2"
 mock = "^5"
 webdavclient3 = "^3"
