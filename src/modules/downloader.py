@@ -10,7 +10,7 @@ import random
 from typing import Union
 from pathlib import Path
 from urllib3.exceptions import ReadTimeoutError
-from requests.exceptions import ConnectionError
+from requests.exceptions import ConnectionError as RequestsConnectionError
 from instagrapi import Client
 from instagrapi.exceptions import LoginRequired, ClientRequestTimeout, MediaNotFound, MediaUnavailable
 from logger import log
@@ -223,7 +223,7 @@ class Downloader:
                 'status': 'source_not_found'
             }
 
-        except (ReadTimeoutError, ConnectionError, ClientRequestTimeout) as error:
+        except (ReadTimeoutError, RequestsConnectionError, ClientRequestTimeout) as error:
             pause = random.randint(self.configuration['delay-requests'] * 3, self.configuration['delay-requests'] * 30)
             log.error('[Downloader]: Timeout error downloading post content: %s\n%s\nWaiting %s seconds...', error, shortcode, pause)
             time.sleep(pause)
