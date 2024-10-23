@@ -14,10 +14,8 @@ from telegram import TelegramBot, exceptions as TelegramExceptions
 from users import Users
 from vault import VaultClient
 from configs.constants import (
-    TELEGRAM_BOT_NAME, ROLES_MAP,
-    QUEUE_FREQUENCY, STATUSES_MESSAGE_FREQUENCY,
-    METRICS_PORT, METRICS_INTERVAL,
-    VAULT_DBENGINE_MOUNT_POINT, VAULT_DB_ROLE_MAIN, VAULT_DB_ROLE_USERS, VAULT_DB_ROLE_USERS_RL
+    TELEGRAM_BOT_NAME, ROLES_MAP, QUEUE_FREQUENCY, STATUSES_MESSAGE_FREQUENCY,
+    METRICS_PORT, METRICS_INTERVAL, VAULT_DB_ROLE
 )
 from modules.database import DatabaseClient
 from modules.exceptions import FailedMessagesStatusUpdater
@@ -28,16 +26,19 @@ from modules.metrics import Metrics
 
 
 # Vault client
-# The need to explicitly specify a mount point will no longer be necessary after solving the https://github.com/obervinov/vault-package/issues/49
-vault = VaultClient(dbengine={"mount_point": VAULT_DBENGINE_MOUNT_POINT})
+vault = VaultClient()
 # Telegram instance
 telegram = TelegramBot(vault=vault)
 # Telegram bot for decorators
 bot = telegram.telegram_bot
+# Client for communication with the database
+database = DatabaseClient(vault=vault, db_role=VAULT_DB_ROLE)
+# Metrics exporter
+metrics = Metrics(port=METRICS_PORT, interval=METRICS_INTERVAL, metrics_prefix=TELEGRAM_BOT_NAME, vault=vault, database=database)
 # Users module with rate limits option
-users_rl = Users(vault=vault, rate_limits=True, storage={'db_role': VAULT_DB_ROLE_USERS_RL})
+users_rl = Users(vault=vault, rate_limits=True, storage_connection=database.get_connection())
 # Users module without rate limits option
-users = Users(vault=vault, storage={'db_role': VAULT_DB_ROLE_USERS})
+users = Users(vault=vault, storage_connection=database.get_connection())
 
 # Client for download content from instagram
 # If API disabled, the mock object will be used
@@ -65,12 +66,6 @@ else:
     log.warning('[Bot]: Uploader API is disabled, using mock object, because enabled flag is %s', uploader_api_enabled)
     uploader = MagicMock()
     uploader.run_transfers.return_value = 'completed'
-
-# Client for communication with the database
-database = DatabaseClient(vault=vault, db_role=VAULT_DB_ROLE_MAIN)
-
-# Metrics exporter
-metrics = Metrics(port=METRICS_PORT, interval=METRICS_INTERVAL, metrics_prefix=TELEGRAM_BOT_NAME, vault=vault, database=database)
 
 
 # START HANDLERS BLOCK ##############################################################################################################
@@ -343,7 +338,7 @@ def message_parser(message: telegram.telegram_types.Message = None) -> dict:
             log.error('[Bot]: post id %s from user %s is wrong', post_id, message.chat.id)
             telegram.send_styled_message(
                 chat_id=message.chat.id,
-                messages_template={'alias': 'url_error'}
+                messages_template={'alias': 'url_error', 'kwargs': {'url': message.text}}
             )
     else:
         log.error('[Bot]: post link %s from user %s is incorrect', message.text, message.chat.id)
@@ -379,20 +374,23 @@ def process_one_post(
     user = users_rl.user_access_check(**requestor)
     if user.get('permissions', None) == users_rl.user_status_allow:
         data = message_parser(message)
-        rate_limit = user.get('rate_limits', None)
-
-        # Define time to process the message in queue
-        if rate_limit:
-            data['scheduled_time'] = rate_limit
+        if not data:
+            log.error('[Bot]: link %s cannot be processed', message.text)
         else:
-            data['scheduled_time'] = datetime.now()
+            rate_limit = user.get('rate_limits', None)
 
-        # Check if the message is unique
-        if database.check_message_uniqueness(data['post_id'], data['user_id']):
-            status = database.add_message_to_queue(data)
-            log.info('[Bot]: %s from user %s', status, message.chat.id)
-        else:
-            log.info('[Bot]: post %s from user %s already exist in the database', data['post_id'], message.chat.id)
+            # Define time to process the message in queue
+            if rate_limit:
+                data['scheduled_time'] = rate_limit
+            else:
+                data['scheduled_time'] = datetime.now()
+
+            # Check if the message is unique
+            if database.check_message_uniqueness(data['post_id'], data['user_id']):
+                status = database.add_message_to_queue(data)
+                log.info('[Bot]: %s from user %s', status, message.chat.id)
+            else:
+                log.info('[Bot]: post %s from user %s already exist in the database', data['post_id'], message.chat.id)
 
         # If it is not a list of posts - delete users message
         if mode == 'single':
@@ -539,7 +537,7 @@ def queue_handler_thread() -> None:
 
             log.info('[Queue-handler-thread] starting handler for post %s...', message[2])
             # download the contents of an instagram post to a temporary folder
-            if download_status not in ['completed', 'source_not_found']:
+            if download_status not in ['completed', 'source_not_found', 'not_supported']:
                 download_metadata = downloader.get_post_content(shortcode=post_id)
                 owner_id = download_metadata['owner']
                 download_status = download_metadata['status']
@@ -557,6 +555,15 @@ def queue_handler_thread() -> None:
                     state='processed',
                     download_status=download_status,
                     upload_status=download_status,
+                    post_owner=owner_id
+                )
+            # downloader couldn't download the post for some reason
+            if download_status == 'not_supported':
+                database.update_message_state_in_queue(
+                    post_id=post_id,
+                    state='not_supported',
+                    download_status='not_supported',
+                    upload_status='not_supported',
                     post_owner=owner_id
                 )
             # upload the received content to the destination storage
@@ -581,6 +588,8 @@ def queue_handler_thread() -> None:
                 log.info('[Queue-handler-thread] the post %s has been processed successfully', post_id)
             elif download_status == 'source_not_found' and upload_status == 'source_not_found':
                 log.warning('[Queue-handler-thread] the post %s not found, message was marked as processed', post_id)
+            elif download_status == 'not_supported' and upload_status == 'not_supported':
+                log.errors('[Queue-handler-thread] the post %s is not supported, message was excluded from processing', post_id)
             else:
                 log.warning(
                     '[Queue-handler-thread] the post %s has not been processed yet (download: %s, uploader: %s)',

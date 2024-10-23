@@ -213,7 +213,7 @@ def fixture_prepare_vault(vault_url, namespace, policy_path, postgres_url, postg
     # Prepare database engine configuration
     client.sys.enable_secrets_engine(
         backend_type='database',
-        path='database'
+        path='pytest-database'
     )
 
     # Configure database engine
@@ -224,7 +224,8 @@ def fixture_prepare_vault(vault_url, namespace, policy_path, postgres_url, postg
         allowed_roles=["pytest"],
         username="postgres",
         password="postgres",
-        connection_url=postgres_url
+        connection_url=postgres_url,
+        mount_point="pytest-database"
     )
     print(f"Configured database engine: {configuration}")
 
@@ -240,7 +241,8 @@ def fixture_prepare_vault(vault_url, namespace, policy_path, postgres_url, postg
         db_name="postgresql",
         creation_statements=statement,
         default_ttl="1h",
-        max_ttl="24h"
+        max_ttl="24h",
+        mount_point="pytest-database"
     )
     print(f"Created role: {role}")
 

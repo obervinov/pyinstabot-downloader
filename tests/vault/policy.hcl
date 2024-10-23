@@ -25,7 +25,7 @@ path "sys/mounts/pytest" {
 
 # Operations for pytest
 # Allow reading database credentials for a role 
-path "database/creds/pytest" {
+path "pytest-database/creds/pytest" {
   capabilities = ["read"]
 }
 
@@ -55,22 +55,6 @@ path "pyinstabot-downloader/config" {
 # Work with secret application data
 path "pyinstabot-downloader/data/configuration/*" {
   capabilities = ["create", "read", "update", "list"]
-}
-
-# Operations for the module
-# Work with secret event data
-path "pyinstabot-downloader/data/data/*" {
-  capabilities = ["create", "read", "update", "list"]
-}
-
-# Allowed to read bot history
-path "pyinstabot-downloader/metadata/history/*" {
-  capabilities = ["read", "list"]
-}
-
-# Allowed to create, read, update, and list bot history
-path "pyinstabot-downloader/data/history/*" {
-  capabilities = ["create", "read", "list", "update"]
 }
 
 # Allowed to read and list of user configurations

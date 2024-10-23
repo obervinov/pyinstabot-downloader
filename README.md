@@ -122,6 +122,7 @@ This project is a Telegram bot that allows you to upload posts from your Instagr
     "session-file": "session.json",
     "timezone-offset": "10800",
     "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) ...",
+    "request-timeout": "10"
   }
   ```
 
@@ -137,6 +138,7 @@ This project is a Telegram bot that allows you to upload posts from your Instagr
   - `enabled`: the status of the downloader module
   - `username`: the username of the instagram account
   - `password`: the password of the instagram account
+  - `request-timeout`: the timeout for requests to the instagram api
   </br>
 
 - `configuration/uploader-api`: uploader module configuration (for upload content to the target storage)
@@ -256,4 +258,4 @@ docker compose -f docker-compose.yml up -d
 ## <img src="https://github.com/obervinov/_templates/blob/v1.2.2/icons/github-actions.png" width="25" title="github-actions"> GitHub Actions
 | Name  | Version |
 | ------------------------ | ----------- |
-| GitHub Actions Templates | [v1.2.9](https://github.com/obervinov/_templates/tree/v1.2.9) |
+| GitHub Actions Templates | [v2.0.2](https://github.com/obervinov/_templates/tree/v2.0.2) |

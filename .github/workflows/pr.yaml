@@ -1,30 +1,21 @@
 ---
-name: PR
-
-on:
-  push:
-    branches:
-      - '*'
-      - '*/*'
-      - '**'
-      - '!main'
-
-jobs:
-  changelog:
-    uses: obervinov/_templates/.github/workflows/changelog.yaml@v1.2.9
-
-  pylint:
-    uses: obervinov/_templates/.github/workflows/pylint.yaml@v1.2.9
-
-  pytest:
-    uses: obervinov/_templates/.github/workflows/pytest-with-vault.yaml@v1.2.9
-
-  pyproject:
-    uses: obervinov/_templates/.github/workflows/pyproject.yaml@v1.2.9
+  name: PR
   
-  pr:
-    uses: obervinov/_templates/.github/workflows/pr.yaml@v1.2.9
+  on:
+    push:
+      branches:
+        - '*'
+        - '*/*'
+        - '**'
+        - '!main'
+  
+  jobs:    
+    pr:
+      uses: obervinov/_templates/.github/workflows/pr.yaml@v2.0.2
 
-  build-pr-image:
-    uses: obervinov/_templates/.github/workflows/docker.yaml@v1.2.9
-    needs: [changelog, pylint, pytest, pyproject]
+    pyproject:
+      uses: obervinov/_templates/.github/workflows/pyproject.yaml@v2.0.2
+
+    build-pr-image:
+      uses: obervinov/_templates/.github/workflows/docker.yaml@v2.0.2
+      needs: [pr, pyproject]

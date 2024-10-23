@@ -1,4 +1,4 @@
-FROM python:3.9.20
+FROM python:3.12.7
 
 ### External argumetns ###
 ARG PROJECT_DESCRIPTION
@@ -53,7 +53,7 @@ COPY LICENSE ./
 ### Installing poetry and python dependeces ###
 RUN curl -sSL https://install.python-poetry.org | python -
 RUN poetry install
-ENV PYTHONPATH=/home/${PROJECT_NAME}/app/src:/home/${PROJECT_NAME}/app/.venv/lib/python3.10/site-packages
+ENV PYTHONPATH=/home/${PROJECT_NAME}/app/src:/home/${PROJECT_NAME}/app/.venv/lib/python3.12/site-packages
 
 ### Entrypoint ###
 CMD [ "python3", "src/bot.py" ]
