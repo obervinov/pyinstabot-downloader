@@ -241,7 +241,8 @@ def fixture_prepare_vault(vault_url, namespace, policy_path, postgres_url, postg
         db_name="postgresql",
         creation_statements=statement,
         default_ttl="1h",
-        max_ttl="24h"
+        max_ttl="24h",
+        mount_point="pytest-database"
     )
     print(f"Created role: {role}")
 
