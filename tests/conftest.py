@@ -224,7 +224,8 @@ def fixture_prepare_vault(vault_url, namespace, policy_path, postgres_url, postg
         allowed_roles=["pytest"],
         username="postgres",
         password="postgres",
-        connection_url=postgres_url
+        connection_url=postgres_url,
+        mount_point="pytest-database"
     )
     print(f"Configured database engine: {configuration}")
 
