@@ -15,10 +15,7 @@ from telegram import TelegramBot, exceptions as TelegramExceptions
 from users import Users
 from vault import VaultClient
 from configs.constants import (
-    TELEGRAM_BOT_NAME, ROLES_MAP,
-    QUEUE_FREQUENCY, STATUSES_MESSAGE_FREQUENCY,
-    METRICS_PORT, METRICS_INTERVAL,
-    VAULT_DBENGINE_MOUNT_POINT, VAULT_DB_ROLE_MAIN, VAULT_DB_ROLE_USERS, VAULT_DB_ROLE_USERS_RL
+    TELEGRAM_BOT_NAME, ROLES_MAP, QUEUE_FREQUENCY, STATUSES_MESSAGE_FREQUENCY, METRICS_PORT, METRICS_INTERVAL, VAULT_DBENGINE_MOUNT_POINT, VAULT_DB_ROLE
 )
 from modules.database import DatabaseClient
 from modules.exceptions import FailedMessagesStatusUpdater
@@ -35,10 +32,14 @@ vault = VaultClient(dbengine={"mount_point": VAULT_DBENGINE_MOUNT_POINT})
 telegram = TelegramBot(vault=vault)
 # Telegram bot for decorators
 bot = telegram.telegram_bot
+# Client for communication with the database
+database = DatabaseClient(vault=vault, db_role=VAULT_DB_ROLE)
+# Metrics exporter
+metrics = Metrics(port=METRICS_PORT, interval=METRICS_INTERVAL, metrics_prefix=TELEGRAM_BOT_NAME, vault=vault, database=database)
 # Users module with rate limits option
-users_rl = Users(vault=vault, rate_limits=True, storage={'db_role': VAULT_DB_ROLE_USERS_RL})
+users_rl = Users(vault=vault, rate_limits=True, storage_connection=database.get_connection())
 # Users module without rate limits option
-users = Users(vault=vault, storage={'db_role': VAULT_DB_ROLE_USERS})
+users = Users(vault=vault, storage_connection=database.get_connection())
 
 # Client for download content from instagram
 # If API disabled, the mock object will be used
@@ -66,12 +67,6 @@ else:
     log.warning('[Bot]: Uploader API is disabled, using mock object, because enabled flag is %s', uploader_api_enabled)
     uploader = MagicMock()
     uploader.run_transfers.return_value = 'completed'
-
-# Client for communication with the database
-database = DatabaseClient(vault=vault, db_role=VAULT_DB_ROLE_MAIN)
-
-# Metrics exporter
-metrics = Metrics(port=METRICS_PORT, interval=METRICS_INTERVAL, metrics_prefix=TELEGRAM_BOT_NAME, vault=vault, database=database)
 
 
 # START HANDLERS BLOCK ##############################################################################################################
@@ -319,7 +314,7 @@ def get_user_messages(user_id: str = None) -> dict:
     return {'queue_list': queue_string, 'processed_list': processed_string, 'queue_count': len(queue), 'processed_count': len(processed)}
 
 
-def message_parser(message: telegram.telegram_types.Message = None) -> Union[dict, None]:
+def message_parser(message: telegram.telegram_types.Message = None) -> dict:
     """
     Parses the message containing the Instagram post link and returns the data.
 
@@ -328,8 +323,6 @@ def message_parser(message: telegram.telegram_types.Message = None) -> Union[dic
 
     Returns:
         dict: The data containing the user id, post url, post id, post owner, link type, message id, and chat id.
-            or
-        None: If the post link is incorrect.
     """
     data = {}
     if re.match(r'^https://www.instagram.com/(p|reel)/.*', message.text):
@@ -348,7 +341,6 @@ def message_parser(message: telegram.telegram_types.Message = None) -> Union[dic
                 chat_id=message.chat.id,
                 messages_template={'alias': 'url_error', 'kwargs': {'url': message.text}}
             )
-        data = None
     else:
         log.error('[Bot]: post link %s from user %s is incorrect', message.text, message.chat.id)
         telegram.send_styled_message(
@@ -385,7 +377,6 @@ def process_one_post(
         data = message_parser(message)
         if not data:
             log.error('[Bot]: link %s cannot be processed', message.text)
-
         else:
             rate_limit = user.get('rate_limits', None)
 

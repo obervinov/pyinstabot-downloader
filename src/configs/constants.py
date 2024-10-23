@@ -22,7 +22,4 @@ METRICS_INTERVAL = 30
 
 # Vault Database Engine constants
 VAULT_DBENGINE_MOUNT_POINT = f"{TELEGRAM_BOT_NAME}-database"
-# Will be removed after https://github.com/obervinov/users-package/issues/47
-VAULT_DB_ROLE_MAIN = f"{TELEGRAM_BOT_NAME}-bot"
-VAULT_DB_ROLE_USERS = f"{TELEGRAM_BOT_NAME}-users"
-VAULT_DB_ROLE_USERS_RL = f"{TELEGRAM_BOT_NAME}-users-rl"
+VAULT_DB_ROLE = f"{TELEGRAM_BOT_NAME}"
