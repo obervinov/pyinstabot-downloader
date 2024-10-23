@@ -12,6 +12,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 #### 💥 Breaking Changes
 * bump python version to `3.12`
 #### 🐛 Bug Fixes
+* other general bug fixes and improvements
 * fix not enough condition for `igtv` type of content for `Downloader()` class
 * fix infinite loop in the `Downloader()` class when type of content not supported in condition
 * [Bug: Do not start the release creation process when closing a PR](https://github.com/obervinov/pyinstabot-downloader/issues/104)

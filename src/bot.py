@@ -15,8 +15,7 @@ from users import Users
 from vault import VaultClient
 from configs.constants import (
     TELEGRAM_BOT_NAME, ROLES_MAP, QUEUE_FREQUENCY, STATUSES_MESSAGE_FREQUENCY,
-    METRICS_PORT, METRICS_INTERVAL,
-    VAULT_DBENGINE_MOUNT_POINT, VAULT_DB_ROLE
+    METRICS_PORT, METRICS_INTERVAL, VAULT_DB_ROLE
 )
 from modules.database import DatabaseClient
 from modules.exceptions import FailedMessagesStatusUpdater
@@ -27,8 +26,7 @@ from modules.metrics import Metrics
 
 
 # Vault client
-# The need to explicitly specify a mount point will no longer be necessary after solving the https://github.com/obervinov/vault-package/issues/49
-vault = VaultClient(dbengine={"mount_point": VAULT_DBENGINE_MOUNT_POINT})
+vault = VaultClient()
 # Telegram instance
 telegram = TelegramBot(vault=vault)
 # Telegram bot for decorators
