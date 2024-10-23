@@ -29,6 +29,11 @@ vault  = { git = "https://github.com/obervinov/vault-package.git", tag = "v4.0.0
 users = { git = "https://github.com/obervinov/users-package.git", tag = "v4.0.1" }
 telegram = { git = "https://github.com/obervinov/telegram-package.git", tag = "v3.0.0" }
 
+[tool.poetry.group.dev.dependencies]
+pylint = "^3.3.1"
+flake8 = "^7.1.1"
+pytest = "^8.3.3"
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
