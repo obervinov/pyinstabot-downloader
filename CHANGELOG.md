@@ -7,7 +7,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 ### What's Changed
 **Full Changelog**: https://github.com/obervinov/pyinstabot-downloader/compare/v3.0.0...v3.1.0 by @obervinov in https://github.com/obervinov/pyinstabot-downloader/pull/111
 #### 🚀 Features
-* bump workflows to `v2.0.0`
+* bump workflows to `2.0.2`
 * bump dependencies versions
 #### 💥 Breaking Changes
 * bump python version to `3.12`
