@@ -18,3 +18,4 @@
 
     build-pr-image:
       uses: obervinov/_templates/.github/workflows/docker.yaml@v2.0.0
+      needs: [pr, pyproject]
