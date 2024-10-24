@@ -214,7 +214,7 @@ class Downloader:
                 }
 
         except (MediaUnavailable, MediaNotFound) as error:
-            log.warning('[Downloader]: Post %s not found, perhaps it was deleted. Message will be marked as processed:\n%s', shortcode, error)
+            log.warning('[Downloader]: Post %s not found, perhaps it was deleted. Message will be marked as processed: %s', shortcode, error)
             response = {
                 'post': shortcode,
                 'owner': 'undefined',
