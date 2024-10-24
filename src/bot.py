@@ -324,6 +324,8 @@ def message_parser(message: telegram.telegram_types.Message = None) -> dict:
         dict: The data containing the user id, post url, post id, post owner, link type, message id, and chat id.
     """
     data = {}
+    post_id = None
+    post_owner = None
     if re.match(r'^https://www.instagram.com/(p|reel)/.*', message.text):
         post_id = message.text.split('/')[4]
         post_owner = 'undefined'

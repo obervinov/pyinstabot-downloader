@@ -9,7 +9,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 #### 
 * [Bug: Update python version in README](https://github.com/obervinov/pyinstabot-downloader/issues/112)
 #### 🐛 Bug Fixes
-* add support for new link format with post owner
+* add support for instagram's new link format (with post owner name)
 
 
 ## v3.1.0 - 2024-10-23
