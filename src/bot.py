@@ -326,11 +326,23 @@ def message_parser(message: telegram.telegram_types.Message = None) -> dict:
     data = {}
     if re.match(r'^https://www.instagram.com/(p|reel)/.*', message.text):
         post_id = message.text.split('/')[4]
-        if len(post_id) == 11 and re.match(r'^[a-zA-Z0-9_-]+$', post_id):
+        post_owner = 'undefined'
+    elif re.match(r'^https://www.instagram.com/.*/(p|reel)/.*', message.text):
+        post_id = message.text.split('/')[5]
+        post_owner = message.text.split('/')[4]
+    else:
+        log.error('[Bot]: post link %s from user %s is incorrect', message.text, message.chat.id)
+        telegram.send_styled_message(
+            chat_id=message.chat.id,
+            messages_template={'alias': 'url_error'}
+        )
+
+    if post_id:
+        if len(post_id) == 11 and re.match(r'^[теa-zA-Z0-9_-]+$', post_id):
             data['user_id'] = message.chat.id
             data['post_url'] = message.text
             data['post_id'] = post_id
-            data['post_owner'] = 'undefined'
+            data['post_owner'] = post_owner
             data['link_type'] = 'post'
             data['message_id'] = message.id
             data['chat_id'] = message.chat.id
@@ -340,12 +352,6 @@ def message_parser(message: telegram.telegram_types.Message = None) -> dict:
                 chat_id=message.chat.id,
                 messages_template={'alias': 'url_error', 'kwargs': {'url': message.text}}
             )
-    else:
-        log.error('[Bot]: post link %s from user %s is incorrect', message.text, message.chat.id)
-        telegram.send_styled_message(
-            chat_id=message.chat.id,
-            messages_template={'alias': 'url_error'}
-        )
     return data
 # END BLOCK ADDITIONAL FUNCTIONS ######################################################################################################
 
