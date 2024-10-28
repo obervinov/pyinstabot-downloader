@@ -6,7 +6,6 @@ https://github.com/subzeroid/instagrapi
 """
 import os
 import time
-import random
 from pathlib import Path
 from urllib3.exceptions import ReadTimeoutError
 from requests.exceptions import ConnectionError as RequestsConnectionError
