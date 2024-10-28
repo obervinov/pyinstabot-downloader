@@ -11,7 +11,7 @@ from pathlib import Path
 from urllib3.exceptions import ReadTimeoutError
 from requests.exceptions import ConnectionError as RequestsConnectionError
 from instagrapi import Client
-from instagrapi.exceptions import LoginRequired, ClientRequestTimeout, MediaNotFound, MediaUnavailable
+from instagrapi.exceptions import LoginRequired, ClientRequestTimeout, MediaNotFound, MediaUnavailable, PleaseWaitFewMinutes
 from logger import log
 from .exceptions import WrongVaultInstance, FailedCreateDownloaderInstance, FailedAuthInstagram, FailedDownloadPost
 
@@ -110,12 +110,13 @@ class Downloader:
             (8, 'any'): self.client.album_download
         }
 
-    def _login(self) -> str | None:
+    def _login(self, force: bool = False) -> str | None:
         """
         The method for authentication in Instagram API.
 
         Args:
-            None
+            :param force (bool): force re-authentication in the Instagram API.
+
         Returns:
             (str) logged_in
                 or
@@ -123,6 +124,7 @@ class Downloader:
         """
         log.info('[Downloader]: Authentication in the Instagram API...')
 
+        # 2FA authentication settings
         if self.configuration['2fa-enabled']:
             totp_code = self.client.totp_generate_code(seed=self.configuration['2fa-seed'])
             log.info('[Downloader]: Two-factor authentication is enabled. TOTP code: %s', totp_code)
@@ -137,14 +139,19 @@ class Downloader:
                 'password': self.configuration['password']
             }
 
-        if os.path.exists(self.configuration['session-file']):
+        # Login to the Instagram API
+        if os.path.exists(self.configuration['session-file']) and not force:
+            log.info('[Downloader]: Loading session file with creation date %s', time.ctime(os.path.getctime(self.configuration['session-file'])))
             self.client.load_settings(self.configuration['session-file'])
             self.client.login(**login_args)
         else:
+            log.info('[Downloader]: Session file not found or forced re-authentication.')
             self.client.login(**login_args)
             self.client.dump_settings(self.configuration['session-file'])
 
+        # Check the status of the authentication
         try:
+            log.info('[Downloader]: Checking the status of the authentication...')
             self.client.get_timeline_feed()
         except LoginRequired:
             log.error('[Downloader]: Authentication in the Instagram API failed.')
@@ -152,6 +159,11 @@ class Downloader:
             self.client.set_settings({})
             self.client.set_uuids(old_session["uuids"])
             self.client.login(**login_args)
+            self.client.dump_settings(self.configuration['session-file'])
+        except PleaseWaitFewMinutes:
+            log.error('[Downloader]: Device or IP address has been restricted. Just wait a one hour and try again.')
+            time.sleep(3600)
+            self._login(force=True)
 
         log.info('[Downloader]: Authentication in the Instagram API was successful.')
         return 'logged_in'
@@ -223,9 +235,13 @@ class Downloader:
             }
 
         except (ReadTimeoutError, RequestsConnectionError, ClientRequestTimeout) as error:
-            pause = random.randint(self.configuration['delay-requests'] * 3, self.configuration['delay-requests'] * 30)
-            log.error('[Downloader]: Timeout error downloading post content: %s\n%s\nWaiting %s seconds...', error, shortcode, pause)
-            time.sleep(pause)
+            log.error('[Downloader]: Timeout error downloading post content: %s. Retry after 1 minute.', error)
+            time.sleep(60)
+            self.get_post_content(shortcode=shortcode, error_count=error_count + 1)
+
+        except LoginRequired as error:
+            log.error('[Downloader]: Instagram API forcibly revoked all account sessions. Re-authentication required: %s', error)
+            self._login()
             self.get_post_content(shortcode=shortcode, error_count=error_count + 1)
 
         # Temporary general exception for migration to the new module.

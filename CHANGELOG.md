@@ -3,10 +3,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/) and this project adheres to [Semantic Versioning](http://semver.org/).
 
 
+## v3.1.2 - 2024-10-28
+### What's Changed
+**Full Changelog**: https://github.com/obervinov/pyinstabot-downloader/compare/v3.1.1...v3.1.2 by @obervinov in https://github.com/obervinov/pyinstabot-downloader/pull/114
+#### 🐛 Bug Fixes
+* general bug fixes and improvements
+* add additional exception handling for the `Downloader()` class
+
+
 ## v3.1.1 - 2024-10-24
 ### What's Changed
 **Full Changelog**: https://github.com/obervinov/pyinstabot-downloader/compare/v3.1.0...v3.1.1 by @obervinov in https://github.com/obervinov/pyinstabot-downloader/pull/113
-#### 
+#### 📚 Documentation
 * [Bug: Update python version in README](https://github.com/obervinov/pyinstabot-downloader/issues/112)
 #### 🐛 Bug Fixes
 * add support for instagram's new link format (with post owner name)
