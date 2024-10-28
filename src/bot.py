@@ -331,7 +331,7 @@ def message_parser(message: telegram.telegram_types.Message = None) -> dict:
         post_owner = 'undefined'
     elif re.match(r'^https://www.instagram.com/.*/(p|reel)/.*', message.text):
         post_id = message.text.split('/')[5]
-        post_owner = message.text.split('/')[4]
+        post_owner = message.text.split('/')[3]
     else:
         log.error('[Bot]: post link %s from user %s is incorrect', message.text, message.chat.id)
         telegram.send_styled_message(
