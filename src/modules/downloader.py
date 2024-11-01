@@ -108,7 +108,8 @@ class Downloader:
             'device': self.configuration['device-metadata'].split(';')[2],
             'cpu': self.configuration['device-metadata'].split(';')[3]
         }
-        self.client.set_device(device_settings)
+        self.client.set_device(device=device_settings)
+        self.client.set_user_agent()
         log.info('[Downloader]: Client settings: %s', self.client.get_settings())
 
         auth_status = self.login()
