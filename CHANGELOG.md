@@ -7,7 +7,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 ### What's Changed
 **Full Changelog**: https://github.com/obervinov/pyinstabot-downloader/compare/v3.1.2...v3.1.3 by @obervinov in https://github.com/obervinov/pyinstabot-downloader/pull/115
 #### 🐛 Bug Fixes
-* removed conflicted `_check_incomplete_transfers()` method from the `Uploader()` class (conflicted with the queue processing thread, its outdated mechanism)
+* remove the conflicting `_check_incomplete_transfers()` method with the queue processing thread from the `Uploader()` class - this is a deprecated mechanism
 * rewrite the exception handling in the `Downloader()` class
 * add exception handling for the `ChallengeRequired` in the `Downloader()` class
 * other small improvements
