@@ -10,12 +10,11 @@ from pathlib import Path
 from urllib3.exceptions import ReadTimeoutError
 from requests.exceptions import ConnectionError as RequestsConnectionError
 from instagrapi import Client
-from instagrapi.exceptions import LoginRequired, ClientRequestTimeout, MediaNotFound, MediaUnavailable, PleaseWaitFewMinutes
+from instagrapi.exceptions import LoginRequired, ClientRequestTimeout, MediaNotFound, MediaUnavailable, PleaseWaitFewMinutes, ChallengeRequired
 from logger import log
 from .exceptions import WrongVaultInstance, FailedCreateDownloaderInstance, FailedAuthInstagram, FailedDownloadPost
 
 
-# pylint: disable=too-few-public-methods
 class Downloader:
     """
     An Instagram API instance is created by this class and contains a set of all the necessary methods
@@ -94,8 +93,9 @@ class Downloader:
         self.client.set_timezone_offset(seconds=int(self.configuration['timezone-offset']))
         self.client.set_user_agent(user_agent=self.configuration['user-agent'])
         self.client.set_proxy(dsn=self.configuration.get('proxy-dsn', None))
+        log.info('[Downloader]: Client settings: %s', self.client.get_settings())
 
-        auth_status = self._login()
+        auth_status = self.login()
         if auth_status == 'logged_in':
             log.info('[Downloader]: Instance created successfully with account %s', self.configuration['username'])
         else:
@@ -109,19 +109,51 @@ class Downloader:
             (8, 'any'): self.client.album_download
         }
 
-    def _login(self, force: bool = False) -> str | None:
+    @staticmethod
+    def exceptions_handler(method) -> None:
+        """
+        Decorator for handling exceptions in the Downloader class.
+
+        Args:
+            :param method (function): method to be wrapped.
+        """
+        def wrapper(self, *args, **kwargs):
+            try:
+                return method(self, *args, **kwargs)
+            except LoginRequired:
+                log.error('[Downloader]: Instagram API login required. Re-authentication...')
+                self.login(method='relogin')
+            except ChallengeRequired:
+                log.error('[Downloader]: Instagram API requires challenge. Need manually pass in browser. Retry after 1 hour')
+                time.sleep(3600)
+                self.login()
+            except PleaseWaitFewMinutes:
+                log.error('[Downloader]: Device or IP address has been restricted. Just wait a one hour and try again')
+                time.sleep(3600)
+                self.login(method='relogin')
+            except (ReadTimeoutError, RequestsConnectionError, ClientRequestTimeout):
+                log.error('[Downloader]: Timeout error downloading post content. Retry after 1 minute')
+                time.sleep(60)
+            return method(self, *args, **kwargs)
+        return wrapper
+
+    @exceptions_handler
+    def login(self, method: str = 'session') -> str | None:
         """
         The method for authentication in Instagram API.
 
         Args:
-            :param force (bool): force re-authentication in the Instagram API.
+            :param method (str): the type of authentication in the Instagram API. Default: 'session'.
+                possible values:
+                    'session' - authentication by existing session file. Or create session file for existing device.
+                    'relogin' - authentication as an existing device. This will create a new session file and clear the old attributes.
 
         Returns:
             (str) logged_in
                 or
             None
         """
-        log.info('[Downloader]: Authentication in the Instagram API...')
+        log.info('[Downloader]: Authentication in the Instagram API with type: %s', method)
 
         # 2FA authentication settings
         if self.configuration['2fa-enabled']:
@@ -139,34 +171,30 @@ class Downloader:
             }
 
         # Login to the Instagram API
-        if os.path.exists(self.configuration['session-file']) and not force:
+        if method == 'session' and os.path.exists(self.configuration['session-file']):
             log.info('[Downloader]: Loading session file with creation date %s', time.ctime(os.path.getctime(self.configuration['session-file'])))
             self.client.load_settings(self.configuration['session-file'])
             self.client.login(**login_args)
-        else:
-            log.info('[Downloader]: Session file not found or forced re-authentication.')
-            self.client.login(**login_args)
-            self.client.dump_settings(self.configuration['session-file'])
-
-        # Check the status of the authentication
-        try:
-            log.info('[Downloader]: Checking the status of the authentication...')
-            self.client.get_timeline_feed()
-        except LoginRequired:
-            log.error('[Downloader]: Authentication in the Instagram API failed.')
+        elif method == 'relogin':
+            log.info('[Downloader]: Relogin to the Instagram API...')
             old_session = self.client.get_settings()
             self.client.set_settings({})
             self.client.set_uuids(old_session["uuids"])
             self.client.login(**login_args)
             self.client.dump_settings(self.configuration['session-file'])
-        except PleaseWaitFewMinutes:
-            log.error('[Downloader]: Device or IP address has been restricted. Just wait a one hour and try again.')
-            time.sleep(3600)
-            self._login(force=True)
+        else:
+            log.info('[Downloader]: Creating a new session file...')
+            self.client.login(**login_args)
+            self.client.dump_settings(self.configuration['session-file'])
 
+        # Check the status of the authentication
+        log.info('[Downloader]: Checking the status of the authentication...')
+        self.client.get_timeline_feed()
         log.info('[Downloader]: Authentication in the Instagram API was successful.')
+
         return 'logged_in'
 
+    @exceptions_handler
     def get_post_content(self, shortcode: str = None, error_count: int = 0) -> dict | None:
         """
         The method for getting the content of a post from a specified Post ID.
@@ -232,22 +260,5 @@ class Downloader:
                 'type': 'undefined',
                 'status': 'source_not_found'
             }
-
-        except (ReadTimeoutError, RequestsConnectionError, ClientRequestTimeout) as error:
-            log.error('[Downloader]: Timeout error downloading post content: %s. Retry after 1 minute.', error)
-            time.sleep(60)
-            self.get_post_content(shortcode=shortcode, error_count=error_count + 1)
-
-        except LoginRequired as error:
-            log.error('[Downloader]: Instagram API forcibly revoked all account sessions. Re-authentication required: %s', error)
-            self._login()
-            self.get_post_content(shortcode=shortcode, error_count=error_count + 1)
-
-        # Temporary general exception for migration to the new module.
-        # Will be replaced by specific exceptions after v3.0.0
-        # pylint: disable=broad-exception-caught
-        except Exception as error:
-            log.error('[Downloader]: Error downloading post content: %s (%s)\n%s', error, type(error), media_info)
-            raise FailedDownloadPost("General error downloading post content.") from error
 
         return response

@@ -67,31 +67,6 @@ class Uploader:
         self.storage = WebDavClient(options)
         log.info('[Uploader]: Connection to the WebDav remote directory is established')
 
-        self._check_incomplete_transfers()
-
-    def _check_incomplete_transfers(self) -> None:
-        """
-        The method for checking uploads in temp directory that for some reason could not be uploaded to the target cloud storage.
-
-        Args:
-            None
-
-        Returns:
-            None
-        """
-        log.info('[Uploader]: Checking incomplete transfers...')
-        for root, dirs, _ in os.walk(self.configuration['source-directory']):
-            for dir_name in dirs:
-                sub_directory = os.path.join(root, dir_name)
-                # Check the subdirectory for files
-                sub_files = [f for f in os.listdir(sub_directory) if os.path.isfile(os.path.join(sub_directory, f))]
-                if sub_files:
-                    log.warning('[Uploader]: An unloaded artifact was found: %s', sub_directory)
-                    self.run_transfers(sub_directory=sub_directory)
-                else:
-                    log.info('[Uploader]: Remove of an empty directory %s', sub_directory)
-                    os.rmdir(sub_directory)
-
     def run_transfers(
         self,
         sub_directory: str = None
