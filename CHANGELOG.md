@@ -3,6 +3,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/) and this project adheres to [Semantic Versioning](http://semver.org/).
 
 
+## v3.2.0 - 2024-11-01
+### What's Changed
+**Full Changelog**: https://github.com/obervinov/pyinstabot-downloader/compare/v3.1.3...v3.2.0 by @obervinov in https://github.com/obervinov/pyinstabot-downloader/pull/116
+#### 🐛 Bug Fixes
+* fix conflict between device metadata and user-agent in the `Downloader()` class
+#### 💥 Breaking Changes
+* `Downloader()` configuration has been changed. Please, check the new parameters in [README.md](README.md#bot-configuration-source-and-supported-parameters) and update Vault configuration
+
+
 ## v3.1.3 - 2024-11-01
 ### What's Changed
 **Full Changelog**: https://github.com/obervinov/pyinstabot-downloader/compare/v3.1.2...v3.1.3 by @obervinov in https://github.com/obervinov/pyinstabot-downloader/pull/115

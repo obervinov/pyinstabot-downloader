@@ -39,9 +39,11 @@ class Downloader:
                 :param locale (str): locale for requests.
                 :param country-code (str): country code for requests.
                 :param timezone-offset (int): timezone offset for requests.
-                :param user-agent (str): user agent for requests.
                 :param proxy-dsn (str): proxy dsn for requests.
                 :param request-timeout (int): request timeout for requests.
+                :app-metadata (dict): instagram application metadata.
+                :os-metadata (dict): operating system metadata.
+                :device-metadata (dict): device metadata.
             :param vault (object): instance of vault for reading configuration downloader-api.
 
         Returns:
@@ -62,9 +64,11 @@ class Downloader:
             ...     'locale': 'en_US',
             ...     'country-code': '1',
             ...     'timezone-offset': 10800,
-            ...     'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
             ...     'proxy-dsn': 'http://localhost:8080'
-            ...     'request-timeout': 10
+            ...     'request-timeout': 10,
+            ...     'app-metadata': '269.0.0.18.75;314665256',
+            ...     'device-metadata': 'OnePlus;6T Dev;devitron;qcom;480dpi;1080x1920',
+            ...     'os-metadata': 'Android;8;26'
             ... }
             >>> vault = Vault()
             >>> downloader = Downloader(configuration, vault)
@@ -91,8 +95,20 @@ class Downloader:
         self.client.set_locale(locale=self.configuration['locale'])
         self.client.set_country_code(country_code=int(self.configuration['country-code']))
         self.client.set_timezone_offset(seconds=int(self.configuration['timezone-offset']))
-        self.client.set_user_agent(user_agent=self.configuration['user-agent'])
         self.client.set_proxy(dsn=self.configuration.get('proxy-dsn', None))
+        device_settings = {
+            'app_version': self.configuration['app-metadata'].split(';')[0],
+            'version_code': self.configuration['app-metadata'].split(';')[1],
+            'android_version': self.configuration['os-metadata'].split(';')[1],
+            'android_release': f"{self.configuration['os-metadata'].split(';')[2]}.0.0",
+            'dpi': self.configuration['device-metadata'].split(';')[4],
+            'resolution': self.configuration['device-metadata'].split(';')[5],
+            'manufacturer': self.configuration['device-metadata'].split(';')[0],
+            'model': self.configuration['device-metadata'].split(';')[1],
+            'device': self.configuration['device-metadata'].split(';')[2],
+            'cpu': self.configuration['device-metadata'].split(';')[3]
+        }
+        self.client.set_device(device_settings)
         log.info('[Downloader]: Client settings: %s', self.client.get_settings())
 
         auth_status = self.login()

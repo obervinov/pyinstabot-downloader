@@ -121,9 +121,12 @@ This project is a Telegram bot that allows you to upload posts from your Instagr
     "password": "my_password",
     "session-file": "session.json",
     "timezone-offset": "10800",
-    "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) ...",
-    "request-timeout": "10"
+    "request-timeout": "10",
+    "app-metadata": "269.0.0.18.75;314665256",
+    "device-metadata": "OnePlus;6T Dev;devitron;qcom;480dpi;1080x1920",
+    "os-metadata": "Android;8;26"
   }
+
   ```
 
   Description of parameters
@@ -131,7 +134,6 @@ This project is a Telegram bot that allows you to upload posts from your Instagr
   - `locale`: the locale of the instagram account
   - `session-file`: the path to the file where the session data will be stored
   - `timezone-offset`: the offset of the timezone in seconds
-  - `user-agent`: the user-agent of the instagram account
   - `2fa-enabled`: two-factor authentication status
   - `2fa-seed`: two-factor authentication secret
   - `country-code`: the country code of the instagram account
@@ -139,6 +141,9 @@ This project is a Telegram bot that allows you to upload posts from your Instagr
   - `username`: the username of the instagram account
   - `password`: the password of the instagram account
   - `request-timeout`: the timeout for requests to the instagram api
+  - `app-metadata`: the metadata of the instagram application (app_version;code_version)
+  - `device-metadata`: the metadata of the device (manufacturer;model;model_code;cpu;dpi;resolution)
+  - `os-metadata`: the metadata of the operating system (os;version;sdk_version)
   </br>
 
 - `configuration/uploader-api`: uploader module configuration (for upload content to the target storage)
