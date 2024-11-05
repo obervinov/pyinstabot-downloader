@@ -42,6 +42,7 @@ class Downloader:
         ...     '2fa-seed': 'my_seed_secret',
         ...     'locale': 'en_US',
         ...     'country-code': '1',
+        ...     'country': 'US',
         ...     'timezone-offset': 10800,
         ...     'proxy-dsn': 'http://localhost:8080'
         ...     'request-timeout': 10,
@@ -71,6 +72,7 @@ class Downloader:
                 :param 2fa-seed (str): seed for two-factor authentication (secret key).
                 :param locale (str): locale for requests.
                 :param country-code (str): country code for requests.
+                :param country (str): country for requests.
                 :param timezone-offset (int): timezone offset for requests.
                 :param proxy-dsn (str): proxy dsn for requests.
                 :param request-timeout (int): request timeout for requests.
@@ -95,7 +97,7 @@ class Downloader:
         log.info('[Downloader]: Creating a new instance...')
         self.client = Client()
 
-        log.info('[Downloader]: Setting client settings...')
+        log.info('[Downloader]: Setting client configuration...')
         self.client.delay_range = [1, int(self.configuration['delay-requests'])]
         self.client.request_timeout = int(self.configuration['request-timeout'])
         self.client.set_proxy(dsn=self.configuration.get('proxy-dsn', None))
@@ -134,9 +136,10 @@ class Downloader:
             - device settings
             - user agent
         """
-        log.info('[Downloader]: Setting general session settings...')
+        log.info('[Downloader]: Setting general session attributes...')
         self.client.set_locale(locale=self.configuration['locale'])
         self.client.set_country_code(country_code=int(self.configuration['country-code']))
+        self.client.set_country(country=self.configuration['country'])
         self.client.set_timezone_offset(seconds=int(self.configuration['timezone-offset']))
         self.client.set_device(device=self.device_settings)
         self.client.set_user_agent()
@@ -151,6 +154,7 @@ class Downloader:
         if (
             session_settings['locale'] != self.configuration['locale'] or
             session_settings['country_code'] != int(self.configuration['country-code']) or
+            session_settings['country'] != self.configuration['country'] or
             session_settings['timezone_offset'] != int(self.configuration['timezone-offset']) or
             session_settings['device_settings'] != self.device_settings
         ):

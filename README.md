@@ -115,6 +115,7 @@ This project is a Telegram bot that allows you to upload posts from your Instagr
     "2fa-enabled": "False",
     "2fa-seed": "my_2fa_secret",
     "country-code": "1",
+    "country": "US",
     "delay-requests": "1",
     "locale": "en_US",
     "username": "my_username",
@@ -137,6 +138,7 @@ This project is a Telegram bot that allows you to upload posts from your Instagr
   - `2fa-enabled`: two-factor authentication status
   - `2fa-seed`: two-factor authentication secret
   - `country-code`: the country code of the instagram account
+  - `country`: the country of the instagram account
   - `enabled`: the status of the downloader module
   - `username`: the username of the instagram account
   - `password`: the password of the instagram account
