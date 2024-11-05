@@ -19,6 +19,39 @@ class Downloader:
     """
     An Instagram API instance is created by this class and contains a set of all the necessary methods
     to upload content from Instagram to a temporary directory.
+
+    Attributes:
+        :attribute configuration (dict): dictionary with configuration parameters for instagram api communication.
+        :attribute client (object): instance of the instagram api client.
+        :attribute device_settings (dict): dictionary with device settings for instagram api client.
+        :attribute download_methods (dict): dictionary with download methods for instagram api client.
+
+    Methods:
+        :method set_session_settings: setting general session settings for the instagram api.
+        :method exceptions_handler: decorator for handling exceptions in the Downloader class.
+        :method login: authentication in instagram api.
+        :method get_post_content: getting the content of a post.
+
+    Examples:
+        >>> configuration = {
+        ...     'username': 'my_username',
+        ...     'password': 'my_password',
+        ...     'session-file': 'data/session.json',
+        ...     'delay-requests': 1,
+        ...     '2fa-enabled': False,
+        ...     '2fa-seed': 'my_seed_secret',
+        ...     'locale': 'en_US',
+        ...     'country-code': '1',
+        ...     'timezone-offset': 10800,
+        ...     'proxy-dsn': 'http://localhost:8080'
+        ...     'request-timeout': 10,
+        ...     'app-metadata': '269.0.0.18.75;314665256',
+        ...     'device-metadata': 'OnePlus;6T Dev;devitron;qcom;480dpi;1080x1920',
+        ...     'os-metadata': 'Android;8;26'
+        ... }
+        >>> vault = Vault()
+        >>> downloader = Downloader(configuration, vault)
+        >>> status = downloader.get_post_content('shortcode')
     """
     def __init__(
         self,
@@ -45,33 +78,6 @@ class Downloader:
                 :os-metadata (dict): operating system metadata.
                 :device-metadata (dict): device metadata.
             :param vault (object): instance of vault for reading configuration downloader-api.
-
-        Returns:
-            None
-
-        Attributes:
-            :attribute configuration (dict): dictionary with configuration parameters for instagram api communication.
-            :attribute client (object): instance of the instagram api client.
-
-        Examples:
-            >>> configuration = {
-            ...     'username': 'my_username',
-            ...     'password': 'my_password',
-            ...     'session-file': 'data/session.json',
-            ...     'delay-requests': 1,
-            ...     '2fa-enabled': False,
-            ...     '2fa-seed': 'my_seed_secret',
-            ...     'locale': 'en_US',
-            ...     'country-code': '1',
-            ...     'timezone-offset': 10800,
-            ...     'proxy-dsn': 'http://localhost:8080'
-            ...     'request-timeout': 10,
-            ...     'app-metadata': '269.0.0.18.75;314665256',
-            ...     'device-metadata': 'OnePlus;6T Dev;devitron;qcom;480dpi;1080x1920',
-            ...     'os-metadata': 'Android;8;26'
-            ... }
-            >>> vault = Vault()
-            >>> downloader = Downloader(configuration, vault)
         """
         if not vault:
             raise WrongVaultInstance("Wrong vault instance, you must pass the vault instance to the class argument.")
@@ -89,14 +95,11 @@ class Downloader:
         log.info('[Downloader]: Creating a new instance...')
         self.client = Client()
 
-        log.info('[Downloader]: Configuring client settings...')
+        log.info('[Downloader]: Setting client settings...')
         self.client.delay_range = [1, int(self.configuration['delay-requests'])]
         self.client.request_timeout = int(self.configuration['request-timeout'])
-        self.client.set_locale(locale=self.configuration['locale'])
-        self.client.set_country_code(country_code=int(self.configuration['country-code']))
-        self.client.set_timezone_offset(seconds=int(self.configuration['timezone-offset']))
         self.client.set_proxy(dsn=self.configuration.get('proxy-dsn', None))
-        device_settings = {
+        self.device_settings = {
             'app_version': self.configuration['app-metadata'].split(';')[0],
             'version_code': self.configuration['app-metadata'].split(';')[1],
             'android_version': self.configuration['os-metadata'].split(';')[1],
@@ -108,16 +111,6 @@ class Downloader:
             'device': self.configuration['device-metadata'].split(';')[2],
             'cpu': self.configuration['device-metadata'].split(';')[3]
         }
-        self.client.set_device(device=device_settings)
-        self.client.set_user_agent()
-        log.info('[Downloader]: Client settings: %s', self.client.get_settings())
-
-        auth_status = self.login()
-        if auth_status == 'logged_in':
-            log.info('[Downloader]: Instance created successfully with account %s', self.configuration['username'])
-        else:
-            raise FailedAuthInstagram("Failed to authenticate the Instaloader instance.")
-
         self.download_methods = {
             (1, 'any'): self.client.photo_download,
             (2, 'feed'): self.client.video_download,
@@ -125,6 +118,47 @@ class Downloader:
             (2, 'igtv'): self.client.igtv_download,
             (8, 'any'): self.client.album_download
         }
+
+        auth_status = self.login()
+        if auth_status == 'logged_in':
+            log.info('[Downloader]: Instance created successfully with account %s', self.configuration['username'])
+        else:
+            raise FailedAuthInstagram("Failed to authenticate the Instaloader instance.")
+
+    def _set_session_settings(self) -> None:
+        """
+        The method for setting general session settings for the Instagram API, such as
+            - locale
+            - country code
+            - timezone offset
+            - device settings
+            - user agent
+        """
+        log.info('[Downloader]: Setting general session settings...')
+        self.client.set_locale(locale=self.configuration['locale'])
+        self.client.set_country_code(country_code=int(self.configuration['country-code']))
+        self.client.set_timezone_offset(seconds=int(self.configuration['timezone-offset']))
+        self.client.set_device(device=self.device_settings)
+        self.client.set_user_agent()
+        log.info('[Downloader]: General session settings have been successfully set: %s', self.client.get_settings())
+
+    def _validate_session_settings(self) -> bool:
+        """
+        The method for checking the correctness between the session settings and the configuration settings.
+        """
+        log.info('[Downloader]: Checking the difference between the session settings and the configuration settings...')
+        session_settings = self.client.get_settings()
+        if (
+            session_settings['locale'] != self.configuration['locale'] or
+            session_settings['country_code'] != int(self.configuration['country-code']) or
+            session_settings['timezone_offset'] != int(self.configuration['timezone-offset']) or
+            session_settings['device_settings'] != self.device_settings
+        ):
+            log.info('[Downloader]: The session settings are not equal to the configuration settings.')
+            return False
+
+        log.info('[Downloader]: The session settings are equal to the configuration settings.')
+        return True
 
     @staticmethod
     def exceptions_handler(method) -> None:
@@ -188,21 +222,30 @@ class Downloader:
             }
 
         # Login to the Instagram API
-        if method == 'session' and os.path.exists(self.configuration['session-file']):
-            log.info('[Downloader]: Loading session file with creation date %s', time.ctime(os.path.getctime(self.configuration['session-file'])))
-            self.client.load_settings(self.configuration['session-file'])
-            self.client.login(**login_args)
-        elif method == 'relogin':
-            log.info('[Downloader]: Relogin to the Instagram API...')
-            old_session = self.client.get_settings()
+        create_new_session = False
+        if method == 'relogin':
+            log.info('[Downloader]: Authentication with the clearing of the session...')
+            # extract old uuids and clear settings
+            old_uuids = self.client.get_settings()["uuids"]
             self.client.set_settings({})
-            self.client.set_uuids(old_session["uuids"])
-            self.client.login(**login_args)
-            self.client.dump_settings(self.configuration['session-file'])
+            # set old uuids and set general session settings
+            self.client.set_uuids(old_uuids)
+            create_new_session = True
         else:
-            log.info('[Downloader]: Creating a new session file...')
-            self.client.login(**login_args)
+            log.info('[Downloader]: Authentication with the existing session...')
+            if os.path.exists(self.configuration['session-file']):
+                self.client.load_settings(self.configuration['session-file'])
+                if not self._validate_session_settings():
+                    create_new_session = True
+            else:
+                create_new_session = True
+
+        self._set_session_settings()
+        self.client.login(**login_args)
+
+        if create_new_session:
             self.client.dump_settings(self.configuration['session-file'])
+            log.info('[Downloader]: The session file was created successfully: %s', self.configuration['session-file'])
 
         # Check the status of the authentication
         log.info('[Downloader]: Checking the status of the authentication...')
@@ -269,8 +312,8 @@ class Downloader:
                     'status': status if status else 'failed'
                 }
 
-        except (MediaUnavailable, MediaNotFound) as error:
-            log.warning('[Downloader]: Post %s not found, perhaps it was deleted. Message will be marked as processed: %s', shortcode, error)
+        except (MediaUnavailable, MediaNotFound):
+            log.warning('[Downloader]: Post %s not found, perhaps it was deleted. Message will be marked as processed', shortcode)
             response = {
                 'post': shortcode,
                 'owner': 'undefined',
