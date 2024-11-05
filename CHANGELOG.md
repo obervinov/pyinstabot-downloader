@@ -11,6 +11,8 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 * fix the login strategy for exceptions
 #### 💥 Breaking Changes
 * `Downloader()` configuration has been changed. Please, check the new parameters in [README.md](README.md#bot-configuration-source-and-supported-parameters) and update Vault configuration
+#### 🚀 Features
+* add validator of settings between the config and session in the `Downloader()` class
 
 
 ## v3.1.3 - 2024-11-01
