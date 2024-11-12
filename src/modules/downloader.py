@@ -159,6 +159,9 @@ class Downloader:
 
         # Apply all session settings
         self.client.set_settings({**other_settings, 'device_settings': device_settings})
+        # Temporarily fix for country
+        # Country in set_settings is not working
+        self.client.set_country(self.configuration['country'])
         self.client.set_user_agent()
         log.info('[Downloader]: General session settings have been successfully set: %s', self.client.get_settings())
 
