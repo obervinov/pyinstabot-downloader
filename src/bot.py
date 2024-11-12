@@ -418,7 +418,7 @@ def process_posts(
         None
     """
     requestor = {
-        'user_id': message.chat.id, 'role_id': ROLES_MAP['Posts List'],
+        'user_id': message.chat.id, 'role_id': ROLES_MAP['Posts'],
         'chat_id': message.chat.id, 'message_id': message.message_id
     }
     user = users.user_access_check(**requestor)

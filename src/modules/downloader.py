@@ -139,6 +139,7 @@ class Downloader:
         The method for setting general session settings for the Instagram API, such as
             - locale
             - country code
+            - country
             - timezone offset
             - device settings
             - user agent
