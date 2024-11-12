@@ -10,8 +10,8 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 * fix conflict between device metadata and user-agent in the `Downloader()` class
 * fix the login strategy for exceptions
 #### 💥 Breaking Changes
-* `Downloader()` configuration has been changed. **Please, check the new parameters in [README.md](README.md#bot-configuration-source-and-supported-parameters) and update Vault configuration**
-* remove button `Post` and  `Posts List` buttons from bot commands, because it is have been replaced by the `Posts` button (same functionality). **Required to update the users roles in the vault and recreate start up message**
+* `Downloader()` class configuration has been changed. **Please, check the new parameters in [README.md](README.md#bot-configuration-source-and-supported-parameters) and update Vault configuration**
+* remove `Post` and `Posts List` buttons from the bot commands, because it is have been replaced by the `Posts` button (buttons have the same functionality). **Required to update the users roles in the vault and recreate start up message**
 #### 🚀 Features
 * add validators for session settings in the `Downloader()` class
 
