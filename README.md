@@ -123,7 +123,7 @@ This project is a Telegram bot that allows you to upload posts from your Instagr
     "session-file": "session.json",
     "timezone-offset": "10800",
     "request-timeout": "10",
-    "device-settings": "{\"app_version\": \"269.0.0.18.75\", \"version_code\": \"314665256\", \"manufacturer\": \"OnePlus\", \"model\": \"6T Dev\", \"device\": \"devitron\", \"cpu\": \"qcom\", \"dpi\": \"480dpi\", \"resolution\": \"1080x1920\", \"android_release\": \"8.0.0\", \"android_version\": \"26\"}"
+    "device-settings": {"app_version": "269.0.0.18.75", "version_code": "314665256", "manufacturer": "OnePlus", "model": "6T Dev", "device": "devitron", "cpu": "qcom", "dpi": "480dpi", "resolution": "1080x1920", "android_release": "8.0.0", "android_version": "26"}
   }
 
   ```
@@ -180,8 +180,8 @@ This project is a Telegram bot that allows you to upload posts from your Instagr
 
   ```json
   {
-    "requests": "{\"requests_per_day\": 10, \"requests_per_hour\": 1, \"random_shift_minutes\": 60}",
-    "roles": "[\"posts\", \"reschedule_queue\"]",
+    "requests": {"requests_per_day": 10, "requests_per_hour": 1, "random_shift_minutes": 60},
+    "roles": ["posts", "reschedule_queue"],
     "status": "allowed"
   }
   ```
