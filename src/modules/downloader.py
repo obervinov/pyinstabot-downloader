@@ -50,7 +50,10 @@ class Downloader:
         ...     'request-timeout': 10,
         ...     'device-settings': {
         ...         'app_metadata': {'app_version': '269.0.0.18.75', 'version_code': '314665256'},
-        ...         'device_metadata': {'manufacturer': 'OnePlus', 'model': '6T Dev', 'device': 'devitron', 'cpu': 'qcom', 'dpi': '480dpi', 'resolution': '1080x1920'},
+        ...         'device_metadata': {
+        ...           'manufacturer': 'OnePlus', 'model': '6T Dev', 'device': 'devitron',
+        ...           'cpu': 'qcom', 'dpi': '480dpi', 'resolution': '1080x1920'
+        ...         },
         ...         'os_metadata': {'android_release': '8.0.0', 'android_version': '26'}
         ...     }
         ... }
@@ -81,9 +84,12 @@ class Downloader:
                 :param proxy-dsn (str): proxy dsn for requests.
                 :param request-timeout (int): request timeout for requests.
                 :device-settings (dict): dictionary with device settings for requests.
-                    :param app_metadata (dict): dictionary with app metadata for requests. Must be: 'app_version', 'version_code'.
-                    :param os_metadata (dict): dictionary with os metadata for requests. Must be: 'android_version', 'android_release'.
-                    :param device_metadata (dict): dictionary with device metadata for requests. Must be: 'manufacturer', 'model', 'device', 'cpu', 'dpi', 'resolution'.
+                    :param app_metadata (dict): dictionary with app metadata for requests.
+                        Must be: 'app_version', 'version_code'.
+                    :param os_metadata (dict): dictionary with os metadata for requests.
+                        Must be: 'android_version', 'android_release'.
+                    :param device_metadata (dict): dictionary with device metadata for requests.
+                        Must be: 'manufacturer', 'model', 'device', 'cpu', 'dpi', 'resolution'.
             :param vault (object): instance of vault for reading configuration downloader-api.
         """
         if not vault:
