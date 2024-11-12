@@ -50,12 +50,9 @@ class Downloader:
         ...     'proxy-dsn': 'http://localhost:8080'
         ...     'request-timeout': 10,
         ...     'device-settings': {
-        ...         'app_metadata': {'app_version': '269.0.0.18.75', 'version_code': '314665256'},
-        ...         'device_metadata': {
-        ...           'manufacturer': 'OnePlus', 'model': '6T Dev', 'device': 'devitron',
-        ...           'cpu': 'qcom', 'dpi': '480dpi', 'resolution': '1080x1920'
-        ...         },
-        ...         'os_metadata': {'android_release': '8.0.0', 'android_version': '26'}
+        ...         'app_version': 269.0.0.18.75, 'version_code': 314665256,
+        ...         'manufacturer': 'OnePlus', 'model': '6T Dev', 'device': 'devitron', 'cpu': 'qcom', 'dpi': '480dpi', 'resolution': '1080x1920',
+        ...         'android_release': 8.0.0, 'android_version': 26
         ...     }
         ... }
         >>> vault = Vault()
@@ -85,12 +82,16 @@ class Downloader:
                 :param proxy-dsn (str): proxy dsn for requests.
                 :param request-timeout (int): request timeout for requests.
                 :device-settings (dict): dictionary with device settings for requests.
-                    :param app_metadata (dict): dictionary with app metadata for requests.
-                        Must be: 'app_version', 'version_code'.
-                    :param os_metadata (dict): dictionary with os metadata for requests.
-                        Must be: 'android_version', 'android_release'.
-                    :param device_metadata (dict): dictionary with device metadata for requests.
-                        Must be: 'manufacturer', 'model', 'device', 'cpu', 'dpi', 'resolution'.
+                    :param app_version (float): application version.
+                    :param version_code (int): version code.
+                    :param manufacturer (str): manufacturer of the device.
+                    :param model (str): model of the device.
+                    :param device (str): device name.
+                    :param cpu (str): cpu name.
+                    :param dpi (str): dpi resolution.
+                    :param resolution (str): screen resolution.
+                    :param android_release (float): android release version.
+                    :param android_version (int): android version.
             :param vault (object): instance of vault for reading configuration downloader-api.
         """
         if not vault:
@@ -113,8 +114,12 @@ class Downloader:
         self.client.delay_range = [1, int(self.configuration['delay-requests'])]
         self.client.request_timeout = int(self.configuration['request-timeout'])
         self.client.set_proxy(dsn=self.configuration.get('proxy-dsn', None))
-        self.general_settings_list = ['locale', 'country_code', 'country', 'timezone_offset']
-        self.device_settings_list = ['app_metadata', 'os_metadata', 'device_metadata']
+        self.general_settings_list = [
+            'locale', 'country_code', 'country', 'timezone_offset'
+        ]
+        self.device_settings_list = [
+            'app_version', 'version_code', 'manufacturer', 'model', 'device', 'cpu', 'dpi', 'resolution', 'android_release', 'android_version'
+        ]
         self.download_methods = {
             (1, 'any'): self.client.photo_download,
             (2, 'feed'): self.client.video_download,
@@ -141,27 +146,10 @@ class Downloader:
         log.info('[Downloader]: Extracting device settings...')
         device_settings = json.loads(self.configuration['device-settings'])
         if not all(item in device_settings.keys() for item in self.device_settings_list):
-            raise ValueError(
-                "Incorrect app, os or device metadata format. Must be: "
-                "os_metadata: 'android_version', 'android_release', "
-                "app_metadata: 'app_version', 'version_code', "
-                "device_metadata: 'manufacturer', 'model', 'device', 'cpu', 'dpi', 'resolution'."
-            )
-        device_settings = {
-            'app_version': device_settings['app_metadata']['app_version'],
-            'version_code': device_settings['app_metadata']['version_code'],
-            'android_version': device_settings['os_metadata']['android_version'],
-            'android_release': device_settings['os_metadata']['android_release'],
-            'dpi': device_settings['device_metadata']['dpi'],
-            'resolution': device_settings['device_metadata']['resolution'],
-            'manufacturer': device_settings['device_metadata']['manufacturer'],
-            'model': device_settings['device_metadata']['model'],
-            'device': device_settings['device_metadata']['device'],
-            'cpu': device_settings['device_metadata']['cpu']
-        }
+            raise ValueError("Incorrect device settings in the configuration. Please check the configuration in the Vault.")
 
-        log.info('[Downloader]: Extracting other settings...')
         # Extract other settings except device settings
+        log.info('[Downloader]: Extracting other settings...')
         other_settings = {item: None for item in self.general_settings_list}
         for item in other_settings.keys():
             other_settings[item] = self.configuration[item.replace('_', '-')]
@@ -182,6 +170,11 @@ class Downloader:
         session_settings = self.client.get_settings()
         for item in self.general_settings_list:
             if session_settings[item] != self.configuration[item.replace('_', '-')]:
+                log.info('[Downloader]: The session settings are not equal to the configuration settings and could be reset.')
+                return False
+        device_settings = self.client.get_settings()['device_settings']
+        for item in self.device_settings_list:
+            if device_settings[item] != json.loads(self.configuration['device-settings'])[item]:
                 log.info('[Downloader]: The session settings are not equal to the configuration settings and could be reset.')
                 return False
         log.info('[Downloader]: The session settings are equal to the configuration settings.')

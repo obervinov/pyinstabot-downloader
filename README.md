@@ -123,7 +123,7 @@ This project is a Telegram bot that allows you to upload posts from your Instagr
     "session-file": "session.json",
     "timezone-offset": "10800",
     "request-timeout": "10",
-    "device-settings": "{\"app_metadata\": {\"app_version\": \"269.0.0.18.75\", \"version_code\": \"314665256\"}, \"device_metadata\": {\"manufacturer\": \"OnePlus\", \"model\": \"6T Dev\", \"device\": \"devitron\", \"cpu\": \"qcom\", \"dpi\": \"480dpi\", \"resolution\": \"1080x1920\"}, \"os_metadata\": {\"android_release\": \"8.0.0\", \"android_version\": \"26\"}}"
+    "device-settings": "{\"app_version\": 269.0.0.18.75, \"version_code\": 314665256, \"manufacturer\": \"OnePlus\", \"model\": \"6T Dev\", \"device\": \"devitron\", \"cpu\": \"qcom\", \"dpi\": \"480dpi\", \"resolution\": \"1080x1920\", \"android_release\": 8.0.0, \"android_version\": 26}"
   }
 
   ```
@@ -142,9 +142,16 @@ This project is a Telegram bot that allows you to upload posts from your Instagr
   - `password`: the password of the instagram account
   - `request-timeout`: the timeout for requests to the instagram api
   - `device-settings`: the device settings of the instagram account
-    - `app_metadata`: application metadata (app_version, version_code)
-    - `device_metadata`: device metadata (manufacturer, model, device, cpu, dpi, resolution)
-    - `os_metadata`: os metadata (android_release, android_version)
+    - `app_version`: the version of the instagram app
+    - `version_code`: the version code of the instagram app
+    - `manufacturer`: the manufacturer of the device
+    - `model`: the model of the device
+    - `device`: the device name
+    - `cpu`: the cpu of the device
+    - `dpi`: the dpi of the device
+    - `resolution`: the resolution of the device
+    - `android_release`: the android release version of the device
+    - `android_version`: the android api version of the device
   </br>
 
 - `configuration/uploader-api`: uploader module configuration (for upload content to the target storage)
