@@ -123,9 +123,7 @@ This project is a Telegram bot that allows you to upload posts from your Instagr
     "session-file": "session.json",
     "timezone-offset": "10800",
     "request-timeout": "10",
-    "app-metadata": "269.0.0.18.75;314665256",
-    "device-metadata": "OnePlus;6T Dev;devitron;qcom;480dpi;1080x1920",
-    "os-metadata": "Android;8;26"
+    "device-settings": "{\"app_metadata\": {\"app_version\": \"269.0.0.18.75\", \"version_code\": \"314665256\"}, \"device_metadata\": {\"manufacturer\": \"OnePlus\", \"model\": \"6T Dev\", \"device\": \"devitron\", \"cpu\": \"qcom\", \"dpi\": \"480dpi\", \"resolution\": \"1080x1920\"}, \"os_metadata\": {\"android_release\": \"8.0.0\", \"android_version\": \"26\"}}"
   }
 
   ```
@@ -143,9 +141,10 @@ This project is a Telegram bot that allows you to upload posts from your Instagr
   - `username`: the username of the instagram account
   - `password`: the password of the instagram account
   - `request-timeout`: the timeout for requests to the instagram api
-  - `app-metadata`: the metadata of the instagram application (app_version;code_version)
-  - `device-metadata`: the metadata of the device (manufacturer;model;model_code;cpu;dpi;resolution)
-  - `os-metadata`: the metadata of the operating system (os;version;sdk_version)
+  - `device-settings`: the device settings of the instagram account
+    - `app_metadata`: application metadata (app_version, version_code)
+    - `device_metadata`: device metadata (manufacturer, model, device, cpu, dpi, resolution)
+    - `os_metadata`: os metadata (android_release, android_version)
   </br>
 
 - `configuration/uploader-api`: uploader module configuration (for upload content to the target storage)
@@ -175,14 +174,14 @@ This project is a Telegram bot that allows you to upload posts from your Instagr
   ```json
   {
     "requests": "{\"requests_per_day\": 10, \"requests_per_hour\": 1, \"random_shift_minutes\": 60}",
-    "roles": "[\"post\", \"posts_list\"]",
+    "roles": "[\"posts\", \"reschedule_queue\"]",
     "status": "allowed"
   }
   ```
 
   Description of parameters
   - `requests`: the number of requests that the user can make per day and per hour, as well as the random shift in minutes (scheduling of message processing from the queue works on the basis of this parameter)
-  - `roles`: list of roles that allow to use the corresponding functionality ([available roles](src/configs/constants.py#L11-L15)).
+  - `roles`: list of roles that allow to use the corresponding functionality ([available roles](src/configs/constants.py#L11-L14)).
   - `status`: allowed or denied user access to the bot
 
 

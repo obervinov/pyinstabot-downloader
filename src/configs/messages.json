@@ -16,10 +16,6 @@
             "text": "{0} Sorry, you have not permissions for use this feature. Please, check you permission roles.\nMetadata:\n<code>userid: {1}</code>\n<code>username: {2}</code>",
             "args": [":no_entry:", "userid", "username"]
         },
-        "help_for_post": {
-            "text": "{0} <b>For a download post, just send a link to this post.</b>\nfor example:\n<code>https://www.instagram.com/p/QwErtY_1234</code>",
-            "args": [":link:"]
-        },
         "help_for_posts_list": {
             "text": "{0} To get a backup copy of the list of posts, send links to posts in a list (each new link with a new message line). This message will be automatically split into a number of messages equal to the number of links and processed in the order of the queue.\n {1} Example:\n<code>https://www.instagram.com/p/QwEr_tY1234\nhttps://www.instagram.com/p/QwEr_tY1235\nhttps://www.instagram.com/p/QwEr_tY1236</code>",
             "args": [":information:", ":link:"]

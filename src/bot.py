@@ -120,14 +120,7 @@ def bot_callback_query_handler(call: telegram.callback_query = None) -> None:
         'chat_id': call.message.chat.id, 'message_id': call.message.message_id
     }
     if users.user_access_check(**requestor).get('permissions', None) == users.user_status_allow:
-        if call.data == "Post":
-            help_message = telegram.send_styled_message(
-                chat_id=call.message.chat.id,
-                messages_template={'alias': 'help_for_post'}
-            )
-            bot.register_next_step_handler(call.message, process_one_post, help_message)
-
-        elif call.data == "Posts List":
+        if call.data == "Posts":
             help_message = telegram.send_styled_message(
                 chat_id=call.message.chat.id,
                 messages_template={'alias': 'help_for_posts_list'}

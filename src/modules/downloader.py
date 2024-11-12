@@ -23,11 +23,13 @@ class Downloader:
     Attributes:
         :attribute configuration (dict): dictionary with configuration parameters for instagram api communication.
         :attribute client (object): instance of the instagram api client.
-        :attribute device_settings (dict): dictionary with device settings for instagram api client.
         :attribute download_methods (dict): dictionary with download methods for instagram api client.
+        :attribute general_settings_list (list): list of general session settings for the instagram api.
+        :attribute device_settings_list (list): list of device settings for the instagram api.
 
     Methods:
-        :method set_session_settings: setting general session settings for the instagram api.
+        :method _set_session_settings: setting general session settings for the instagram api.
+        :method _validate_session_settings: checking the correctness between the session settings and the configuration settings.
         :method exceptions_handler: decorator for handling exceptions in the Downloader class.
         :method login: authentication in instagram api.
         :method get_post_content: getting the content of a post.
@@ -46,9 +48,11 @@ class Downloader:
         ...     'timezone-offset': 10800,
         ...     'proxy-dsn': 'http://localhost:8080'
         ...     'request-timeout': 10,
-        ...     'app-metadata': '269.0.0.18.75;314665256',
-        ...     'device-metadata': 'OnePlus;6T Dev;devitron;qcom;480dpi;1080x1920',
-        ...     'os-metadata': 'Android;8;26'
+        ...     'device-settings': {
+        ...         'app_metadata': {'app_version': '269.0.0.18.75', 'version_code': '314665256'},
+        ...         'device_metadata': {'manufacturer': 'OnePlus', 'model': '6T Dev', 'device': 'devitron', 'cpu': 'qcom', 'dpi': '480dpi', 'resolution': '1080x1920'},
+        ...         'os_metadata': {'android_release': '8.0.0', 'android_version': '26'}
+        ...     }
         ... }
         >>> vault = Vault()
         >>> downloader = Downloader(configuration, vault)
@@ -76,9 +80,10 @@ class Downloader:
                 :param timezone-offset (int): timezone offset for requests.
                 :param proxy-dsn (str): proxy dsn for requests.
                 :param request-timeout (int): request timeout for requests.
-                :app-metadata (dict): instagram application metadata.
-                :os-metadata (dict): operating system metadata.
-                :device-metadata (dict): device metadata.
+                :device-settings (dict): dictionary with device settings for requests.
+                    :param app_metadata (dict): dictionary with app metadata for requests. Must be: 'app_version', 'version_code'.
+                    :param os_metadata (dict): dictionary with os metadata for requests. Must be: 'android_version', 'android_release'.
+                    :param device_metadata (dict): dictionary with device metadata for requests. Must be: 'manufacturer', 'model', 'device', 'cpu', 'dpi', 'resolution'.
             :param vault (object): instance of vault for reading configuration downloader-api.
         """
         if not vault:
@@ -97,22 +102,12 @@ class Downloader:
         log.info('[Downloader]: Creating a new instance...')
         self.client = Client()
 
-        log.info('[Downloader]: Setting client configuration...')
+        log.info('[Downloader]: Setting up the client configuration...')
         self.client.delay_range = [1, int(self.configuration['delay-requests'])]
         self.client.request_timeout = int(self.configuration['request-timeout'])
         self.client.set_proxy(dsn=self.configuration.get('proxy-dsn', None))
-        self.device_settings = {
-            'app_version': self.configuration['app-metadata'].split(';')[0],
-            'version_code': self.configuration['app-metadata'].split(';')[1],
-            'android_version': self.configuration['os-metadata'].split(';')[1],
-            'android_release': f"{self.configuration['os-metadata'].split(';')[2]}.0.0",
-            'dpi': self.configuration['device-metadata'].split(';')[4],
-            'resolution': self.configuration['device-metadata'].split(';')[5],
-            'manufacturer': self.configuration['device-metadata'].split(';')[0],
-            'model': self.configuration['device-metadata'].split(';')[1],
-            'device': self.configuration['device-metadata'].split(';')[2],
-            'cpu': self.configuration['device-metadata'].split(';')[3]
-        }
+        self.general_settings_list = ['locale', 'country_code', 'country', 'timezone_offset']
+        self.device_settings_list = ['app_metadata', 'os_metadata', 'device_metadata']
         self.download_methods = {
             (1, 'any'): self.client.photo_download,
             (2, 'feed'): self.client.video_download,
@@ -136,31 +131,52 @@ class Downloader:
             - device settings
             - user agent
         """
-        log.info('[Downloader]: Setting general session attributes...')
-        self.client.set_locale(locale=self.configuration['locale'])
-        self.client.set_country_code(country_code=int(self.configuration['country-code']))
-        self.client.set_country(country=self.configuration['country'])
-        self.client.set_timezone_offset(seconds=int(self.configuration['timezone-offset']))
-        self.client.set_device(device=self.device_settings)
+        log.info('[Downloader]: Extracting device settings...')
+        device_settings = self.configuration['device-settings']
+        if not all(item in device_settings.keys() for item in self.device_settings_list):
+            raise ValueError(
+                "Incorrect app, os or device metadata format. Must be: "
+                "os_metadata: 'android_version', 'android_release', "
+                "app_metadata: 'app_version', 'version_code', "
+                "device_metadata: 'manufacturer', 'model', 'device', 'cpu', 'dpi', 'resolution'."
+            )
+        device_settings = {
+            'app_version': device_settings['app_metadata']['app_version'],
+            'version_code': device_settings['app_metadata']['version_code'],
+            'android_version': device_settings['os_metadata']['android_version'],
+            'android_release': device_settings['os_metadata']['android_release'],
+            'dpi': device_settings['device_metadata']['dpi'],
+            'resolution': device_settings['device_metadata']['resolution'],
+            'manufacturer': device_settings['device_metadata']['manufacturer'],
+            'model': device_settings['device_metadata']['model'],
+            'device': device_settings['device_metadata']['device'],
+            'cpu': device_settings['device_metadata']['cpu']
+        }
+
+        log.info('[Downloader]: Extracting other settings...')
+        # Extract other settings except device settings
+        other_settings = {item: None for item in self.general_settings_list}
+        for item in other_settings.keys():
+            other_settings[item] = self.configuration[item.replace('_', '-')]
+
+        # Apply all session settings
+        self.client.set_settings({**other_settings, 'device_settings': device_settings})
         self.client.set_user_agent()
         log.info('[Downloader]: General session settings have been successfully set: %s', self.client.get_settings())
 
     def _validate_session_settings(self) -> bool:
         """
         The method for checking the correctness between the session settings and the configuration settings.
+
+        Returns:
+            (bool) True if the session settings are equal to the configuration settings, otherwise False.
         """
         log.info('[Downloader]: Checking the difference between the session settings and the configuration settings...')
         session_settings = self.client.get_settings()
-        if (
-            session_settings['locale'] != self.configuration['locale'] or
-            session_settings['country_code'] != int(self.configuration['country-code']) or
-            session_settings['country'] != self.configuration['country'] or
-            session_settings['timezone_offset'] != int(self.configuration['timezone-offset']) or
-            session_settings['device_settings'] != self.device_settings
-        ):
-            log.info('[Downloader]: The session settings are not equal to the configuration settings.')
-            return False
-
+        for item in self.general_settings_list:
+            if session_settings[item] != self.configuration[item.replace('_', '-')]:
+                log.info('[Downloader]: The session settings are not equal to the configuration settings and could be reset.')
+                return False
         log.info('[Downloader]: The session settings are equal to the configuration settings.')
         return True
 
