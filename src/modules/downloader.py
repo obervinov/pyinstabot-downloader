@@ -155,6 +155,8 @@ class Downloader:
         for item in other_settings.keys():
             other_settings[item] = self.configuration[item.replace('_', '-')]
 
+        log.debug('[Downloader]: Retrieved settings: %s', {**other_settings, 'device_settings': device_settings})
+
         # Apply all session settings
         self.client.set_settings({**other_settings, 'device_settings': device_settings})
         self.client.set_user_agent()
