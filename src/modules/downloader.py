@@ -6,6 +6,7 @@ https://github.com/subzeroid/instagrapi
 """
 import os
 import time
+import json
 from pathlib import Path
 from urllib3.exceptions import ReadTimeoutError
 from requests.exceptions import ConnectionError as RequestsConnectionError
@@ -138,7 +139,7 @@ class Downloader:
             - user agent
         """
         log.info('[Downloader]: Extracting device settings...')
-        device_settings = self.configuration['device-settings']
+        device_settings = json.loads(self.configuration['device-settings'])
         if not all(item in device_settings.keys() for item in self.device_settings_list):
             raise ValueError(
                 "Incorrect app, os or device metadata format. Must be: "
