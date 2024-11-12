@@ -50,9 +50,9 @@ class Downloader:
         ...     'proxy-dsn': 'http://localhost:8080'
         ...     'request-timeout': 10,
         ...     'device-settings': {
-        ...         'app_version': 269.0.0.18.75, 'version_code': 314665256,
+        ...         'app_version': '269.0.0.18.75', 'version_code': '314665256',
         ...         'manufacturer': 'OnePlus', 'model': '6T Dev', 'device': 'devitron', 'cpu': 'qcom', 'dpi': '480dpi', 'resolution': '1080x1920',
-        ...         'android_release': 8.0.0, 'android_version': 26
+        ...         'android_release': '8.0.0', 'android_version': '26'
         ...     }
         ... }
         >>> vault = Vault()
@@ -82,16 +82,16 @@ class Downloader:
                 :param proxy-dsn (str): proxy dsn for requests.
                 :param request-timeout (int): request timeout for requests.
                 :device-settings (dict): dictionary with device settings for requests.
-                    :param app_version (float): application version.
-                    :param version_code (int): version code.
+                    :param app_version (str): application version.
+                    :param version_code (str): version code.
                     :param manufacturer (str): manufacturer of the device.
                     :param model (str): model of the device.
                     :param device (str): device name.
                     :param cpu (str): cpu name.
                     :param dpi (str): dpi resolution.
                     :param resolution (str): screen resolution.
-                    :param android_release (float): android release version.
-                    :param android_version (int): android version.
+                    :param android_release (str): android release version.
+                    :param android_version (str): android version.
             :param vault (object): instance of vault for reading configuration downloader-api.
         """
         if not vault:
