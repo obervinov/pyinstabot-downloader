@@ -272,7 +272,7 @@ class Downloader:
 
         if create_new_session:
             self.client.dump_settings(self.configuration['session-file'])
-            log.info('[Downloader]: The session file was created successfully: %s', self.configuration['session-file'])
+            log.info('[Downloader]: The new session file was created successfully: %s', self.configuration['session-file'])
 
         # Check the status of the authentication
         log.info('[Downloader]: Checking the status of the authentication...')
