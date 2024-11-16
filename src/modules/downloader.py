@@ -158,10 +158,10 @@ class Downloader:
         log.debug('[Downloader]: Retrieved settings: %s', {**other_settings, 'device_settings': device_settings})
 
         # Apply all session settings
-        self.client.set_settings({**other_settings, 'device_settings': device_settings})
+        self.client.set_settings(settings={**other_settings, 'device_settings': device_settings})
         # Temporarily fix for country
         # Country in set_settings is not working
-        self.client.set_country(self.configuration['country'])
+        # self.client.set_country(country=other_settings['country'])
         self.client.set_user_agent()
         log.info('[Downloader]: General session settings have been successfully set: %s', self.client.get_settings())
 
@@ -198,7 +198,8 @@ class Downloader:
             try:
                 return method(self, *args, **kwargs)
             except LoginRequired:
-                log.error('[Downloader]: Instagram API login required. Re-authentication...')
+                log.error('[Downloader]: Instagram API login required. Re-authenticate after 1 hour')
+                time.sleep(3600)
                 self.login(method='relogin')
             except ChallengeRequired:
                 log.error('[Downloader]: Instagram API requires challenge. Need manually pass in browser. Retry after 1 hour')
