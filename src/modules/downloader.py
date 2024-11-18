@@ -217,15 +217,15 @@ class Downloader:
         log.info('[Downloader]: Checking the difference between the session settings and the configuration settings...')
         session_settings = self.client.get_settings()
         for item in self.general_settings_list:
-            if session_settings[item] != self.configuration[item.replace('_', '-')]:
+            if str(session_settings[item]) != str(self.configuration[item.replace('_', '-')]):
                 log.info(
-                    '[Downloader]: The session key value are not equal to the expected value. Session will be reset: %s and %s',
+                    '[Downloader]: The session key value are not equal to the expected value: %s != %s. Session will be reset',
                     session_settings[item], self.configuration[item.replace('_', '-')]
                 )
                 return False
         device_settings = self.client.get_settings()['device_settings']
         for item in self.device_settings_list:
-            if device_settings[item] != json.loads(self.configuration['device-settings'])[item]:
+            if str(device_settings[item]) != str(json.loads(self.configuration['device-settings'])[item]):
                 log.info(
                     '[Downloader]: The session key value are not equal to the expected value. Session will be reset: %s and %s',
                     device_settings[item], json.loads(self.configuration['device-settings'])[item]
