@@ -7,6 +7,7 @@ https://github.com/subzeroid/instagrapi
 import os
 import time
 import json
+import random
 from pathlib import Path
 from urllib3.exceptions import ReadTimeoutError
 from requests.exceptions import ConnectionError as RequestsConnectionError
@@ -134,6 +135,47 @@ class Downloader:
         else:
             raise FailedAuthInstagram("Failed to authenticate the Instaloader instance.")
 
+    def _get_login_args(self) -> dict:
+        """Get login arguments for the Instagram API"""
+        if self.configuration['2fa-enabled']:
+            totp_code = self.client.totp_generate_code(seed=self.configuration['2fa-seed'])
+            log.info('[Downloader]: Two-factor authentication is enabled. TOTP code: %s', totp_code)
+            return {
+                'username': self.configuration['username'],
+                'password': self.configuration['password'],
+                'verification_code': totp_code
+            }
+        return {
+            'username': self.configuration['username'],
+            'password': self.configuration['password']
+        }
+
+    def _create_new_session(self, login_args: dict) -> None:
+        """Create a new session file for the Instagram API"""
+        self._set_session_settings()
+        self.client.login(**login_args)
+        self.client.dump_settings(self.configuration['session-file'])
+        log.info('[Downloader]: The new session file was created successfully: %s', self.configuration['session-file'])
+
+    def _handle_relogin(self, login_args: dict) -> None:
+        """Handle re-authentication in the Instagram API"""
+        log.info('[Downloader]: Authentication with the clearing of the session...')
+        old_uuids = self.client.get_settings().get("uuids", {})
+        self.client.set_settings({})
+        self.client.set_uuids(old_uuids)
+        self._create_new_session(login_args)
+
+    def _load_session(self, login_args: dict) -> None:
+        """Load or create a session."""
+        log.info('[Downloader]: Authentication with the existing session...')
+        session_file = self.configuration['session-file']
+        if os.path.exists(session_file):
+            self.client.load_settings(session_file)
+            if not self._validate_session_settings():
+                self._create_new_session(login_args)
+        else:
+            self._create_new_session(login_args)
+
     def _set_session_settings(self) -> None:
         """
         The method for setting general session settings for the Instagram API, such as
@@ -176,14 +218,20 @@ class Downloader:
         session_settings = self.client.get_settings()
         for item in self.general_settings_list:
             if session_settings[item] != self.configuration[item.replace('_', '-')]:
-                log.info('[Downloader]: The session settings are not equal to the configuration settings and could be reset.')
+                log.info(
+                    '[Downloader]: The session key value are not equal to the expected value. Session will be reset: %s and %s',
+                    session_settings[item], self.configuration[item.replace('_', '-')]
+                )
                 return False
         device_settings = self.client.get_settings()['device_settings']
         for item in self.device_settings_list:
             if device_settings[item] != json.loads(self.configuration['device-settings'])[item]:
-                log.info('[Downloader]: The session settings are not equal to the configuration settings and could be reset.')
+                log.info(
+                    '[Downloader]: The session key value are not equal to the expected value. Session will be reset: %s and %s',
+                    device_settings[item], json.loads(self.configuration['device-settings'])[item]
+                )
                 return False
-        log.info('[Downloader]: The session settings are equal to the configuration settings.')
+        log.info('[Downloader]: The session settings are equal to the expected settings.')
         return True
 
     @staticmethod
@@ -195,19 +243,23 @@ class Downloader:
             :param method (function): method to be wrapped.
         """
         def wrapper(self, *args, **kwargs):
+            random_shift = random.randint(600, 3600)
             try:
                 return method(self, *args, **kwargs)
             except LoginRequired:
-                log.error('[Downloader]: Instagram API login required. Re-authenticate after 1 hour')
-                time.sleep(3600)
+                log.error('[Downloader]: Instagram API login required. Re-authenticate after %s hour', random_shift/60)
+                time.sleep(random_shift)
+                log.info('[Downloader]: Re-authenticate after timeout due to login required')
                 self.login(method='relogin')
             except ChallengeRequired:
-                log.error('[Downloader]: Instagram API requires challenge. Need manually pass in browser. Retry after 1 hour')
-                time.sleep(3600)
+                log.error('[Downloader]: Instagram API requires challenge. Need manually pass in browser. Retry after %s hour', random_shift/60)
+                time.sleep(random_shift)
+                log.info('[Downloader]: Re-authenticate after timeout due to challenge required')
                 self.login()
             except PleaseWaitFewMinutes:
-                log.error('[Downloader]: Device or IP address has been restricted. Just wait a one hour and try again')
-                time.sleep(3600)
+                log.error('[Downloader]: Device or IP address has been restricted. Just wait a %s hour and retry', random_shift/60)
+                time.sleep(random_shift)
+                log.info('[Downloader]: Retry after timeout due to restriction')
                 self.login(method='relogin')
             except (ReadTimeoutError, RequestsConnectionError, ClientRequestTimeout):
                 log.error('[Downloader]: Timeout error downloading post content. Retry after 1 minute')
@@ -223,8 +275,8 @@ class Downloader:
         Args:
             :param method (str): the type of authentication in the Instagram API. Default: 'session'.
                 possible values:
-                    'session' - authentication by existing session file. Or create session file for existing device.
-                    'relogin' - authentication as an existing device. This will create a new session file and clear the old attributes.
+                    'session' - authentication by existing session file or create session file for existing device.
+                    'relogin' - authentication as an existing device. Creates a new session file and clears the old attributes.
 
         Returns:
             (str) logged_in
@@ -233,46 +285,14 @@ class Downloader:
         """
         log.info('[Downloader]: Authentication in the Instagram API with type: %s', method)
 
-        # 2FA authentication settings
-        if self.configuration['2fa-enabled']:
-            totp_code = self.client.totp_generate_code(seed=self.configuration['2fa-seed'])
-            log.info('[Downloader]: Two-factor authentication is enabled. TOTP code: %s', totp_code)
-            login_args = {
-                'username': self.configuration['username'],
-                'password': self.configuration['password'],
-                'verification_code': totp_code
-            }
-        else:
-            login_args = {
-                'username': self.configuration['username'],
-                'password': self.configuration['password']
-            }
+        # Generate login arguments
+        login_args = self._get_login_args()
 
-        # Login to the Instagram API
-        create_new_session = False
+        # Handle authentication method
         if method == 'relogin':
-            log.info('[Downloader]: Authentication with the clearing of the session...')
-            # extract old uuids and clear settings
-            old_uuids = self.client.get_settings()["uuids"]
-            self.client.set_settings({})
-            # set old uuids and set general session settings
-            self.client.set_uuids(old_uuids)
-            create_new_session = True
+            self._handle_relogin(login_args)
         else:
-            log.info('[Downloader]: Authentication with the existing session...')
-            if os.path.exists(self.configuration['session-file']):
-                self.client.load_settings(self.configuration['session-file'])
-                if not self._validate_session_settings():
-                    create_new_session = True
-            else:
-                create_new_session = True
-
-        self._set_session_settings()
-        self.client.login(**login_args)
-
-        if create_new_session:
-            self.client.dump_settings(self.configuration['session-file'])
-            log.info('[Downloader]: The new session file was created successfully: %s', self.configuration['session-file'])
+            self._load_session(login_args)
 
         # Check the status of the authentication
         log.info('[Downloader]: Checking the status of the authentication...')
