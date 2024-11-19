@@ -30,6 +30,10 @@ class Downloader:
         :attribute device_settings_list (list): list of device settings for the instagram api.
 
     Methods:
+        :method _get_login_args: get login arguments for the instagram api.
+        :method _create_new_session: create a new session file for the instagram api.
+        :method _handle_relogin: handle re-authentication in the instagram api.
+        :method _load_session: load or create a session.
         :method _set_session_settings: setting general session settings for the instagram api.
         :method _validate_session_settings: checking the correctness between the session settings and the configuration settings.
         :method exceptions_handler: decorator for handling exceptions in the Downloader class.
@@ -171,6 +175,8 @@ class Downloader:
         session_file = self.configuration['session-file']
         if os.path.exists(session_file):
             self.client.load_settings(session_file)
+            # Temporarily fix for country, because it is not working in set_settings
+            self.client.set_country(country=self.configuration['country'])
             if not self._validate_session_settings():
                 self._create_new_session(login_args)
         else:
