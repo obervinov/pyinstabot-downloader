@@ -227,7 +227,7 @@ class Downloader:
         for item in self.device_settings_list:
             if str(device_settings[item]) != str(json.loads(self.configuration['device-settings'])[item]):
                 log.info(
-                    '[Downloader]: The session key value are not equal to the expected value. Session will be reset: %s and %s',
+                    '[Downloader]: The session key value are not equal to the expected value: %s != %s. Session will be reset',
                     device_settings[item], json.loads(self.configuration['device-settings'])[item]
                 )
                 return False
@@ -243,21 +243,21 @@ class Downloader:
             :param method (function): method to be wrapped.
         """
         def wrapper(self, *args, **kwargs):
-            random_shift = random.randint(600, 3600)
+            random_shift = random.randint(600, 7200)
             try:
                 return method(self, *args, **kwargs)
             except LoginRequired:
-                log.error('[Downloader]: Instagram API login required. Re-authenticate after %s hour', random_shift/60)
+                log.error('[Downloader]: Instagram API login required. Re-authenticate after %s minutes', round(random_shift/60))
                 time.sleep(random_shift)
                 log.info('[Downloader]: Re-authenticate after timeout due to login required')
                 self.login(method='relogin')
             except ChallengeRequired:
-                log.error('[Downloader]: Instagram API requires challenge. Need manually pass in browser. Retry after %s hour', random_shift/60)
+                log.error('[Downloader]: Instagram API requires challenge in browser. Retry after %s minutes', round(random_shift/60))
                 time.sleep(random_shift)
                 log.info('[Downloader]: Re-authenticate after timeout due to challenge required')
                 self.login()
             except PleaseWaitFewMinutes:
-                log.error('[Downloader]: Device or IP address has been restricted. Just wait a %s hour and retry', random_shift/60)
+                log.error('[Downloader]: Device or IP address has been restricted. Just wait a %s minutes and retry', round(random_shift/60))
                 time.sleep(random_shift)
                 log.info('[Downloader]: Retry after timeout due to restriction')
                 self.login(method='relogin')
@@ -289,6 +289,7 @@ class Downloader:
         login_args = self._get_login_args()
 
         # Handle authentication method
+        time.sleep(3600)
         if method == 'relogin':
             self._handle_relogin(login_args)
         else:
