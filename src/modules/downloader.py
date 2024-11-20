@@ -295,7 +295,6 @@ class Downloader:
         login_args = self._get_login_args()
 
         # Handle authentication method
-        time.sleep(3600)
         if method == 'relogin':
             self._handle_relogin(login_args)
         else:
