@@ -120,19 +120,12 @@ def bot_callback_query_handler(call: telegram.callback_query = None) -> None:
         'chat_id': call.message.chat.id, 'message_id': call.message.message_id
     }
     if users.user_access_check(**requestor).get('permissions', None) == users.user_status_allow:
-        if call.data == "Post":
-            help_message = telegram.send_styled_message(
-                chat_id=call.message.chat.id,
-                messages_template={'alias': 'help_for_post'}
-            )
-            bot.register_next_step_handler(call.message, process_one_post, help_message)
-
-        elif call.data == "Posts List":
+        if call.data == "Posts":
             help_message = telegram.send_styled_message(
                 chat_id=call.message.chat.id,
                 messages_template={'alias': 'help_for_posts_list'}
             )
-            bot.register_next_step_handler(call.message, process_list_posts, help_message)
+            bot.register_next_step_handler(call.message, process_posts, help_message)
 
         elif call.data == "Reschedule Queue":
             help_message = telegram.send_styled_message(
@@ -367,6 +360,9 @@ def process_one_post(
     """
     Processes an Instagram post link sent by a user and adds it to the queue for download.
 
+    Notice: This method will merge with the `process_posts` method in v3.3.0.
+            After combining the two buttons into a `Posts` button in version 3.2.0, it makes no sense to split one functionality into two methods.
+
     Args:
         message (telegram.telegram_types.Message): The Telegram message object containing the post link.
         help_message (telegram.telegram_types.Message): The help message to be deleted.
@@ -376,7 +372,7 @@ def process_one_post(
         None
     """
     requestor = {
-        'user_id': message.chat.id, 'role_id': ROLES_MAP['Post'],
+        'user_id': message.chat.id, 'role_id': ROLES_MAP['Posts'],
         'chat_id': message.chat.id, 'message_id': message.message_id
     }
     user = users_rl.user_access_check(**requestor)
@@ -407,12 +403,12 @@ def process_one_post(
                 telegram.delete_message(message.chat.id, help_message.id)
 
 
-def process_list_posts(
+def process_posts(
     message: telegram.telegram_types.Message = None,
     help_message: telegram.telegram_types.Message = None
 ) -> None:
     """
-    Process a list of Instagram post links.
+    Process a single or multiple posts from the user's message.
 
     Args:
         message (telegram.telegram_types.Message, optional): The message containing the list of post links. Defaults to None.
@@ -422,7 +418,7 @@ def process_list_posts(
         None
     """
     requestor = {
-        'user_id': message.chat.id, 'role_id': ROLES_MAP['Posts List'],
+        'user_id': message.chat.id, 'role_id': ROLES_MAP['Posts'],
         'chat_id': message.chat.id, 'message_id': message.message_id
     }
     user = users.user_access_check(**requestor)
@@ -611,12 +607,6 @@ def queue_handler_thread() -> None:
 def main():
     """
     The main entry point of the project.
-
-    Args:
-        None
-
-    Returns:
-        None
     """
     # Thread for processing queue
     thread_queue_handler = threading.Thread(target=queue_handler_thread, args=(), name="QueueHandlerThread")

@@ -115,15 +115,17 @@ This project is a Telegram bot that allows you to upload posts from your Instagr
     "2fa-enabled": "False",
     "2fa-seed": "my_2fa_secret",
     "country-code": "1",
+    "country": "US",
     "delay-requests": "1",
     "locale": "en_US",
     "username": "my_username",
     "password": "my_password",
     "session-file": "session.json",
     "timezone-offset": "10800",
-    "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) ...",
-    "request-timeout": "10"
+    "request-timeout": "10",
+    "device-settings": {"app_version": "269.0.0.18.75", "version_code": "314665256", "manufacturer": "OnePlus", "model": "6T Dev", "device": "devitron", "cpu": "qcom", "dpi": "480dpi", "resolution": "1080x1920", "android_release": "8.0.0", "android_version": "26"}
   }
+
   ```
 
   Description of parameters
@@ -131,14 +133,25 @@ This project is a Telegram bot that allows you to upload posts from your Instagr
   - `locale`: the locale of the instagram account
   - `session-file`: the path to the file where the session data will be stored
   - `timezone-offset`: the offset of the timezone in seconds
-  - `user-agent`: the user-agent of the instagram account
   - `2fa-enabled`: two-factor authentication status
   - `2fa-seed`: two-factor authentication secret
   - `country-code`: the country code of the instagram account
+  - `country`: the country of the instagram account
   - `enabled`: the status of the downloader module
   - `username`: the username of the instagram account
   - `password`: the password of the instagram account
   - `request-timeout`: the timeout for requests to the instagram api
+  - `device-settings`: the device settings of the instagram account
+    - `app_version`: the version of the instagram app
+    - `version_code`: the version code of the instagram app
+    - `manufacturer`: the manufacturer of the device
+    - `model`: the model of the device
+    - `device`: the device name
+    - `cpu`: the cpu of the device
+    - `dpi`: the dpi of the device
+    - `resolution`: the resolution of the device
+    - `android_release`: the android release version of the device
+    - `android_version`: the android api version of the device
   </br>
 
 - `configuration/uploader-api`: uploader module configuration (for upload content to the target storage)
@@ -167,15 +180,15 @@ This project is a Telegram bot that allows you to upload posts from your Instagr
 
   ```json
   {
-    "requests": "{\"requests_per_day\": 10, \"requests_per_hour\": 1, \"random_shift_minutes\": 60}",
-    "roles": "[\"post\", \"posts_list\"]",
+    "requests": {"requests_per_day": 10, "requests_per_hour": 1, "random_shift_minutes": 60},
+    "roles": ["posts", "reschedule_queue"],
     "status": "allowed"
   }
   ```
 
   Description of parameters
   - `requests`: the number of requests that the user can make per day and per hour, as well as the random shift in minutes (scheduling of message processing from the queue works on the basis of this parameter)
-  - `roles`: list of roles that allow to use the corresponding functionality ([available roles](src/configs/constants.py#L11-L15)).
+  - `roles`: list of roles that allow to use the corresponding functionality ([available roles](src/configs/constants.py#L11-L14)).
   - `status`: allowed or denied user access to the bot
 
 
