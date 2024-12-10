@@ -326,6 +326,8 @@ def message_parser(message: telegram.telegram_types.Message = None) -> dict:
             telegram.send_styled_message(chat_id=message.chat.id, messages_template={'alias': 'url_error', 'kwargs': {'url': message.text}})
     elif account_name:
         data['account_name'] = account_name
+        log.warning(account_name)
+
     return data
 # END BLOCK ADDITIONAL FUNCTIONS ######################################################################################################
 
@@ -423,7 +425,7 @@ def process_account(
     if user.get('permissions', None) == users.user_status_allow:
         internal_user_id = None
         data = message_parser(message)
-        print(data)
+        log.warning(data)
         exist_account = database.get_account_info(name=data['account_name'])
         if exist_account:
             log.info('[Bot]: account %s already exist in the database', message.chat.id)
@@ -435,7 +437,7 @@ def process_account(
             internal_user_id = account_info['pk']
         posts_list = downloader.get_user_posts(user_id=internal_user_id)
         # For debug
-        print(posts_list)
+        log.warning(posts_list)
         # For debug
         for post in posts_list:
             link = f"https://www.instagram.com/p/{post['code']}"
