@@ -425,7 +425,7 @@ def process_account(
     if user.get('permissions', None) == users.user_status_allow:
         internal_user_id = None
         data = message_parser(message)
-        exist_account = database.get_account_info(name=data['account_name'])
+        exist_account = database.get_account_info(username=data['account_name'])
         if exist_account:
             log.info('[Bot]: account %s already exist in the database', message.chat.id)
             internal_user_id = exist_account[1]

@@ -713,7 +713,7 @@ class DatabaseClient:
             data (dict): A dictionary containing the account details.
 
         Parameters:
-            name (str): The username of the account.
+            username (str): The username of the account.
             pk (str): The primary key of the account.
             full_name (str): The full name of the account.
             media_count (int): The number of media items in the account.
@@ -722,7 +722,7 @@ class DatabaseClient:
         """
         exist_account = self._select(table_name='accounts', columns=("id",), condition=f"username = '{data.get('username')}'")
 
-        columns = ("name", "pk", "full_name", "media_count", "follower_count", "following_count")
+        columns = ("username", "pk", "full_name", "media_count", "follower_count", "following_count")
         values = (
             data.get('username'), data.get('pk'), data.get('full_name'),
             data.get('media_count'), data.get('follower_count'), data.get('following_count')
@@ -736,15 +736,15 @@ class DatabaseClient:
         else:
             self._insert(table_name='accounts', columns=columns, values=values)
 
-    def get_account_info(self, name: str = None) -> tuple:
+    def get_account_info(self, username: str = None) -> tuple:
         """
         Get the account information from the accounts table in the database.
 
         Args:
-            name (str): The username of the account.
+            username (str): The username of the account.
 
         Returns:
             tuple: A tuple containing the account information from the accounts table.
         """
-        account = self._select(table_name='accounts', columns=("*",), condition=f"username = '{name}'", limit=1)
+        account = self._select(table_name='accounts', columns=("*",), condition=f"username = '{username}'", limit=1)
         return account[0] if account else None
