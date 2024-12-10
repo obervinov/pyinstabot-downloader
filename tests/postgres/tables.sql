@@ -60,7 +60,6 @@ CREATE TABLE accounts (
     media_count INTEGER NOT NULL,
     follower_count INTEGER NOT NULL,
     following_count INTEGER NOT NULL,
-    biography VARCHAR (255) NOT NULL,
     last_updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 

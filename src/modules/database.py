@@ -719,16 +719,15 @@ class DatabaseClient:
             media_count (int): The number of media items in the account.
             follower_count (int): The number of followers of the account.
             following_count (int): The number of accounts the account is following.
-            biography (str): The biography of the account.
             last_updated (str): The time the account information was last updated.
         """
         exist_account = self._select(table_name='accounts', columns=("id",), condition=f"username = '{data.get('username')}'")
 
-        columns = ("name", "pk", "full_name", "media_count", "follower_count", "following_count", "biography", "last_updated")
+        columns = ("name", "pk", "full_name", "media_count", "follower_count", "following_count", "last_updated")
         values = (
             f"name = '{data.get('username')}', pk = '{data.get('pk')}', full_name = '{str(data.get('full_name'))}', "
             f"media_count = {data.get('media_count')}, follower_count = {data.get('follower_count')}, "
-            f"following_count = {data.get('following_count')}, biography = '{str(data.get('biography'))}', last_updated = CURRENT_TIMESTAMP"
+            f"following_count = {data.get('following_count')}, last_updated = CURRENT_TIMESTAMP"
         )
         if exist_account:
             self._update(table_name='accounts', values=values, condition=f"id = '{exist_account[0][0]}'")
