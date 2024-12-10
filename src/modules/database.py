@@ -255,10 +255,20 @@ class DatabaseClient:
                 cursor.execute(sql_query, values)
             conn.commit()
             self.close_connection(conn)
-        except (psycopg2.Error, IndexError) as error:
+        except IndexError as error:
             log.error(
                 '[Database]: An error occurred while inserting a row into the table %s: %s\nColumns: %s\nValues: %s\nQuery: %s',
                 table_name, error, columns, values, sql_query
+            )
+        except TypeError as error:
+            log.error(
+                '[Database]: Wrong data type in the columns or values: %s\nColumns: %s\nValues: %s\nQuery: %s',
+                error, columns, values, sql_query
+            )
+        except psycopg2.Error as error:
+            log.error(
+                '[Database]: A database-related error occurred: %s\nColumns: %s\nValues: %s\nQuery: %s',
+                error, columns, values, sql_query
             )
 
     @reconnect_on_exception
