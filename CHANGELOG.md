@@ -3,6 +3,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/) and this project adheres to [Semantic Versioning](http://semver.org/).
 
 
+## v3.3.0 - 2024-12-10
+### What's Changed
+**Full Changelog**: https://github.com/obervinov/pyinstabot-downloader/compare/v3.2.0...v3.3.0 by @obervinov in https://github.com/obervinov/pyinstabot-downloader/pull/119
+#### 🐛 Bug Fixes
+* small code formatting improvements
+#### 💥 Breaking Changes
+* 
+#### 🚀 Features
+* add new table `accounts` to the database for storing account public data
+* add the ability to retrieve the entire list of account posts and add it to the queue
+
+
 ## v3.2.0 - 2024-11-21
 ### What's Changed
 **Full Changelog**: https://github.com/obervinov/pyinstabot-downloader/compare/v3.1.3...v3.2.0 by @obervinov in https://github.com/obervinov/pyinstabot-downloader/pull/116

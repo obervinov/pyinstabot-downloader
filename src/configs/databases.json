@@ -38,6 +38,21 @@
             ]
         },
         {
+            "name": "accounts",
+            "description": "The table stores the instagram account public information",
+            "columns": [
+                "id SERIAL PRIMARY KEY, ",
+                "username VARCHAR(255) UNIQUE NOT NULL, ",
+                "pk VARCHAR(255) NOT NULL, ",
+                "full_name VARCHAR(255) NOT NULL, ",
+                "media_count INTEGER NOT NULL, ",
+                "follower_count INTEGER NOT NULL, ",
+                "following_count INTEGER NOT NULL, ",
+                "biography VARCHAR(255) NOT NULL, ",
+                "last_updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP"
+            ]
+        },
+        {
             "name": "migrations",
             "description": "Table to store the migration history of the database",
             "columns": [

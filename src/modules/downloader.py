@@ -375,3 +375,33 @@ class Downloader:
             }
 
         return response
+
+    @exceptions_handler
+    def get_account_info(self, username: str = None) -> dict | None:
+        """
+        The method for getting information about the account by the specified User ID.
+
+        Args:
+            :param username (str): the ID of the user for downloading content.
+
+        Returns:
+            (dict) account information
+        """
+        log.info('[Downloader]: Extracting information about the account %s...', username)
+        account_info = self.client.user_info_by_username(username=username)
+        log.info('[Downloader]: Information about the account %s has been successfully extracted', username)
+        return account_info
+
+    @exceptions_handler
+    def get_user_posts(self, user_id: str = None) -> list | None:
+        """
+        The method for getting the content of a post from a specified User ID.
+
+        Args:
+            :param user_id (str): the internal ID of the user for downloading content.
+
+        Returns:
+            (list) list of posts
+        """
+        log.info('[Downloader]: Extracting the list of posts for the user %s...', user_id)
+        return self.client.user_medias(user_id=user_id).dict()
