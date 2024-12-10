@@ -425,14 +425,13 @@ def process_account(
     if user.get('permissions', None) == users.user_status_allow:
         internal_user_id = None
         data = message_parser(message)
-        log.warning(data)
         exist_account = database.get_account_info(name=data['account_name'])
         if exist_account:
             log.info('[Bot]: account %s already exist in the database', message.chat.id)
             internal_user_id = exist_account[1]
         else:
             log.info('[Bot]: account %s does not exist in the database', message.chat.id)
-            account_info = downloader.get_account_info(username=data['account_name']).dict()
+            account_info = downloader.get_account_info(username=data['account_name'])
             database.add_account_info(data=account_info)
             internal_user_id = account_info['pk']
         posts_list = downloader.get_user_posts(user_id=internal_user_id)

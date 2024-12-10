@@ -402,4 +402,4 @@ class Downloader:
             (list) list of posts
         """
         log.info('[Downloader]: Extracting the list of posts for the user %s...', user_id)
-        return self.client.user_medias(user_id=user_id, sleep=range(1, 5)).dict()
+        return self.client.user_medias(user_id=user_id, sleep=range(1, 5))
