@@ -725,12 +725,15 @@ class DatabaseClient:
 
         columns = ("name", "pk", "full_name", "media_count", "follower_count", "following_count", "last_updated")
         values = (
-            f"name = '{data.get('username')}', pk = '{data.get('pk')}', full_name = '{str(data.get('full_name'))}', "
-            f"media_count = {data.get('media_count')}, follower_count = {data.get('follower_count')}, "
-            f"following_count = {data.get('following_count')}, last_updated = CURRENT_TIMESTAMP"
+            data.get('username'), data.get('pk'), data.get('full_name'),
+            data.get('media_count'), data.get('follower_count'), data.get('following_count')
         )
         if exist_account:
-            self._update(table_name='accounts', values=values, condition=f"id = '{exist_account[0][0]}'")
+            self._update(
+                table_name='accounts',
+                values={f"{columns[i]} = '{values[i]}'" for i in range(len(columns))},
+                condition=f"id = '{exist_account[0][0]}'"
+            )
         else:
             self._insert(table_name='accounts', columns=columns, values=values)
 
