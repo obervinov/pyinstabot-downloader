@@ -435,11 +435,11 @@ def process_account(
             database.add_account_info(data=account_info)
             internal_user_id = account_info['pk']
         posts_list = downloader.get_user_posts(user_id=internal_user_id)
-        # For debug
-        log.warning(posts_list)
-        # For debug
         for post in posts_list:
-            link = f"https://www.instagram.com/p/{post['code']}"
+            # For debug
+            log.warning(post)
+            # For debug
+            link = f"https://www.instagram.com/p/{post.code}"
             message.text = link
             process_one_post(message=message, help_message=help_message, mode='list')
 
