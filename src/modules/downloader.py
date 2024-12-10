@@ -388,9 +388,7 @@ class Downloader:
             (dict) account information
         """
         log.info('[Downloader]: Extracting information about the account %s...', username)
-        account_info = self.client.user_info_by_username(username=username)
-        log.info('[Downloader]: Information about the account %s has been successfully extracted', username)
-        return account_info
+        return self.client.user_info_by_username(username=username)
 
     @exceptions_handler
     def get_user_posts(self, user_id: str = None) -> list | None:

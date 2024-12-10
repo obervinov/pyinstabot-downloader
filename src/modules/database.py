@@ -572,8 +572,8 @@ class DatabaseClient:
             >>> check_message_uniqueness(post_id='12345', user_id='67890')
             True
         """
-        queue = self._select(table_name='queue', columns=("id"), condition=f"post_id = '{post_id}' AND user_id = '{user_id}'", limit=1)
-        processed = self._select(table_name='processed', columns=("id"), condition=f"post_id = '{post_id}' AND user_id = '{user_id}'", limit=1)
+        queue = self._select(table_name='queue', columns=("id",), condition=f"post_id = '{post_id}' AND user_id = '{user_id}'", limit=1)
+        processed = self._select(table_name='processed', columns=("id",), condition=f"post_id = '{post_id}' AND user_id = '{user_id}'", limit=1)
         if queue or processed:
             return False
         return True
@@ -735,5 +735,5 @@ class DatabaseClient:
         Returns:
             tuple: A tuple containing the account information from the accounts table.
         """
-        account = self._select(table_name='accounts', columns=("*"), condition=f"username = '{name}'", limit=1)
+        account = self._select(table_name='accounts', columns=("*",), condition=f"username = '{name}'", limit=1)
         return account[0] if account else None
