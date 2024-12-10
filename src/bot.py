@@ -300,13 +300,13 @@ def message_parser(message: telegram.telegram_types.Message = None) -> dict:
     post_id = None
     post_owner = None
     account_name = None
-    if re.match(r'^https://www.instagram.com/(p|reel)/.*', message.text):
+    if re.match(r'^https://www\.instagram\.com/(p|reel)/.*', message.text):
         post_id = message.text.split('/')[4]
         post_owner = 'undefined'
-    elif re.match(r'^https://www.instagram.com/.*/(p|reel)/.*', message.text):
+    elif re.match(r'^https://www\.instagram\.com/.*/(p|reel)/.*', message.text):
         post_id = message.text.split('/')[5]
         post_owner = message.text.split('/')[3]
-    elif re.match(r'^https://www.instagram.com/.*', message.text):
+    elif re.match(r'^https://www\.instagram\.com/.*', message.text):
         account_name = message.text.split('/')[3]
     else:
         log.error('[Bot]: post link %s from user %s is incorrect', message.text, message.chat.id)
