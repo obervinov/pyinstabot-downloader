@@ -116,7 +116,7 @@ def bot_callback_query_handler(call: telegram.callback_query = None) -> None:
             method = process_posts
         elif call.data == "Account":
             alias = 'help_for_account'
-            method = process_one_post
+            method = process_account
         elif call.data == "Reschedule Queue":
             alias = 'help_for_reschedule_queue'
             method = reschedule_queue
@@ -326,8 +326,8 @@ def message_parser(message: telegram.telegram_types.Message = None) -> dict:
             telegram.send_styled_message(chat_id=message.chat.id, messages_template={'alias': 'url_error', 'kwargs': {'url': message.text}})
     elif account_name:
         data['account_name'] = account_name
-        log.warning(account_name)
 
+    log.info('[Bot]: validation of the link %s from user %s is completed', message.text, message.chat.id)
     return data
 # END BLOCK ADDITIONAL FUNCTIONS ######################################################################################################
 
