@@ -402,4 +402,4 @@ class Downloader:
             (list) list of posts
         """
         log.info('[Downloader]: Extracting the list of posts for the user %s...', user_id)
-        return self.client.user_medias(user_id=user_id, sleep=random.randint(1, self.configuration['delay-requests']))
+        return self.client.user_medias(user_id=user_id, sleep=random.randint(1, int(self.configuration['delay-requests'])))
