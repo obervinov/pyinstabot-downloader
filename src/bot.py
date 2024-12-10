@@ -427,10 +427,10 @@ def process_account(
         data = message_parser(message)
         exist_account = database.get_account_info(username=data['account_name'])
         if exist_account:
-            log.info('[Bot]: account %s already exist in the database', data['account_name'])
-            internal_user_id = exist_account[1]
+            log.info('[Bot]: account %s found in the database', data['account_name'])
+            internal_user_id = exist_account[2]
         else:
-            log.info('[Bot]: account %s does not exist in the database', data['account_name'])
+            log.info('[Bot]: account %s does not exist in the database, will request data from Instagram', data['account_name'])
             account_info = downloader.get_account_info(username=data['account_name'])
             database.add_account_info(data=account_info)
             internal_user_id = account_info['pk']

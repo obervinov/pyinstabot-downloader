@@ -391,15 +391,15 @@ class Downloader:
         return self.client.user_info_by_username(username=username).dict()
 
     @exceptions_handler
-    def get_user_posts(self, user_id: str = None) -> list | None:
+    def get_user_posts(self, user_id: int = None) -> list | None:
         """
         The method for getting the content of a post from a specified User ID.
 
         Args:
-            :param user_id (str): the internal ID of the user for downloading content.
+            :param user_id (int): the ID of the user for downloading content.
 
         Returns:
             (list) list of posts
         """
-        log.info('[Downloader]: Extracting the list of posts for the user %s...', user_id)
+        log.info('[Downloader]: Extracting the list of posts for the user pk %s...', user_id)
         return self.client.user_medias(user_id=user_id, sleep=random.randint(1, int(self.configuration['delay-requests'])))
