@@ -726,9 +726,9 @@ class DatabaseClient:
 
         columns = ("name", "pk", "full_name", "media_count", "follower_count", "following_count", "biography", "last_updated")
         values = (
-            f"name = '{data.get('username')}', pk = '{data.get('pk')}', full_name = '{data.get('full_name')}', "
+            f"name = '{data.get('username')}', pk = '{data.get('pk')}', full_name = '{str(data.get('full_name'))}', "
             f"media_count = {data.get('media_count')}, follower_count = {data.get('follower_count')}, "
-            f"following_count = {data.get('following_count')}, biography = '{data.get('biography')}', last_updated = CURRENT_TIMESTAMP"
+            f"following_count = {data.get('following_count')}, biography = '{str(data.get('biography'))}', last_updated = CURRENT_TIMESTAMP"
         )
         if exist_account:
             self._update(table_name='accounts', values=values, condition=f"id = '{exist_account[0][0]}'")
