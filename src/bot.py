@@ -400,7 +400,7 @@ def process_posts(
     if user.get('permissions', None) == users.user_status_allow:
         for link in message.text.split('\n'):
             message.text = link
-            process_one_post(message=message, help_message=help_message, mode='list')
+            process_one_post(message=message, mode='list')
         telegram.delete_message(message.chat.id, message.id)
         if help_message is not None:
             telegram.delete_message(message.chat.id, help_message.id)
@@ -436,12 +436,14 @@ def process_account(
             internal_user_id = account_info['pk']
         posts_list = downloader.get_user_posts(user_id=internal_user_id)
         for post in posts_list:
-            # For debug
-            log.warning(post)
-            # For debug
             link = f"https://www.instagram.com/p/{post.code}"
             message.text = link
-            process_one_post(message=message, help_message=help_message, mode='list')
+            process_one_post(message=message, mode='list')
+
+        telegram.delete_message(message.chat.id, message.id)
+        if help_message is not None:
+            telegram.delete_message(message.chat.id, help_message.id)
+
 
 
 def reschedule_queue(
