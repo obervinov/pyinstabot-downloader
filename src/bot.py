@@ -445,7 +445,6 @@ def process_account(
             telegram.delete_message(message.chat.id, help_message.id)
 
 
-
 def reschedule_queue(
     message: telegram.telegram_types.Message = None,
     help_message: telegram.telegram_types.Message = None
