@@ -55,11 +55,12 @@ CREATE TABLE processed (
 CREATE TABLE accounts (
     id serial PRIMARY KEY,
     username VARCHAR (50) UNIQUE NOT NULL,
-    pk VARCHAR (50) NOT NULL,
-    full_name VARCHAR (50) NOT NULL,
+    pk NUMERIC NOT NULL,
+    full_name VARCHAR (255) NOT NULL,
     media_count INTEGER NOT NULL,
     follower_count INTEGER NOT NULL,
     following_count INTEGER NOT NULL,
+    cursor VARCHAR (255),
     last_updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 

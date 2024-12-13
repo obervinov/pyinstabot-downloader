@@ -112,10 +112,10 @@ class Downloader:
                 "Please check the configuration in class argument or the secret with the configuration in the Vault."
             )
 
-        log.info('[Downloader]: Creating a new instance...')
+        log.info('[Downloader]: creating a new instance...')
         self.client = Client()
 
-        log.info('[Downloader]: Setting up the client configuration...')
+        log.info('[Downloader]: setting up the client configuration...')
         self.client.delay_range = [1, int(self.configuration['delay-requests'])]
         self.client.request_timeout = int(self.configuration['request-timeout'])
         self.client.set_proxy(dsn=self.configuration.get('proxy-dsn', None))
@@ -135,7 +135,7 @@ class Downloader:
 
         auth_status = self.login()
         if auth_status == 'logged_in':
-            log.info('[Downloader]: Instance created successfully with account %s', self.configuration['username'])
+            log.info('[Downloader]: instance created successfully with account %s', self.configuration['username'])
         else:
             raise FailedAuthInstagram("Failed to authenticate the Instaloader instance.")
 
@@ -143,7 +143,7 @@ class Downloader:
         """Get login arguments for the Instagram API"""
         if self.configuration['2fa-enabled']:
             totp_code = self.client.totp_generate_code(seed=self.configuration['2fa-seed'])
-            log.info('[Downloader]: Two-factor authentication is enabled. TOTP code: %s', totp_code)
+            log.info('[Downloader]: 2fa is enabled. TOTP code: %s', totp_code)
             return {
                 'username': self.configuration['username'],
                 'password': self.configuration['password'],
@@ -159,11 +159,11 @@ class Downloader:
         self._set_session_settings()
         self.client.login(**login_args)
         self.client.dump_settings(self.configuration['session-file'])
-        log.info('[Downloader]: The new session file was created successfully: %s', self.configuration['session-file'])
+        log.info('[Downloader]: the new session file was created successfully: %s', self.configuration['session-file'])
 
     def _handle_relogin(self, login_args: dict) -> None:
         """Handle re-authentication in the Instagram API"""
-        log.info('[Downloader]: Authentication with the clearing of the session...')
+        log.info('[Downloader]: authentication with the clearing of the session...')
         old_uuids = self.client.get_settings().get("uuids", {})
         self.client.set_settings({})
         self.client.set_uuids(old_uuids)
@@ -171,7 +171,7 @@ class Downloader:
 
     def _load_session(self, login_args: dict) -> None:
         """Load or create a session."""
-        log.info('[Downloader]: Authentication with the existing session...')
+        log.info('[Downloader]: authentication with the existing session...')
         session_file = self.configuration['session-file']
         if os.path.exists(session_file):
             self.client.load_settings(session_file)
@@ -192,18 +192,18 @@ class Downloader:
             - device settings
             - user agent
         """
-        log.info('[Downloader]: Extracting device settings...')
+        log.info('[Downloader]: extracting device settings...')
         device_settings = json.loads(self.configuration['device-settings'])
         if not all(item in device_settings.keys() for item in self.device_settings_list):
-            raise ValueError("Incorrect device settings in the configuration. Please check the configuration in the Vault.")
+            raise ValueError("incorrect device settings in the configuration. Please check the configuration in the Vault.")
 
         # Extract other settings except device settings
-        log.info('[Downloader]: Extracting other settings...')
+        log.info('[Downloader]: extracting other settings...')
         other_settings = {item: None for item in self.general_settings_list}
         for item in other_settings.keys():
             other_settings[item] = self.configuration[item.replace('_', '-')]
 
-        log.debug('[Downloader]: Retrieved settings: %s', {**other_settings, 'device_settings': device_settings})
+        log.debug('[Downloader]: retrieved settings: %s', {**other_settings, 'device_settings': device_settings})
 
         # Apply all session settings
         self.client.set_settings(settings={**other_settings, 'device_settings': device_settings})
@@ -211,7 +211,7 @@ class Downloader:
         # Country in set_settings is not working
         self.client.set_country(country=other_settings['country'])
         self.client.set_user_agent()
-        log.info('[Downloader]: General session settings have been successfully set: %s', self.client.get_settings())
+        log.info('[Downloader]: general session settings have been successfully set: %s', self.client.get_settings())
 
     def _validate_session_settings(self) -> bool:
         """
@@ -220,12 +220,12 @@ class Downloader:
         Returns:
             (bool) True if the session settings are equal to the configuration settings, otherwise False.
         """
-        log.info('[Downloader]: Checking the difference between the session settings and the configuration settings...')
+        log.info('[Downloader]: checking the difference between the session settings and the configuration settings...')
         session_settings = self.client.get_settings()
         for item in self.general_settings_list:
             if str(session_settings[item]) != str(self.configuration[item.replace('_', '-')]):
                 log.info(
-                    '[Downloader]: The session key value are not equal to the expected value: %s != %s. Session will be reset',
+                    '[Downloader]: the session key value are not equal to the expected value: %s != %s. Session will be reset',
                     session_settings[item], self.configuration[item.replace('_', '-')]
                 )
                 return False
@@ -233,11 +233,11 @@ class Downloader:
         for item in self.device_settings_list:
             if str(device_settings[item]) != str(json.loads(self.configuration['device-settings'])[item]):
                 log.info(
-                    '[Downloader]: The session key value are not equal to the expected value: %s != %s. Session will be reset',
+                    '[Downloader]: the session key value are not equal to the expected value: %s != %s. Session will be reset',
                     device_settings[item], json.loads(self.configuration['device-settings'])[item]
                 )
                 return False
-        log.info('[Downloader]: The session settings are equal to the expected settings.')
+        log.info('[Downloader]: the session settings are equal to the expected settings.')
         return True
 
     @staticmethod
@@ -253,22 +253,22 @@ class Downloader:
             try:
                 return method(self, *args, **kwargs)
             except LoginRequired:
-                log.error('[Downloader]: Instagram API login required. Re-authenticate after %s minutes', round(random_shift/60))
+                log.error('[Downloader]: instagram API login required. Re-authenticate after %s minutes', round(random_shift/60))
                 time.sleep(random_shift)
-                log.info('[Downloader]: Re-authenticate after timeout due to login required')
+                log.info('[Downloader]: re-authenticate after timeout due to login required')
                 self.login(method='relogin')
             except ChallengeRequired:
-                log.error('[Downloader]: Instagram API requires challenge in browser. Retry after %s minutes', round(random_shift/60))
+                log.error('[Downloader]: instagram API requires challenge in browser. Retry after %s minutes', round(random_shift/60))
                 time.sleep(random_shift)
-                log.info('[Downloader]: Re-authenticate after timeout due to challenge required')
+                log.info('[Downloader]: re-authenticate after timeout due to challenge required')
                 self.login()
             except PleaseWaitFewMinutes:
-                log.error('[Downloader]: Device or IP address has been restricted. Just wait a %s minutes and retry', round(random_shift/60))
+                log.error('[Downloader]: device or IP address has been restricted. Just wait a %s minutes and retry', round(random_shift/60))
                 time.sleep(random_shift)
-                log.info('[Downloader]: Retry after timeout due to restriction')
+                log.info('[Downloader]: retry after timeout due to restriction')
                 self.login(method='relogin')
             except (ReadTimeoutError, RequestsConnectionError, ClientRequestTimeout):
-                log.error('[Downloader]: Timeout error downloading post content. Retry after 1 minute')
+                log.error('[Downloader]: timeout error downloading post content. Retry after 1 minute')
                 time.sleep(60)
             return method(self, *args, **kwargs)
         return wrapper
@@ -289,7 +289,7 @@ class Downloader:
                 or
             None
         """
-        log.info('[Downloader]: Authentication in the Instagram API with type: %s', method)
+        log.info('[Downloader]: authentication in the Instagram API with type: %s', method)
 
         # Generate login arguments
         login_args = self._get_login_args()
@@ -301,9 +301,9 @@ class Downloader:
             self._load_session(login_args)
 
         # Check the status of the authentication
-        log.info('[Downloader]: Checking the status of the authentication...')
+        log.info('[Downloader]: checking the status of the authentication...')
         self.client.get_timeline_feed()
-        log.info('[Downloader]: Authentication in the Instagram API was successful.')
+        log.info('[Downloader]: authentication in the Instagram API was successful.')
 
         return 'logged_in'
 
@@ -325,10 +325,10 @@ class Downloader:
                 }
         """
         if error_count > 3:
-            log.error('[Downloader]: The number of errors exceeded the limit: %s', error_count)
-            raise FailedDownloadPost("The number of errors exceeded the limit.")
+            log.error('[Downloader]: the number of errors exceeded the limit: %s', error_count)
+            raise FailedDownloadPost("the number of errors exceeded the limit.")
 
-        log.info('[Downloader]: Downloading the contents of the post %s...', shortcode)
+        log.info('[Downloader]: downloading the contents of the post %s...', shortcode)
         try:
             media_pk = self.client.media_pk_from_code(code=shortcode)
             media_info = self.client.media_info(media_pk=media_pk).dict()
@@ -345,11 +345,11 @@ class Downloader:
                 download_method(media_pk=media_pk, folder=path)
                 status = "completed"
             else:
-                log.error('[Downloader]: The media type is not supported for download: %s', media_info)
+                log.error('[Downloader]: the media type is not supported for download: %s', media_info)
                 status = "not_supported"
 
             if os.listdir(path):
-                log.info('[Downloader]: The contents of the post %s have been successfully downloaded', shortcode)
+                log.info('[Downloader]: the contents of the post %s have been successfully downloaded', shortcode)
                 response = {
                     'post': shortcode,
                     'owner': media_info['user']['username'],
@@ -357,7 +357,7 @@ class Downloader:
                     'status': status if status else 'completed'
                 }
             else:
-                log.error('[Downloader]: Temporary directory is empty: %s', path)
+                log.error('[Downloader]: temporary directory is empty: %s', path)
                 response = {
                     'post': shortcode,
                     'owner': media_info['user']['username'],
@@ -366,7 +366,7 @@ class Downloader:
                 }
 
         except (MediaUnavailable, MediaNotFound):
-            log.warning('[Downloader]: Post %s not found, perhaps it was deleted. Message will be marked as processed', shortcode)
+            log.warning('[Downloader]: post %s not found, perhaps it was deleted. Message will be marked as processed', shortcode)
             response = {
                 'post': shortcode,
                 'owner': 'undefined',
@@ -387,19 +387,20 @@ class Downloader:
         Returns:
             (dict) account information
         """
-        log.info('[Downloader]: Extracting information about the account %s...', username)
+        log.info('[Downloader]: extracting information about the account %s...', username)
         return self.client.user_info_by_username(username=username).dict()
 
     @exceptions_handler
-    def get_user_posts(self, user_id: int = None) -> list | None:
+    def get_user_posts(self, user_id: int = None, cursor: str = None) -> list | None:
         """
         The method for getting the content of a post from a specified User ID.
 
         Args:
             :param user_id (int): the ID of the user for downloading content.
+            :param cursor (str): the cursor for pagination.
 
         Returns:
             (list) list of posts
         """
-        log.info('[Downloader]: Extracting the list of posts for the user pk %s...', user_id)
-        return self.client.user_medias_paginated(user_id=user_id)
+        log.info('[Downloader]: extracting the list of posts for the user pk %s...', user_id)
+        return self.client.user_medias_paginated(user_id=user_id, amount=20, end_cursor=cursor)

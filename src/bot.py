@@ -307,7 +307,7 @@ def message_parser(message: telegram.telegram_types.Message = None) -> dict:
         post_id = message.text.split('/')[5]
         post_owner = message.text.split('/')[3]
     elif re.match(r'^https://www\.instagram\.com/.*', message.text):
-        account_name = message.text.split('/')[3]
+        account_name = message.text.split('/')[3].split('?')[0]
     else:
         log.error('[Bot]: post link %s from user %s is incorrect', message.text, message.chat.id)
         telegram.send_styled_message(chat_id=message.chat.id, messages_template={'alias': 'url_error'})
@@ -435,10 +435,13 @@ def process_account(
             database.add_account_info(data=account_info)
             internal_user_id = account_info['pk']
         posts_list = downloader.get_user_posts(user_id=internal_user_id)
-        for post in posts_list:
+        for post in posts_list[0]:
+            # debug #
+            log.warning(post)
             link = f"https://www.instagram.com/p/{post.code}"
             message.text = link
             process_one_post(message=message, mode='list')
+        database.add_account_info(data={**data, 'cursor': posts_list[1]})
 
         telegram.delete_message(message.chat.id, message.id)
         if help_message is not None:

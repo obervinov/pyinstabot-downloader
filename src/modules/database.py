@@ -714,18 +714,19 @@ class DatabaseClient:
 
         Parameters:
             username (str): The username of the account.
-            pk (str): The primary key of the account.
+            pk (int): The primary key of the account.
             full_name (str): The full name of the account.
             media_count (int): The number of media items in the account.
             follower_count (int): The number of followers of the account.
             following_count (int): The number of accounts the account is following.
+            cursor (str): The cursor for the account.
         """
         exist_account = self._select(table_name='accounts', columns=("id",), condition=f"username = '{data.get('username')}'")
 
-        columns = ("username", "pk", "full_name", "media_count", "follower_count", "following_count")
+        columns = ("username", "pk", "full_name", "media_count", "follower_count", "following_count", "cursor")
         values = (
-            data.get('username'), data.get('pk'), data.get('full_name'),
-            data.get('media_count'), data.get('follower_count'), data.get('following_count')
+            data.get('username'), data.get('pk'), data.get('full_name'), data.get('media_count'), data.get('follower_count'),
+            data.get('following_count'), data.get('cursor')
         )
         if exist_account:
             self._update(
