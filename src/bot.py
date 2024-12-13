@@ -423,25 +423,27 @@ def process_account(
     }
     user = users.user_access_check(**requestor)
     if user.get('permissions', None) == users.user_status_allow:
-        internal_user_id = None
         data = message_parser(message)
-        exist_account = database.get_account_info(username=data['account_name'])
-        if exist_account:
-            log.info('[Bot]: account %s found in the database', data['account_name'])
-            internal_user_id = exist_account[2]
-        else:
-            log.info('[Bot]: account %s does not exist in the database, will request data from Instagram', data['account_name'])
+        account_id, cursor = database.get_account_info(username=data['account_name'])
+        if not account_id:
+            log.info('[Bot]: account %s does not exist in the database, will request data from API', data['account_name'])
             account_info = downloader.get_account_info(username=data['account_name'])
             database.add_account_info(data=account_info)
-            internal_user_id = account_info['pk']
-        posts_list = downloader.get_user_posts(user_id=internal_user_id)
-        for post in posts_list[0]:
-            # debug #
-            log.warning(post)
-            link = f"https://www.instagram.com/p/{post.code}"
-            message.text = link
-            process_one_post(message=message, mode='list')
-        database.add_account_info(data={**data, 'cursor': posts_list[1]})
+            log.info('[Bot]: account %s added to the database', data['account_name'])
+            account_id = account_info['pk']
+        while True:
+            posts_list, cursor = downloader.get_account_posts(user_id=account_id)
+            log.info('[Bot]: received %s posts from account %s', len(posts_list), data['account_name'])
+            for post in posts_list:
+                # debug #
+                log.warning(post)
+                # debug #
+                message.text = f"https://www.instagram.com/p/{post.code}"
+                process_one_post(message=message, mode='list')
+            database.add_account_info(data={**data, 'cursor': cursor})
+            if not cursor:
+                log.info('[Bot]: all posts from account %s have been processed', data['account_name'])
+                break
 
         telegram.delete_message(message.chat.id, message.id)
         if help_message is not None:

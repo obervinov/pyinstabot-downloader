@@ -746,6 +746,8 @@ class DatabaseClient:
 
         Returns:
             tuple: A tuple containing the account information from the accounts table.
+                pk (int): The primary key of the account.
+                cursor (str): The cursor for the account.
         """
-        account = self._select(table_name='accounts', columns=("*",), condition=f"username = '{username}'", limit=1)
+        account = self._select(table_name='accounts', columns=("pk", "cursor"), condition=f"username = '{username}'", limit=1)
         return account[0] if account else None

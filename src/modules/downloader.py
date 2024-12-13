@@ -391,7 +391,7 @@ class Downloader:
         return self.client.user_info_by_username(username=username).dict()
 
     @exceptions_handler
-    def get_user_posts(self, user_id: int = None, cursor: str = None) -> list | None:
+    def get_account_posts(self, user_id: int = None, cursor: str = None) -> list | None:
         """
         The method for getting the content of a post from a specified User ID.
 
