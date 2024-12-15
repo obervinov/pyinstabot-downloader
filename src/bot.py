@@ -332,8 +332,8 @@ def process_posts(
 
         for link in message.text.split('\n'):
             # Verify that the link is a post link
-            if re.match(r'^https://www\.instagram\.com(/.*/)?(p|reel)/.*', message.text):
-                post_id = link.split('/')[5] if len(link.split('/')) > 5 else link.split('/')[4]
+            if re.match(r'^https://www\.instagram\.com/(p|reel)/.*', message.text):
+                post_id = link.split('/')[4]
                 # Verify that the post id is correct
                 if len(post_id) == 11 and re.match(r'^[a-zA-Z0-9_-]+$', post_id):
                     if database.check_message_uniqueness(post_id=post_id, user_id=message.chat.id):
