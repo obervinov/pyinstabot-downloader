@@ -723,19 +723,14 @@ class DatabaseClient:
         """
         exist_account = self._select(table_name='accounts', columns=("id",), condition=f"username = '{data.get('username')}'")
 
-        columns = ("username", "pk", "full_name", "media_count", "follower_count", "following_count", "cursor")
-        values = (
-            data.get('username'), data.get('pk'), data.get('full_name'), data.get('media_count'), data.get('follower_count'),
-            data.get('following_count'), data.get('cursor')
-        )
         if exist_account:
             self._update(
                 table_name='accounts',
-                values={f"{columns[i]} = '{values[i]}'" for i in range(len(columns))},
+                values={f"{key} = '{value}'" for key, value in data.items()},
                 condition=f"id = '{exist_account[0][0]}'"
             )
         else:
-            self._insert(table_name='accounts', columns=columns, values=values)
+            self._insert(table_name='accounts', columns=data.keys(), values=data.values())
 
     def get_account_info(self, username: str = None) -> tuple:
         """
