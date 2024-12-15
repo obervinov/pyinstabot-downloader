@@ -449,7 +449,6 @@ def fixture_postgres_queue_test_data(postgres_instance):
         {
             'user_id': 'test_user_1',
             'post_id': 'test_post_1',
-            'post_url': 'https://example.com/p/test_post_1',
             'post_owner': 'test_owner_1',
             'link_type': 'post',
             'message_id': 'test_message_1',
@@ -462,7 +461,6 @@ def fixture_postgres_queue_test_data(postgres_instance):
         {
             'user_id': 'test_user_2',
             'post_id': 'test_post_2',
-            'post_url': 'https://example.com/p/test_post_2',
             'post_owner': 'test_owner_2',
             'link_type': 'post',
             'message_id': 'test_message_2',
@@ -475,7 +473,6 @@ def fixture_postgres_queue_test_data(postgres_instance):
         {
             'user_id': 'test_user_3',
             'post_id': 'test_post_3',
-            'post_url': 'https://example.com/p/test_post_3',
             'post_owner': 'test_owner_3',
             'link_type': 'post',
             'message_id': 'test_message_3',
@@ -490,10 +487,10 @@ def fixture_postgres_queue_test_data(postgres_instance):
     for message in data:
         cursor.execute(
             "INSERT INTO queue "
-            "(user_id, post_id, post_url, post_owner, link_type, message_id, chat_id, scheduled_time, download_status, upload_status, state) "
+            "(user_id, post_id, post_owner, link_type, message_id, chat_id, scheduled_time, download_status, upload_status, state) "
             "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
             (
-                message['user_id'], message['post_id'], message['post_url'], message['post_owner'], message['link_type'],
+                message['user_id'], message['post_id'], message['post_owner'], message['link_type'],
                 message['message_id'], message['chat_id'], message['scheduled_time'], message['download_status'],
                 message['upload_status'], message['state']
             )
@@ -510,7 +507,6 @@ def fixture_postgres_processed_test_data(postgres_instance):
         {
             'user_id': 'test_user_4',
             'post_id': 'test_post_4',
-            'post_url': 'https://example.com/p/test_post_4',
             'post_owner': 'test_owner_4',
             'link_type': 'post',
             'message_id': 'test_message_4',
@@ -522,7 +518,6 @@ def fixture_postgres_processed_test_data(postgres_instance):
         {
             'user_id': 'test_user_5',
             'post_id': 'test_post_5',
-            'post_url': 'https://example.com/p/test_post_5',
             'post_owner': 'test_owner_5',
             'link_type': 'post',
             'message_id': 'test_message_5',
@@ -534,7 +529,6 @@ def fixture_postgres_processed_test_data(postgres_instance):
         {
             'user_id': 'test_user_6',
             'post_id': 'test_post_6',
-            'post_url': 'https://example.com/p/test_post_6',
             'post_owner': 'test_owner_6',
             'link_type': 'post',
             'message_id': 'test_message_6',
@@ -547,10 +541,10 @@ def fixture_postgres_processed_test_data(postgres_instance):
     conn, cursor = postgres_instance
     for message in data:
         cursor.execute(
-            "INSERT INTO processed (user_id, post_id, post_url, post_owner, link_type, message_id, chat_id, download_status, upload_status, state) "
+            "INSERT INTO processed (user_id, post_id, post_owner, link_type, message_id, chat_id, download_status, upload_status, state) "
             "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
             (
-                message['user_id'], message['post_id'], message['post_url'], message['post_owner'], message['link_type'],
+                message['user_id'], message['post_id'], message['post_owner'], message['link_type'],
                 message['message_id'], message['chat_id'], message['download_status'], message['upload_status'],
                 message['state']
             )
