@@ -487,12 +487,12 @@ def fixture_postgres_queue_test_data(postgres_instance):
     for message in data:
         cursor.execute(
             "INSERT INTO queue "
-            "(user_id, post_id, post_owner, link_type, message_id, chat_id, scheduled_time, download_status, upload_status, state) "
+            "(user_id, post_id, post_url, post_owner, link_type, message_id, chat_id, scheduled_time, download_status, upload_status, state) "
             "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
             (
-                message['user_id'], message['post_id'], message['post_owner'], message['link_type'],
-                message['message_id'], message['chat_id'], message['scheduled_time'], message['download_status'],
-                message['upload_status'], message['state']
+                message['user_id'], message['post_id'], f"https://www.instagram.com/p/{message['post_id']}",
+                message['post_owner'], message['link_type'], message['message_id'], message['chat_id'],
+                message['scheduled_time'], message['download_status'], message['upload_status'], message['state']
             )
         )
         conn.commit()
@@ -541,11 +541,11 @@ def fixture_postgres_processed_test_data(postgres_instance):
     conn, cursor = postgres_instance
     for message in data:
         cursor.execute(
-            "INSERT INTO processed (user_id, post_id, post_owner, link_type, message_id, chat_id, download_status, upload_status, state) "
+            "INSERT INTO processed (user_id, post_id, post_url, post_owner, link_type, message_id, chat_id, download_status, upload_status, state) "
             "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
             (
-                message['user_id'], message['post_id'], message['post_owner'], message['link_type'],
-                message['message_id'], message['chat_id'], message['download_status'], message['upload_status'],
+                message['user_id'], message['post_id'], f"https://www.instagram.com/p/{message['post_id']}", message['post_owner'],
+                message['link_type'], message['message_id'], message['chat_id'], message['download_status'], message['upload_status'],
                 message['state']
             )
         )
