@@ -286,101 +286,32 @@ def get_user_messages(user_id: str = None) -> dict:
     return {'queue_list': queue_string, 'processed_list': processed_string, 'queue_count': len(queue), 'processed_count': len(processed)}
 
 
-def message_parser(message: telegram.telegram_types.Message = None) -> dict:
+def post_code_handler(data: dict = None) -> None:
     """
-    Parses the message containing the Instagram post link and returns the data.
+    Processes the post code from the user's message.
 
     Args:
-        message (telegram.telegram_types.Message): The message object containing the post link.
-
-    Returns:
-        dict: The data containing the user id, post url, post id, post owner, link type, message id, and chat id.
+        data (dict): The dictionary containing the post code.
+            user_id (str): The telegram user id.
+            post_id (str): The post id (shortcode).
+            post_owner (str): The post owner. Defaults to 'undefined'.
+            link_type (str): The type of link. Defaults to 'post'.
+            message_id (str): The message id in the chat.
+            chat_id (str): The chat id in the chat.
     """
-    data = {}
-    post_id = None
-    post_owner = None
-    account_name = None
-    if re.match(r'^https://www\.instagram\.com/(p|reel)/.*', message.text):
-        post_id = message.text.split('/')[4]
-        post_owner = 'undefined'
-    elif re.match(r'^https://www\.instagram\.com/.*/(p|reel)/.*', message.text):
-        post_id = message.text.split('/')[5]
-        post_owner = message.text.split('/')[3]
-    elif re.match(r'^https://www\.instagram\.com/.*', message.text):
-        account_name = message.text.split('/')[3].split('?')[0]
-    else:
-        log.error('[Bot]: post link %s from user %s is incorrect', message.text, message.chat.id)
-        telegram.send_styled_message(chat_id=message.chat.id, messages_template={'alias': 'url_error'})
-
-    if post_id:
-        if len(post_id) == 11 and re.match(r'^[теa-zA-Z0-9_-]+$', post_id):
-            data['user_id'] = message.chat.id
-            data['post_url'] = message.text
-            data['post_id'] = post_id
-            data['post_owner'] = post_owner
-            data['link_type'] = 'post'
-            data['message_id'] = message.id
-            data['chat_id'] = message.chat.id
-        else:
-            log.error('[Bot]: post id %s from user %s is wrong', post_id, message.chat.id)
-            telegram.send_styled_message(chat_id=message.chat.id, messages_template={'alias': 'url_error', 'kwargs': {'url': message.text}})
-    elif account_name:
-        data['account_name'] = account_name
-
-    log.info('[Bot]: validation of the link %s from user %s is completed', message.text, message.chat.id)
-    return data
+    requestor = {
+        'user_id': data['user_id'], 'role_id': ROLES_MAP['Posts'],
+        'chat_id': data['chat_id'], 'message_id': data['message_id']
+    }
+    user = users_rl.user_access_check(**requestor)
+    if user.get('permissions', None) == users_rl.user_status_allow:
+        data['scheduled_time'] = user.get('rate_limits', datetime.now())
+        status = database.add_message_to_queue(data)
+        log.info('[Bot]: %s for user_id %s', status, data['user_id'])
 # END BLOCK ADDITIONAL FUNCTIONS ######################################################################################################
 
 
 # START BLOCK PROCESSING FUNCTIONS ####################################################################################################
-def process_one_post(
-    message: telegram.telegram_types.Message = None,
-    help_message: telegram.telegram_types.Message = None,
-    mode: str = 'single'
-) -> None:
-    """
-    Processes an Instagram post link sent by a user and adds it to the queue for download.
-
-    Notice: This method will merge with the `process_posts` method in v3.3.0.
-            After combining the two buttons into a `Posts` button in version 3.2.0, it makes no sense to split one functionality into two methods.
-
-    Args:
-        message (telegram.telegram_types.Message): The Telegram message object containing the post link.
-        help_message (telegram.telegram_types.Message): The help message to be deleted.
-        mode (str, optional): The mode of processing. Defaults to 'single'.
-    """
-    requestor = {
-        'user_id': message.chat.id, 'role_id': ROLES_MAP['Posts'],
-        'chat_id': message.chat.id, 'message_id': message.message_id
-    }
-    user = users_rl.user_access_check(**requestor)
-    if user.get('permissions', None) == users_rl.user_status_allow:
-        data = message_parser(message)
-        if not data:
-            log.error('[Bot]: link %s cannot be processed', message.text)
-        else:
-            rate_limit = user.get('rate_limits', None)
-
-            # Define time to process the message in queue
-            if rate_limit:
-                data['scheduled_time'] = rate_limit
-            else:
-                data['scheduled_time'] = datetime.now()
-
-            # Check if the message is unique
-            if database.check_message_uniqueness(data['post_id'], data['user_id']):
-                status = database.add_message_to_queue(data)
-                log.info('[Bot]: %s from user %s', status, message.chat.id)
-            else:
-                log.info('[Bot]: post %s from user %s already exist in the database', data['post_id'], message.chat.id)
-
-        # If it is not a list of posts - delete users message
-        if mode == 'single':
-            telegram.delete_message(message.chat.id, message.id)
-            if help_message is not None:
-                telegram.delete_message(message.chat.id, help_message.id)
-
-
 def process_posts(
     message: telegram.telegram_types.Message = None,
     help_message: telegram.telegram_types.Message = None
@@ -398,12 +329,26 @@ def process_posts(
     }
     user = users.user_access_check(**requestor)
     if user.get('permissions', None) == users.user_status_allow:
+
         for link in message.text.split('\n'):
-            message.text = link
-            process_one_post(message=message, mode='list')
-        telegram.delete_message(message.chat.id, message.id)
-        if help_message is not None:
-            telegram.delete_message(message.chat.id, help_message.id)
+            # Verify that the link is a post link
+            if re.match(r'^https://www\.instagram\.com(/.*/)?(p|reel)/.*', message.text):
+                post_id = link.split('/')[5] if len(link.split('/')) > 5 else link.split('/')[4]
+                # Verify that the post id is correct
+                if len(post_id) == 11 and re.match(r'^[a-zA-Z0-9_-]+$', post_id):
+                    if database.check_message_uniqueness(post_id=post_id, user_id=message.chat.id):
+                        post_code_handler({
+                            'user_id': message.chat.id, 'post_id': post_id, 'post_owner': 'undefined',
+                            'link_type': 'post', 'message_id': message.id, 'chat_id': message.chat.id
+                        })
+                        telegram.delete_message(message.chat.id, message.id)
+                        telegram.delete_message(message.chat.id, help_message.id)
+                else:
+                    log.error('[Bot]: post id %s from user %s is wrong', post_id, message.chat.id)
+                    telegram.send_styled_message(chat_id=message.chat.id, messages_template={'alias': 'url_error', 'kwargs': {'url': message.text}})
+            else:
+                log.error('[Bot]: post link %s from user %s is incorrect', message.text, message.chat.id)
+                telegram.send_styled_message(chat_id=message.chat.id, messages_template={'alias': 'url_error'})
 
 
 def process_account(
@@ -423,31 +368,34 @@ def process_account(
     }
     user = users.user_access_check(**requestor)
     if user.get('permissions', None) == users.user_status_allow:
-        data = message_parser(message)
-        account_id, cursor = database.get_account_info(username=data['account_name'])
-        if not account_id:
-            log.info('[Bot]: account %s does not exist in the database, will request data from API', data['account_name'])
-            account_info = downloader.get_account_info(username=data['account_name'])
-            database.add_account_info(data=account_info)
-            log.info('[Bot]: account %s added to the database', data['account_name'])
-            account_id = account_info['pk']
-        while True:
-            posts_list, cursor = downloader.get_account_posts(user_id=account_id)
-            log.info('[Bot]: received %s posts from account %s', len(posts_list), data['account_name'])
-            for post in posts_list:
-                # debug #
-                log.warning(post)
-                # debug #
-                message.text = f"https://www.instagram.com/p/{post.code}"
-                process_one_post(message=message, mode='list')
-            database.add_account_info(data={**data, 'cursor': cursor})
-            if not cursor:
-                log.info('[Bot]: all posts from account %s have been processed', data['account_name'])
-                break
+        if re.match(r'^https://www\.instagram\.com/.*', message.text):
+            account_name = message.text.split('/')[3].split('?')[0]
+            account_id, cursor = database.get_account_info(username=account_name)
+            if not account_id:
+                log.info('[Bot]: account %s does not exist in the database, will request data from API', account_name)
+                account_info = downloader.get_account_info(username=account_name)
+                database.add_account_info(data=account_info)
+                account_id = account_info['pk']
 
-        telegram.delete_message(message.chat.id, message.id)
-        if help_message is not None:
+            while True:
+                posts_list, cursor = downloader.get_account_posts(user_id=account_id, cursor=cursor)
+                database.add_account_info(data={'username': account_name, 'cursor': cursor})
+                log.info('[Bot]: received %s posts from account %s', len(posts_list), account_name)
+                for post in posts_list:
+                    if database.check_message_uniqueness(post_id=post.code, user_id=message.chat.id):
+                        post_code_handler({
+                            'user_id': message.chat.id, 'post_id': post.code, 'post_owner': account_name,
+                            'link_type': 'account', 'message_id': message.id, 'chat_id': message.chat.id
+                        })
+                if not cursor:
+                    log.info('[Bot]: all posts from account %s have been processed', account_name)
+                    break
+
+            telegram.delete_message(message.chat.id, message.id)
             telegram.delete_message(message.chat.id, help_message.id)
+        else:
+            log.error('[Bot]: account link %s from user %s is incorrect', message.text, message.chat.id)
+            telegram.send_styled_message(chat_id=message.chat.id, messages_template={'alias': 'url_error'})
 
 
 def reschedule_queue(
