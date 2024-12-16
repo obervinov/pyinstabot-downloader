@@ -726,7 +726,7 @@ class DatabaseClient:
         if exist_account:
             self._update(
                 table_name='accounts',
-                values={f"{key} = '{value}'" for key, value in data.items()},
+                values=", ".join(f"{key} = '{value}'" for key, value in data.items()),
                 condition=f"id = '{exist_account[0][0]}'"
             )
         else:
