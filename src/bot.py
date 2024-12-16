@@ -391,7 +391,7 @@ def process_account(
                         post_code_handler({
                             'user_id': message.chat.id, 'post_id': post.code, 'post_owner': account_name, 'link_type': 'account',
                             'message_id': message.id, 'chat_id': message.chat.id,
-                            'post_url': f"https://www.instagram.com/{downloader.media_type_links[post.media_type]}/p/{post.code}"
+                            'post_url': f"https://www.instagram.com/{downloader.media_type_links[post.media_type]}/{post.code}"
                         })
                 if not cursor:
                     log.info('[Bot]: all posts from account %s have been processed', account_name)
