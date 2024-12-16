@@ -393,7 +393,7 @@ def process_account(
                             'post_url': f"https://www.instagram.com/{downloader.media_type_links[post.media_type]}/{post.code}"
                         })
                 if not cursor:
-                    log.info('[Bot]: all posts from account %s have been processed', account_name)
+                    log.info('[Bot]: full posts list from account %s retrieved', account_name)
                     telegram.delete_message(message.chat.id, message.id)
                     telegram.delete_message(message.chat.id, help_message.id)
                     break
