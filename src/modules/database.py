@@ -710,7 +710,7 @@ class DatabaseClient:
         Add account information to the accounts table in the database.
 
         Args:
-            data (dict): A dictionary containing the account details.
+            data (dict): A dictionary containing the account details. Keep only the necessary keys.
 
         Parameters:
             username (str): The username of the account.
@@ -721,16 +721,18 @@ class DatabaseClient:
             following_count (int): The number of accounts the account is following.
             cursor (str): The cursor for the account.
         """
+        keys_to_keep = ['username', 'pk', 'full_name', 'media_count', 'follower_count', 'following_count']
+        filtered_dict = {key: data[key] for key in keys_to_keep if key in data}
         exist_account = self._select(table_name='accounts', columns=("id",), condition=f"username = '{data.get('username')}'")
 
         if exist_account:
             self._update(
                 table_name='accounts',
-                values=", ".join(f"{key} = '{value}'" for key, value in data.items()),
+                values=", ".join(f"{key} = '{value}'" for key, value in filtered_dict.items()),
                 condition=f"id = '{exist_account[0][0]}'"
             )
         else:
-            self._insert(table_name='accounts', columns=data.keys(), values=data.values())
+            self._insert(table_name='accounts', columns=tuple(filtered_dict.keys()), values=tuple(filtered_dict.values()))
 
     def get_account_info(self, username: str = None) -> tuple:
         """
