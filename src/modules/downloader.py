@@ -130,10 +130,7 @@ class Downloader:
             (1, 'any'): self.client.photo_download, (2, 'feed'): self.client.video_download, (2, 'clips'): self.client.clip_download,
             (2, 'igtv'): self.client.igtv_download, (8, 'any'): self.client.album_download
         }
-        self.media_type_links = {
-            (1, 'any'): 'p', (2, 'feed'): 'p', (8, 'any'): 'p',
-            (2, 'clips'): 'reel', (2, 'igtv'): 'reel'
-        }
+        self.media_type_links = {1: 'p', 8: 'p', 'reel': [2]}
 
         auth_status = self.login()
         if auth_status == 'logged_in':
