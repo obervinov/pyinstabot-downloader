@@ -330,6 +330,7 @@ def process_posts(
     user = users.user_access_check(**requestor)
     if user.get('permissions', None) == users.user_status_allow:
 
+        cleanup_messages = True
         for link in message.text.split('\n'):
             # Verify that the link is a post link
             if re.match(r'^https://www\.instagram\.com/(p|reel)/.*', message.text):
@@ -341,15 +342,18 @@ def process_posts(
                             'user_id': message.chat.id, 'post_id': post_id, 'post_owner': 'undefined', 'link_type': 'post',
                             'message_id': message.id, 'chat_id': message.chat.id, 'post_url': link.split('?')[0]
                         })
-                        telegram.delete_message(message.chat.id, message.id)
-                        telegram.delete_message(message.chat.id, help_message.id)
                 else:
+                    cleanup_messages = False
                     log.error('[Bot]: post id %s from user %s is wrong', post_id, message.chat.id)
                     telegram.send_styled_message(chat_id=message.chat.id, messages_template={'alias': 'url_error', 'kwargs': {'url': message.text}})
             else:
+                cleanup_messages = False
                 log.error('[Bot]: post link %s from user %s is incorrect', message.text, message.chat.id)
                 telegram.send_styled_message(chat_id=message.chat.id, messages_template={'alias': 'url_error'})
 
+        if cleanup_messages:
+            telegram.delete_message(message.chat.id, message.id)
+            telegram.delete_message(message.chat.id, help_message.id)
 
 def process_account(
     message: telegram.telegram_types.Message = None,
