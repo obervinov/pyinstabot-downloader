@@ -355,6 +355,7 @@ def process_posts(
             telegram.delete_message(message.chat.id, message.id)
             telegram.delete_message(message.chat.id, help_message.id)
 
+
 def process_account(
     message: telegram.telegram_types.Message = None,
     help_message: telegram.telegram_types.Message = None
