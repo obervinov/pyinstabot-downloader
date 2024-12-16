@@ -305,7 +305,7 @@ def post_code_handler(data: dict = None) -> None:
     }
     user = users_rl.user_access_check(**requestor)
     if user.get('permissions', None) == users_rl.user_status_allow:
-        data['scheduled_time'] = user.get('rate_limits', datetime.now())
+        data['scheduled_time'] = user.get('rate_limits') or datetime.now()
         status = database.add_message_to_queue(data)
         log.info('[Bot]: %s for user_id %s', status, data['user_id'])
 # END BLOCK ADDITIONAL FUNCTIONS ######################################################################################################
