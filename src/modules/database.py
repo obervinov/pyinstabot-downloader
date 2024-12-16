@@ -745,4 +745,4 @@ class DatabaseClient:
                 cursor (str): The cursor for the account.
         """
         account = self._select(table_name='accounts', columns=("pk", "cursor"), condition=f"username = '{username}'", limit=1)
-        return account[0] if account else None
+        return account if account else (None, None)
