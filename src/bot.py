@@ -384,9 +384,6 @@ def process_account(
 
             while True:
                 posts_list, cursor = downloader.get_account_posts(user_id=account_id, cursor=cursor)
-                # Save the last value of the cursor to the database
-                if cursor:
-                    database.add_account_info({'username': account_name, 'cursor': cursor})
                 log.info('[Bot]: received %s posts from account %s', len(posts_list), account_name)
                 for post in posts_list:
                     if database.check_message_uniqueness(post_id=post.code, user_id=message.chat.id):
@@ -397,10 +394,11 @@ def process_account(
                         })
                 if not cursor:
                     log.info('[Bot]: all posts from account %s have been processed', account_name)
+                    telegram.delete_message(message.chat.id, message.id)
+                    telegram.delete_message(message.chat.id, help_message.id)
                     break
+                database.add_account_info({'username': account_name, 'cursor': cursor})
 
-            telegram.delete_message(message.chat.id, message.id)
-            telegram.delete_message(message.chat.id, help_message.id)
         else:
             log.error('[Bot]: account link %s from user %s is incorrect', message.text, message.chat.id)
             telegram.send_styled_message(chat_id=message.chat.id, messages_template={'alias': 'url_error'})
