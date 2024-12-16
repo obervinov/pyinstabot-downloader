@@ -98,7 +98,7 @@ def test_messages_queue(database_class):
     data = {
         'user_id': 'test_case_6',
         'post_id': 'test_case_6',
-        'post_url': 'https://example.com/p/test_case_6',
+        'post_url': 'https://www.instagram.com/p/test_case_6',
         'post_owner': 'test_case_6',
         'link_type': 'post',
         'message_id': 'test_case_6',

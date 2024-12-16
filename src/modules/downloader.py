@@ -28,6 +28,7 @@ class Downloader:
         :attribute download_methods (dict): dictionary with download methods for instagram api client.
         :attribute general_settings_list (list): list of general session settings for the instagram api.
         :attribute device_settings_list (list): list of device settings for the instagram api.
+        :attribute media_type_links (dict): dictionary with media type links for the instagram api client.
 
     Methods:
         :method _get_login_args: get login arguments for the instagram api.
@@ -126,11 +127,12 @@ class Downloader:
             'app_version', 'version_code', 'manufacturer', 'model', 'device', 'cpu', 'dpi', 'resolution', 'android_release', 'android_version'
         ]
         self.download_methods = {
-            (1, 'any'): self.client.photo_download,
-            (2, 'feed'): self.client.video_download,
-            (2, 'clips'): self.client.clip_download,
-            (2, 'igtv'): self.client.igtv_download,
-            (8, 'any'): self.client.album_download
+            (1, 'any'): self.client.photo_download, (2, 'feed'): self.client.video_download, (2, 'clips'): self.client.clip_download,
+            (2, 'igtv'): self.client.igtv_download, (8, 'any'): self.client.album_download
+        }
+        self.media_type_links = {
+            (1, 'any'): 'p', (2, 'feed'): 'p', (8, 'any'): 'p',
+            (2, 'clips'): 'reel', (2, 'igtv'): 'reel'
         }
 
         auth_status = self.login()

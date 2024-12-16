@@ -375,6 +375,7 @@ class DatabaseClient:
         Parameters:
             user_id (str): The user ID of the message sender.
             post_id (str): The ID of the post the message is related to.
+            post_url (str): The URL of the post the message is related to.
             post_owner (str): The username of the post owner.
             link_type (str): The type of link in the message.
             message_id (str): The ID of the message.
@@ -390,6 +391,7 @@ class DatabaseClient:
             >>> data = {
             ...     'user_id': '12345',
             ...     'post_id': '67890',
+            ...     'post_url': 'https://www.example.com/p/67890/',
             ...     'post_owner': 'johndoe',
             ...     'link_type': 'profile',
             ...     'message_id': 'abcde',
@@ -408,9 +410,9 @@ class DatabaseClient:
                 "message_id", "chat_id", "scheduled_time", "download_status", "upload_status"
             ),
             values=(
-                data.get('user_id', None), data.get('post_id', None), f"https://www.instagram.com/p/{data.get('post_id', None)}",
-                data.get('post_owner', None), data.get('link_type', None), data.get('message_id', None), data.get('chat_id', None),
-                data.get('scheduled_time', None), data.get('download_status', 'not started'), data.get('upload_status', 'not started')
+                data.get('user_id', None), data.get('post_id', None), data.get('post_url', None), data.get('post_owner', None),
+                data.get('link_type', None), data.get('message_id', None), data.get('chat_id', None), data.get('scheduled_time', None),
+                data.get('download_status', 'not started'), data.get('upload_status', 'not started')
             )
         )
         return f"{data.get('message_id', None)}: added to queue"

@@ -338,8 +338,8 @@ def process_posts(
                 if len(post_id) == 11 and re.match(r'^[a-zA-Z0-9_-]+$', post_id):
                     if database.check_message_uniqueness(post_id=post_id, user_id=message.chat.id):
                         post_code_handler({
-                            'user_id': message.chat.id, 'post_id': post_id, 'post_owner': 'undefined',
-                            'link_type': 'post', 'message_id': message.id, 'chat_id': message.chat.id
+                            'user_id': message.chat.id, 'post_id': post_id, 'post_owner': 'undefined', 'link_type': 'post',
+                            'message_id': message.id, 'chat_id': message.chat.id, 'post_url': link.split('?')[0]
                         })
                         telegram.delete_message(message.chat.id, message.id)
                         telegram.delete_message(message.chat.id, help_message.id)
@@ -384,8 +384,9 @@ def process_account(
                 for post in posts_list:
                     if database.check_message_uniqueness(post_id=post.code, user_id=message.chat.id):
                         post_code_handler({
-                            'user_id': message.chat.id, 'post_id': post.code, 'post_owner': account_name,
-                            'link_type': 'account', 'message_id': message.id, 'chat_id': message.chat.id
+                            'user_id': message.chat.id, 'post_id': post.code, 'post_owner': account_name, 'link_type': 'account',
+                            'message_id': message.id, 'chat_id': message.chat.id,
+                            'post_url': f"https://www.instagram.com/{downloader.media_type_links[post.media_type]}/p/{post.code}"
                         })
                 if not cursor:
                     log.info('[Bot]: all posts from account %s have been processed', account_name)

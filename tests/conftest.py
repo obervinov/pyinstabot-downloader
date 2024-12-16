@@ -490,7 +490,7 @@ def fixture_postgres_queue_test_data(postgres_instance):
             "(user_id, post_id, post_url, post_owner, link_type, message_id, chat_id, scheduled_time, download_status, upload_status, state) "
             "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
             (
-                message['user_id'], message['post_id'], f"https://example.com/p/{message['post_id']}",
+                message['user_id'], message['post_id'], f"https://www.instagram.com/p/{message['post_id']}",
                 message['post_owner'], message['link_type'], message['message_id'], message['chat_id'],
                 message['scheduled_time'], message['download_status'], message['upload_status'], message['state']
             )
@@ -544,7 +544,7 @@ def fixture_postgres_processed_test_data(postgres_instance):
             "INSERT INTO processed (user_id, post_id, post_url, post_owner, link_type, message_id, chat_id, download_status, upload_status, state) "
             "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
             (
-                message['user_id'], message['post_id'], f"https://example.com/p/{message['post_id']}", message['post_owner'],
+                message['user_id'], message['post_id'], f"https://www.instagram.com/p/{message['post_id']}", message['post_owner'],
                 message['link_type'], message['message_id'], message['chat_id'], message['download_status'], message['upload_status'],
                 message['state']
             )
