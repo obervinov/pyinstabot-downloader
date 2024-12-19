@@ -24,13 +24,13 @@ files = [
 
 [[package]]
 name = "certifi"
-version = "2024.8.30"
+version = "2024.12.14"
 description = "Python package for providing Mozilla's CA Bundle."
 optional = false
 python-versions = ">=3.6"
 files = [
-    {file = "certifi-2024.8.30-py3-none-any.whl", hash = "sha256:922820b53db7a7257ffbda3f597266d435245903d80737e34f8a45ff3e3230d8"},
-    {file = "certifi-2024.8.30.tar.gz", hash = "sha256:bec941d2aa8195e248a60b31ff9f0558284cf01a52591ceda73ea9afffd69fd9"},
+    {file = "certifi-2024.12.14-py3-none-any.whl", hash = "sha256:1275f7a45be9464efc1173084eaa30f866fe2e47d389406136d332ed4967ec56"},
+    {file = "certifi-2024.12.14.tar.gz", hash = "sha256:b650d30f370c2b724812bee08008be0c4163b163ddaec3f2546c1caf65f191db"},
 ]
 
 [[package]]
@@ -1097,7 +1097,7 @@ zstd = ["zstandard (>=0.18.0)"]
 
 [[package]]
 name = "users"
-version = "4.0.1"
+version = "4.0.2"
 description = "This python module is a simple implementation of user management functionality for telegram bots, such as: authentication, authorization and requests limiting."
 optional = false
 python-versions = "^3.12"
@@ -1112,8 +1112,8 @@ vault = {git = "https://github.com/obervinov/vault-package.git", tag = "v4.0.0"}
 [package.source]
 type = "git"
 url = "https://github.com/obervinov/users-package.git"
-reference = "v4.0.1"
-resolved_reference = "028833a60221fc7949e7743e8e74bef264b7d21c"
+reference = "fix/v4.0.2"
+resolved_reference = "081e6eda7957a4da98ce5a9e67bcf4ffa866d728"
 
 [[package]]
 name = "vault"
@@ -1153,4 +1153,4 @@ requests = "*"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "cb0b52a56037f37461479a9e95905f1bcfdd042f220c07317a6db7d97b01f762"
+content-hash = "ffb8df6c1980da52abfe89bd2922b0d6eb174d4a97cb4b0fc62a7bcccbf43804"

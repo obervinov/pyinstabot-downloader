@@ -64,97 +64,195 @@ else:
     uploader.run_transfers.return_value = 'completed'
 
 
-# START HANDLERS BLOCK ##############################################################################################################
-# Command handler for START command
+# Bot commands #####################################################################################################################
 @bot.message_handler(commands=['start'])
-def start_command(message: telegram.telegram_types.Message = None) -> None:
+@users.access_control(flow='auth')
+def start_command_handler(message: telegram.telegram_types.Message = None) -> None:
     """
-    Sends a startup message to the specified Telegram chat.
+    Processes the main logic of the 'start' command under access control.
 
     Args:
-        message (telegram.telegram_types.Message): The message object containing information about the chat.
+        message (telegram.telegram_types.Message): The message object containing chat information.
     """
-    requestor = {'user_id': message.chat.id, 'chat_id': message.chat.id, 'message_id': message.message_id}
-    if users.user_access_check(**requestor).get('access', None) == users.user_status_allow:
-        log.info('[Bot]: Processing start command for user %s...', message.chat.id)
-        # Main pinned message
-        reply_markup = telegram.create_inline_markup(ROLES_MAP.keys())
-        start_message = telegram.send_styled_message(
-            chat_id=message.chat.id,
-            messages_template={'alias': 'start_message', 'kwargs': {'username': message.from_user.username, 'userid': message.chat.id}},
-            reply_markup=reply_markup
-        )
-        bot.pin_chat_message(start_message.chat.id, start_message.id)
-        bot.delete_message(message.chat.id, message.id)
-        update_status_message(user_id=message.chat.id)
-    else:
-        telegram.send_styled_message(
-            chat_id=message.chat.id,
-            messages_template={'alias': 'reject_message', 'kwargs': {'username': message.chat.username, 'userid': message.chat.id}}
-        )
+    log.info('[Bot]: Processing start command for user %s...', message.user.id)
+    reply_markup = telegram.create_inline_markup(ROLES_MAP.keys())
+    start_message = telegram.send_styled_message(
+        chat_id=message.chat.id,
+        messages_template={'alias': 'start_message', 'kwargs': {'username': message.from_user.username, 'userid': message.user.id}},
+        reply_markup=reply_markup,
+    )
+    bot.pin_chat_message(start_message.chat.id, start_message.id)
+    bot.delete_message(message.chat.id, message.message_id)
+    update_status_message(user_id=message.user.id)
 
 
-# Callback query handler for InlineKeyboardButton (BUTTONS)
+# Callback query handler for InlineKeyboardButton
 @bot.callback_query_handler(func=lambda call: True)
+@users.access_control(flow='auth')
 def bot_callback_query_handler(call: telegram.callback_query = None) -> None:
     """
-    The handler for the callback query from the user.
-    Mainly used to handle button presses.
+    Processes the button press from the user.
 
     Args:
-        call (telegram.callback_query): The callback query object.
+        call (telegram.callback_query): The callback query
     """
-    log.info('[Bot]: Processing button %s for user %s...', call.data, call.message.chat.id)
-    requestor = {
-        'user_id': call.message.chat.id, 'role_id': ROLES_MAP[call.data],
-        'chat_id': call.message.chat.id, 'message_id': call.message.message_id
-    }
-    if users.user_access_check(**requestor).get('permissions', None) == users.user_status_allow:
-        alias = None
-        if call.data == "Posts":
-            alias = 'help_for_posts_list'
-            method = process_posts
-        elif call.data == "Account":
-            alias = 'help_for_account'
-            method = process_account
-        elif call.data == "Reschedule Queue":
-            alias = 'help_for_reschedule_queue'
-            method = reschedule_queue
+    log.info('[Bot]: Processing button %s for user %s...', call.data, call.message.user.id)
+    alias = None
+    if call.data == "Posts":
+        alias = 'help_for_posts_list'
+        method = process_posts
+    elif call.data == "Account":
+        alias = 'help_for_account'
+        method = process_account
+    elif call.data == "Reschedule Queue":
+        alias = 'help_for_reschedule_queue'
+        method = reschedule_queue
+    else:
+        log.error('[Bot]: Handler for button %s not found', call.data)
+        alias = 'unknown_command'
+        method = None
+    help_message = telegram.send_styled_message(chat_id=call.message.chat.id, messages_template={'alias': alias})
+    bot.register_next_step_handler(call.message, method, help_message)
+
+
+# Button handlers ###################################################################################################################
+@users_rl.access_control(flow='authz', role_id=ROLES_MAP['Posts'])
+def post_code_handler(data: dict = None, access_result: dict = None) -> None:
+    """
+    Processes the post code from the user's message.
+
+    Args:
+        data (dict): The dictionary containing the post code.
+            user_id (str): The telegram user id.
+            post_id (str): The post id (shortcode).
+            post_owner (str): The post owner. Defaults to 'undefined'.
+            link_type (str): The type of link. Defaults to 'post'.
+            message_id (str): The message id in the chat.
+            chat_id (str): The chat id in the chat.
+        access_result (dict): The dictionary containing the access result. Propagated from the access_control decorator.
+    """
+    data['scheduled_time'] = access_result.get('rate_limits') or datetime.now()
+    status = database.add_message_to_queue(data)
+    log.info('[Bot]: %s for user_id %s', status, data['user_id'])
+
+
+@users.access_control(flow='authz', role_id=ROLES_MAP['Posts'])
+def process_posts(
+    message: telegram.telegram_types.Message = None,
+    help_message: telegram.telegram_types.Message = None
+) -> None:
+    """
+    Process a single or multiple posts from the user's message.
+
+    Args:
+        message (telegram.telegram_types.Message, optional): The message containing the list of post links. Defaults to None.
+        help_message (telegram.telegram_types.Message, optional): The help message to be deleted. Defaults to None.
+    """
+    cleanup_messages = True
+    for link in message.text.split('\n'):
+        # Verify that the link is a post link
+        if re.match(r'^https://www\.instagram\.com/(p|reel)/.*', message.text):
+            post_id = link.split('/')[4]
+            # Verify that the post id is correct
+            if len(post_id) == 11 and re.match(r'^[a-zA-Z0-9_-]+$', post_id):
+                if database.check_message_uniqueness(post_id=post_id, user_id=message.chat.id):
+                    post_code_handler({
+                        'user_id': message.chat.id, 'post_id': post_id, 'post_owner': 'undefined', 'link_type': 'post',
+                        'message_id': message.id, 'chat_id': message.chat.id, 'post_url': link.split('?')[0]
+                    })
+            else:
+                cleanup_messages = False
+                log.error('[Bot]: post id %s from user %s is wrong', post_id, message.chat.id)
+                telegram.send_styled_message(chat_id=message.chat.id, messages_template={'alias': 'url_error', 'kwargs': {'url': message.text}})
         else:
-            log.error('[Bot]: Handler for button %s not found', call.data)
-            alias = 'unknown_command'
-            method = None
-        help_message = telegram.send_styled_message(chat_id=call.message.chat.id, messages_template={'alias': alias})
-        bot.register_next_step_handler(call.message, method, help_message)
+            cleanup_messages = False
+            log.error('[Bot]: post link %s from user %s is incorrect', message.text, message.chat.id)
+            telegram.send_styled_message(chat_id=message.chat.id, messages_template={'alias': 'url_error'})
 
-    else:
-        alias = 'permission_denied_message'
-        kwargs = {'username': call.message.chat.username, 'userid': call.message.chat.id}
-        telegram.send_styled_message(chat_id=call.message.chat.id, messages_template={'alias': alias, 'kwargs': kwargs})
+    if cleanup_messages:
+        telegram.delete_message(message.chat.id, message.id)
+        telegram.delete_message(message.chat.id, help_message.id)
 
 
-# Handler for incorrect flow (UNKNOWN INPUT)
-@bot.message_handler(regexp=r'.*')
-def unknown_command(message: telegram.telegram_types.Message = None) -> None:
+@users.access_control(flow='authz', role_id=ROLES_MAP['Account'])
+def process_account(
+    message: telegram.telegram_types.Message = None,
+    help_message: telegram.telegram_types.Message = None
+) -> None:
     """
-    Sends a message to the user if the command is not recognized.
+    Processes the user's account posts and adds them to the queue for download.
 
     Args:
-        message (telegram.telegram_types.Message): The message object containing the unrecognized command.
+        message (telegram.telegram_types.Message): The message object containing the user's account link. Defaults to None.
+        help_message (telegram.telegram_types.Message, optional): The help message to be deleted. Defaults to None.
     """
-    requestor = {'user_id': message.chat.id, 'chat_id': message.chat.id, 'message_id': message.message_id}
-    if users.user_access_check(**requestor).get('access', None) == users.user_status_allow:
-        log.error('[Bot]: Invalid command %s from user %s', message.text, message.chat.id)
-        telegram.send_styled_message(chat_id=message.chat.id, messages_template={'alias': 'unknown_command'})
-    else:
-        telegram.send_styled_message(
-            chat_id=message.chat.id,
-            messages_template={'alias': 'reject_message', 'kwargs': {'username': message.chat.username, 'userid': message.chat.id}}
-        )
-# END HANDLERS BLOCK ##############################################################################################################
+    if re.match(r'^https://www\.instagram\.com/.*', message.text):
+        account_name = message.text.split('/')[3].split('?')[0]
+        account_id, cursor = database.get_account_info(username=account_name)
+        if not account_id:
+            log.info('[Bot]: account %s does not exist in the database, will request data from API', account_name)
+            account_info = downloader.get_account_info(username=account_name)
+            database.add_account_info(data=account_info)
+            account_id = account_info['pk']
+
+        while True:
+            posts_list, cursor = downloader.get_account_posts(user_id=account_id, cursor=cursor)
+            log.info('[Bot]: received %s posts from account %s', len(posts_list), account_name)
+            for post in posts_list:
+                if database.check_message_uniqueness(post_id=post.code, user_id=message.chat.id):
+                    post_code_handler({
+                        'user_id': message.chat.id, 'post_id': post.code, 'post_owner': account_name, 'link_type': 'account',
+                        'message_id': message.id, 'chat_id': message.chat.id,
+                        'post_url': f"https://www.instagram.com/{downloader.media_type_links[post.media_type]}/{post.code}"
+                    })
+            if not cursor:
+                log.info('[Bot]: full posts list from account %s retrieved', account_name)
+                telegram.delete_message(message.chat.id, message.id)
+                telegram.delete_message(message.chat.id, help_message.id)
+                break
+            database.add_account_info({'username': account_name, 'cursor': cursor})
+            time.sleep(downloader.configuration['delay-requests'])
 
 
-# START BLOCK ADDITIONAL FUNCTIONS ######################################################################################################
+@users.access_control(flow='authz', role_id=ROLES_MAP['Reschedule Queue'])
+def reschedule_queue(
+    message: telegram.telegram_types.Message = None,
+    help_message: telegram.telegram_types.Message = None
+) -> None:
+    """
+    Manually reschedules the queue for the user.
+
+    Args:
+        message (telegram.telegram_types.Message, optional): The message containing the list of post links. Defaults to None.
+        help_message (telegram.telegram_types.Message, optional): The help message to be deleted. Defaults to None.
+    """
+    can_be_deleted = True
+    for item in message.text.split('\n'):
+        item = item.split(': scheduled for ')
+        post_id = item[0].strip()
+        new_scheduled_time = datetime.strptime(item[1].strip(), '%Y-%m-%d %H:%M:%S.%f')
+        if (
+            isinstance(post_id, str) and len(post_id) == 11 and
+            isinstance(new_scheduled_time, datetime) and new_scheduled_time > datetime.now()
+        ):
+            database.update_schedule_time_in_queue(
+                post_id=post_id,
+                user_id=message.chat.id,
+                scheduled_time=new_scheduled_time
+            )
+        else:
+            can_be_deleted = False
+            telegram.send_styled_message(
+                chat_id=message.chat.id,
+                messages_template={'alias': 'wrong_reschedule_queue', 'kwargs': {'current_time': datetime.now()}}
+            )
+    if can_be_deleted:
+        telegram.delete_message(message.chat.id, message.id)
+    if help_message is not None:
+        telegram.delete_message(message.chat.id, help_message.id)
+
+
+# Internal methods #################################################################################################################
 def update_status_message(user_id: str = None) -> None:
     """
     Updates the status message for the user.
@@ -191,8 +289,7 @@ def update_status_message(user_id: str = None) -> None:
                 if exist_status_message[2] > datetime.now() - timedelta(hours=48):
                     _ = bot.delete_message(chat_id=user_id, message_id=exist_status_message[0])
                 status_message = telegram.send_styled_message(
-                    chat_id=user_id,
-                    messages_template={'alias': 'message_statuses', 'kwargs': message_statuses}
+                    chat_id=user_id, messages_template={'alias': 'message_statuses', 'kwargs': message_statuses}
                 )
                 database.keep_message(
                     message_id=status_message.message_id,
@@ -231,8 +328,7 @@ def update_status_message(user_id: str = None) -> None:
 
         else:
             status_message = telegram.send_styled_message(
-                chat_id=user_id,
-                messages_template={'alias': 'message_statuses', 'kwargs': message_statuses}
+                chat_id=user_id, messages_template={'alias': 'message_statuses', 'kwargs': message_statuses}
             )
             database.keep_message(
                 message_id=status_message.message_id,
@@ -242,14 +338,11 @@ def update_status_message(user_id: str = None) -> None:
             )
             log.info('[Bot]: `status_message` for user %s has been created', user_id)
     except TypeError as exception:
-        exception_context = {
+        log.error({
             'message': f"Failed to update the message with the status of received messages for user {user_id}",
-            'exception': exception,
-            'exist_status_message': exist_status_message,
-            'message_statuses': message_statuses,
+            'exception': exception, 'exist_status_message': exist_status_message, 'message_statuses': message_statuses,
             'diff_between_messages': diff_between_messages
-        }
-        log.error(exception_context)
+        })
 
 
 def get_user_messages(user_id: str = None) -> dict:
@@ -286,169 +379,7 @@ def get_user_messages(user_id: str = None) -> dict:
     return {'queue_list': queue_string, 'processed_list': processed_string, 'queue_count': len(queue), 'processed_count': len(processed)}
 
 
-def post_code_handler(data: dict = None) -> None:
-    """
-    Processes the post code from the user's message.
-
-    Args:
-        data (dict): The dictionary containing the post code.
-            user_id (str): The telegram user id.
-            post_id (str): The post id (shortcode).
-            post_owner (str): The post owner. Defaults to 'undefined'.
-            link_type (str): The type of link. Defaults to 'post'.
-            message_id (str): The message id in the chat.
-            chat_id (str): The chat id in the chat.
-    """
-    requestor = {
-        'user_id': data['user_id'], 'role_id': ROLES_MAP['Posts'],
-        'chat_id': data['chat_id'], 'message_id': data['message_id']
-    }
-    user = users_rl.user_access_check(**requestor)
-    if user.get('permissions', None) == users_rl.user_status_allow:
-        data['scheduled_time'] = user.get('rate_limits') or datetime.now()
-        status = database.add_message_to_queue(data)
-        log.info('[Bot]: %s for user_id %s', status, data['user_id'])
-# END BLOCK ADDITIONAL FUNCTIONS ######################################################################################################
-
-
-# START BLOCK PROCESSING FUNCTIONS ####################################################################################################
-def process_posts(
-    message: telegram.telegram_types.Message = None,
-    help_message: telegram.telegram_types.Message = None
-) -> None:
-    """
-    Process a single or multiple posts from the user's message.
-
-    Args:
-        message (telegram.telegram_types.Message, optional): The message containing the list of post links. Defaults to None.
-        help_message (telegram.telegram_types.Message, optional): The help message to be deleted. Defaults to None.
-    """
-    requestor = {
-        'user_id': message.chat.id, 'role_id': ROLES_MAP['Posts'],
-        'chat_id': message.chat.id, 'message_id': message.message_id
-    }
-    user = users.user_access_check(**requestor)
-    if user.get('permissions', None) == users.user_status_allow:
-
-        cleanup_messages = True
-        for link in message.text.split('\n'):
-            # Verify that the link is a post link
-            if re.match(r'^https://www\.instagram\.com/(p|reel)/.*', message.text):
-                post_id = link.split('/')[4]
-                # Verify that the post id is correct
-                if len(post_id) == 11 and re.match(r'^[a-zA-Z0-9_-]+$', post_id):
-                    if database.check_message_uniqueness(post_id=post_id, user_id=message.chat.id):
-                        post_code_handler({
-                            'user_id': message.chat.id, 'post_id': post_id, 'post_owner': 'undefined', 'link_type': 'post',
-                            'message_id': message.id, 'chat_id': message.chat.id, 'post_url': link.split('?')[0]
-                        })
-                else:
-                    cleanup_messages = False
-                    log.error('[Bot]: post id %s from user %s is wrong', post_id, message.chat.id)
-                    telegram.send_styled_message(chat_id=message.chat.id, messages_template={'alias': 'url_error', 'kwargs': {'url': message.text}})
-            else:
-                cleanup_messages = False
-                log.error('[Bot]: post link %s from user %s is incorrect', message.text, message.chat.id)
-                telegram.send_styled_message(chat_id=message.chat.id, messages_template={'alias': 'url_error'})
-
-        if cleanup_messages:
-            telegram.delete_message(message.chat.id, message.id)
-            telegram.delete_message(message.chat.id, help_message.id)
-
-
-def process_account(
-    message: telegram.telegram_types.Message = None,
-    help_message: telegram.telegram_types.Message = None
-) -> None:
-    """
-    Processes the user's account posts and adds them to the queue for download.
-
-    Args:
-        message (telegram.telegram_types.Message): The message object containing the user's account link. Defaults to None.
-        help_message (telegram.telegram_types.Message, optional): The help message to be deleted. Defaults to None.
-    """
-    requestor = {
-        'user_id': message.chat.id, 'role_id': ROLES_MAP['Account'],
-        'chat_id': message.chat.id, 'message_id': message.message_id
-    }
-    user = users.user_access_check(**requestor)
-    if user.get('permissions', None) == users.user_status_allow:
-        if re.match(r'^https://www\.instagram\.com/.*', message.text):
-            account_name = message.text.split('/')[3].split('?')[0]
-            account_id, cursor = database.get_account_info(username=account_name)
-            if not account_id:
-                log.info('[Bot]: account %s does not exist in the database, will request data from API', account_name)
-                account_info = downloader.get_account_info(username=account_name)
-                database.add_account_info(data=account_info)
-                account_id = account_info['pk']
-
-            while True:
-                posts_list, cursor = downloader.get_account_posts(user_id=account_id, cursor=cursor)
-                log.info('[Bot]: received %s posts from account %s', len(posts_list), account_name)
-                for post in posts_list:
-                    if database.check_message_uniqueness(post_id=post.code, user_id=message.chat.id):
-                        post_code_handler({
-                            'user_id': message.chat.id, 'post_id': post.code, 'post_owner': account_name, 'link_type': 'account',
-                            'message_id': message.id, 'chat_id': message.chat.id,
-                            'post_url': f"https://www.instagram.com/{downloader.media_type_links[post.media_type]}/{post.code}"
-                        })
-                if not cursor:
-                    log.info('[Bot]: full posts list from account %s retrieved', account_name)
-                    telegram.delete_message(message.chat.id, message.id)
-                    telegram.delete_message(message.chat.id, help_message.id)
-                    break
-                database.add_account_info({'username': account_name, 'cursor': cursor})
-
-        else:
-            log.error('[Bot]: account link %s from user %s is incorrect', message.text, message.chat.id)
-            telegram.send_styled_message(chat_id=message.chat.id, messages_template={'alias': 'url_error'})
-
-
-def reschedule_queue(
-    message: telegram.telegram_types.Message = None,
-    help_message: telegram.telegram_types.Message = None
-) -> None:
-    """
-    Manually reschedules the queue for the user.
-
-    Args:
-        message (telegram.telegram_types.Message, optional): The message containing the list of post links. Defaults to None.
-        help_message (telegram.telegram_types.Message, optional): The help message to be deleted. Defaults to None.
-    """
-    requestor = {
-        'user_id': message.chat.id, 'role_id': ROLES_MAP['Reschedule Queue'],
-        'chat_id': message.chat.id, 'message_id': message.message_id
-    }
-    user = users.user_access_check(**requestor)
-    can_be_deleted = True
-    if user.get('permissions', None) == users.user_status_allow:
-        for item in message.text.split('\n'):
-            item = item.split(': scheduled for ')
-            post_id = item[0].strip()
-            new_scheduled_time = datetime.strptime(item[1].strip(), '%Y-%m-%d %H:%M:%S.%f')
-            if (
-                isinstance(post_id, str) and len(post_id) == 11 and
-                isinstance(new_scheduled_time, datetime) and new_scheduled_time > datetime.now()
-            ):
-                database.update_schedule_time_in_queue(
-                    post_id=post_id,
-                    user_id=message.chat.id,
-                    scheduled_time=new_scheduled_time
-                )
-            else:
-                can_be_deleted = False
-                telegram.send_styled_message(
-                    chat_id=message.chat.id,
-                    messages_template={'alias': 'wrong_reschedule_queue', 'kwargs': {'current_time': datetime.now()}}
-                )
-        if can_be_deleted:
-            telegram.delete_message(message.chat.id, message.id)
-        if help_message is not None:
-            telegram.delete_message(message.chat.id, help_message.id)
-# END BLOCK PROCESSING FUNCTIONS ####################################################################################################
-
-
-# SPECIFIED THREADS ###############################################################################################################
+# Threads ###########################################################################################################################
 def status_message_updater_thread() -> None:
     """Handler thread for monitoring and timely updating of the widget with the status of messages sent by the user"""
     log.info('[Message-updater-thread]: started thread for "status_message" updater')
@@ -551,9 +482,9 @@ def queue_handler_thread() -> None:
                 )
         else:
             log.info("[Queue-handler-thread] no messages in the queue for processing at the moment, waiting...")
-# SPECIFIED THREADS ###############################################################################################################
 
 
+# Main #############################################################################################################################
 def main():
     """The main entry point of the project"""
     # Thread for processing queue
