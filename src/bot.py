@@ -120,11 +120,12 @@ def bot_callback_query_handler(call: tg.callback_query, access_result: dict) -> 
 
 # Button handlers ###################################################################################################################
 @users_rl.access_control(flow='authz', role_id=ROLES_MAP['Posts'])
-def post_code_handler(data: dict, access_result: dict = None) -> None:
+def post_code_handler(message: tg.telegram_types.Message, data: dict, access_result: dict = None) -> None:
     """
     Processes the post code from the user's message.
 
     Args:
+        message (tg.telegram_types.Message): Required for the access_control decorator.
         data (dict): The dictionary containing the post code.
             user_id (str): The telegram user id.
             post_id (str): The post id (shortcode).
@@ -157,10 +158,13 @@ def process_posts(message: tg.telegram_types.Message, help_message: tg.telegram_
             # Verify that the post id is correct
             if len(post_id) == 11 and re.match(r'^[a-zA-Z0-9_-]+$', post_id):
                 if database.check_message_uniqueness(post_id=post_id, user_id=message.chat.id):
-                    post_code_handler({
-                        'user_id': message.chat.id, 'post_id': post_id, 'post_owner': 'undefined', 'link_type': 'post',
-                        'message_id': message.id, 'chat_id': message.chat.id, 'post_url': link.split('?')[0]
-                    })
+                    post_code_handler(
+                        message=message,
+                        data={
+                            'user_id': message.chat.id, 'post_id': post_id, 'post_owner': 'undefined', 'link_type': 'post',
+                            'message_id': message.id, 'chat_id': message.chat.id, 'post_url': link.split('?')[0]
+                        }
+                    )
             else:
                 cleanup_messages = False
                 log.error('[Bot]: post id %s from user %s is wrong', post_id, message.chat.id)
@@ -199,11 +203,14 @@ def process_account(message: tg.telegram_types.Message, help_message: tg.telegra
             log.info('[Bot]: received %s posts from account %s', len(posts_list), account_name)
             for post in posts_list:
                 if database.check_message_uniqueness(post_id=post.code, user_id=message.chat.id):
-                    post_code_handler({
-                        'user_id': message.chat.id, 'post_id': post.code, 'post_owner': account_name, 'link_type': 'account',
-                        'message_id': message.id, 'chat_id': message.chat.id,
-                        'post_url': f"https://www.instagram.com/{downloader.media_type_links[post.media_type]}/{post.code}"
-                    })
+                    post_code_handler(
+                        message=message,
+                        data={
+                            'user_id': message.chat.id, 'post_id': post.code, 'post_owner': account_name, 'link_type': 'post',
+                            'message_id': message.id, 'chat_id': message.chat.id,
+                            'post_url': f"https://www.instagram.com/{downloader.media_type_links[post.media_type]}/{post.code}"
+                        }
+                    )
             if not cursor:
                 log.info('[Bot]: full posts list from account %s retrieved', account_name)
                 tg.delete_message(message.chat.id, message.id)
