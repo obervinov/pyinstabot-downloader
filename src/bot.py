@@ -1,3 +1,4 @@
+# pylint: disable=unused-argument
 """
 This module contains the main code for the bot to work and contains the main logic linking the additional modules.
 """
@@ -27,9 +28,9 @@ from modules.metrics import Metrics
 # Vault client
 vault = VaultClient()
 # Telegram instance
-telegram = TelegramBot(vault=vault)
+tg = TelegramBot(vault=vault)
 # Telegram bot for decorators
-bot = telegram.telegram_bot
+bot = tg.telegram_bot
 # Client for communication with the database
 database = DatabaseClient(vault=vault, db_role=VAULT_DB_ROLE)
 # Metrics exporter
@@ -67,16 +68,17 @@ else:
 # Bot commands #####################################################################################################################
 @bot.message_handler(commands=['start'])
 @users.access_control(flow='auth')
-def start_command_handler(message: telegram.telegram_types.Message = None) -> None:
+def start_command_handler(message: tg.telegram_types.Message, access_result: dict) -> None:
     """
     Processes the main logic of the 'start' command under access control.
 
     Args:
-        message (telegram.telegram_types.Message): The message object containing chat information.
+        message (tg.telegram_types.Message): The message object containing chat information.
+        access_result (dict): The dictionary containing the access result. Propagated from the access_control decorator.
     """
     log.info('[Bot]: Processing start command for user %s...', message.user.id)
-    reply_markup = telegram.create_inline_markup(ROLES_MAP.keys())
-    start_message = telegram.send_styled_message(
+    reply_markup = tg.create_inline_markup(ROLES_MAP.keys())
+    start_message = tg.send_styled_message(
         chat_id=message.chat.id,
         messages_template={'alias': 'start_message', 'kwargs': {'username': message.from_user.username, 'userid': message.user.id}},
         reply_markup=reply_markup,
@@ -89,12 +91,13 @@ def start_command_handler(message: telegram.telegram_types.Message = None) -> No
 # Callback query handler for InlineKeyboardButton
 @bot.callback_query_handler(func=lambda call: True)
 @users.access_control(flow='auth')
-def bot_callback_query_handler(call: telegram.callback_query = None) -> None:
+def bot_callback_query_handler(call: tg.callback_query, access_result: dict) -> None:
     """
     Processes the button press from the user.
 
     Args:
-        call (telegram.callback_query): The callback query
+        call (tg.callback_query): The callback query
+        access_result (dict): The dictionary containing the access result. Propagated from the access_control decorator.
     """
     log.info('[Bot]: Processing button %s for user %s...', call.data, call.message.user.id)
     alias = None
@@ -111,13 +114,13 @@ def bot_callback_query_handler(call: telegram.callback_query = None) -> None:
         log.error('[Bot]: Handler for button %s not found', call.data)
         alias = 'unknown_command'
         method = None
-    help_message = telegram.send_styled_message(chat_id=call.message.chat.id, messages_template={'alias': alias})
+    help_message = tg.send_styled_message(chat_id=call.message.chat.id, messages_template={'alias': alias})
     bot.register_next_step_handler(call.message, method, help_message)
 
 
 # Button handlers ###################################################################################################################
 @users_rl.access_control(flow='authz', role_id=ROLES_MAP['Posts'])
-def post_code_handler(data: dict = None, access_result: dict = None) -> None:
+def post_code_handler(data: dict, access_result: dict = None) -> None:
     """
     Processes the post code from the user's message.
 
@@ -137,16 +140,14 @@ def post_code_handler(data: dict = None, access_result: dict = None) -> None:
 
 
 @users.access_control(flow='authz', role_id=ROLES_MAP['Posts'])
-def process_posts(
-    message: telegram.telegram_types.Message = None,
-    help_message: telegram.telegram_types.Message = None
-) -> None:
+def process_posts(message: tg.telegram_types.Message, help_message: tg.telegram_types.Message, access_result: dict) -> None:
     """
     Process a single or multiple posts from the user's message.
 
     Args:
         message (telegram.telegram_types.Message, optional): The message containing the list of post links. Defaults to None.
         help_message (telegram.telegram_types.Message, optional): The help message to be deleted. Defaults to None.
+        access_result (dict): The dictionary containing the access result. Propagated from the access_control decorator.
     """
     cleanup_messages = True
     for link in message.text.split('\n'):
@@ -163,28 +164,26 @@ def process_posts(
             else:
                 cleanup_messages = False
                 log.error('[Bot]: post id %s from user %s is wrong', post_id, message.chat.id)
-                telegram.send_styled_message(chat_id=message.chat.id, messages_template={'alias': 'url_error', 'kwargs': {'url': message.text}})
+                tg.send_styled_message(chat_id=message.chat.id, messages_template={'alias': 'url_error', 'kwargs': {'url': message.text}})
         else:
             cleanup_messages = False
             log.error('[Bot]: post link %s from user %s is incorrect', message.text, message.chat.id)
-            telegram.send_styled_message(chat_id=message.chat.id, messages_template={'alias': 'url_error'})
+            tg.send_styled_message(chat_id=message.chat.id, messages_template={'alias': 'url_error'})
 
     if cleanup_messages:
-        telegram.delete_message(message.chat.id, message.id)
-        telegram.delete_message(message.chat.id, help_message.id)
+        tg.delete_message(message.chat.id, message.id)
+        tg.delete_message(message.chat.id, help_message.id)
 
 
 @users.access_control(flow='authz', role_id=ROLES_MAP['Account'])
-def process_account(
-    message: telegram.telegram_types.Message = None,
-    help_message: telegram.telegram_types.Message = None
-) -> None:
+def process_account(message: tg.telegram_types.Message, help_message: tg.telegram_types.Message, access_result: dict) -> None:
     """
     Processes the user's account posts and adds them to the queue for download.
 
     Args:
         message (telegram.telegram_types.Message): The message object containing the user's account link. Defaults to None.
         help_message (telegram.telegram_types.Message, optional): The help message to be deleted. Defaults to None.
+        access_result (dict): The dictionary containing the access result. Propagated from the access_control decorator.
     """
     if re.match(r'^https://www\.instagram\.com/.*', message.text):
         account_name = message.text.split('/')[3].split('?')[0]
@@ -207,18 +206,15 @@ def process_account(
                     })
             if not cursor:
                 log.info('[Bot]: full posts list from account %s retrieved', account_name)
-                telegram.delete_message(message.chat.id, message.id)
-                telegram.delete_message(message.chat.id, help_message.id)
+                tg.delete_message(message.chat.id, message.id)
+                tg.delete_message(message.chat.id, help_message.id)
                 break
             database.add_account_info({'username': account_name, 'cursor': cursor})
             time.sleep(downloader.configuration['delay-requests'])
 
 
 @users.access_control(flow='authz', role_id=ROLES_MAP['Reschedule Queue'])
-def reschedule_queue(
-    message: telegram.telegram_types.Message = None,
-    help_message: telegram.telegram_types.Message = None
-) -> None:
+def reschedule_queue(message: tg.telegram_types.Message, help_message: tg.telegram_types.Message, access_result: dict) -> None:
     """
     Manually reschedules the queue for the user.
 
@@ -242,14 +238,14 @@ def reschedule_queue(
             )
         else:
             can_be_deleted = False
-            telegram.send_styled_message(
+            tg.send_styled_message(
                 chat_id=message.chat.id,
                 messages_template={'alias': 'wrong_reschedule_queue', 'kwargs': {'current_time': datetime.now()}}
             )
     if can_be_deleted:
-        telegram.delete_message(message.chat.id, message.id)
+        tg.delete_message(message.chat.id, message.id)
     if help_message is not None:
-        telegram.delete_message(message.chat.id, help_message.id)
+        tg.delete_message(message.chat.id, help_message.id)
 
 
 # Internal methods #################################################################################################################
@@ -288,7 +284,7 @@ def update_status_message(user_id: str = None) -> None:
             if exist_status_message[2] < datetime.now() - timedelta(hours=24):
                 if exist_status_message[2] > datetime.now() - timedelta(hours=48):
                     _ = bot.delete_message(chat_id=user_id, message_id=exist_status_message[0])
-                status_message = telegram.send_styled_message(
+                status_message = tg.send_styled_message(
                     chat_id=user_id, messages_template={'alias': 'message_statuses', 'kwargs': message_statuses}
                 )
                 database.keep_message(
@@ -302,7 +298,7 @@ def update_status_message(user_id: str = None) -> None:
                 log.info('[Bot]: `status_message` for user %s has been renewed', user_id)
 
             elif message_statuses is not None and diff_between_messages:
-                editable_message = telegram.send_styled_message(
+                editable_message = tg.send_styled_message(
                     chat_id=user_id,
                     messages_template={'alias': 'message_statuses', 'kwargs': message_statuses},
                     editable_message_id=exist_status_message[0]
@@ -327,7 +323,7 @@ def update_status_message(user_id: str = None) -> None:
                 )
 
         else:
-            status_message = telegram.send_styled_message(
+            status_message = tg.send_styled_message(
                 chat_id=user_id, messages_template={'alias': 'message_statuses', 'kwargs': message_statuses}
             )
             database.keep_message(
@@ -500,7 +496,7 @@ def main():
     # Run bot
     while True:
         try:
-            telegram.launch_bot()
+            tg.launch_bot()
         except TelegramExceptions.FailedToCreateInstance as telegram_api_exception:
             log.error('[Bot]: main thread failed, restart thread: %s', telegram_api_exception)
             time.sleep(5)
