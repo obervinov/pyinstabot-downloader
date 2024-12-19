@@ -158,13 +158,10 @@ def process_posts(message: tg.telegram_types.Message, help_message: tg.telegram_
             # Verify that the post id is correct
             if len(post_id) == 11 and re.match(r'^[a-zA-Z0-9_-]+$', post_id):
                 if database.check_message_uniqueness(post_id=post_id, user_id=message.chat.id):
-                    post_code_handler(
-                        message=message,
-                        data={
+                    post_code_handler(message, data={
                             'user_id': message.chat.id, 'post_id': post_id, 'post_owner': 'undefined', 'link_type': 'post',
                             'message_id': message.id, 'chat_id': message.chat.id, 'post_url': link.split('?')[0]
-                        }
-                    )
+                    })
             else:
                 cleanup_messages = False
                 log.error('[Bot]: post id %s from user %s is wrong', post_id, message.chat.id)
@@ -185,8 +182,8 @@ def process_account(message: tg.telegram_types.Message, help_message: tg.telegra
     Processes the user's account posts and adds them to the queue for download.
 
     Args:
-        message (telegram.telegram_types.Message): The message object containing the user's account link. Defaults to None.
-        help_message (telegram.telegram_types.Message, optional): The help message to be deleted. Defaults to None.
+        message (telegram.telegram_types.Message): The message object containing the user's account link.
+        help_message (telegram.telegram_types.Message, optional): The help message to be deleted.
         access_result (dict): The dictionary containing the access result. Propagated from the access_control decorator.
     """
     if re.match(r'^https://www\.instagram\.com/.*', message.text):
@@ -203,14 +200,11 @@ def process_account(message: tg.telegram_types.Message, help_message: tg.telegra
             log.info('[Bot]: received %s posts from account %s', len(posts_list), account_name)
             for post in posts_list:
                 if database.check_message_uniqueness(post_id=post.code, user_id=message.chat.id):
-                    post_code_handler(
-                        message=message,
-                        data={
+                    post_code_handler(message, data={
                             'user_id': message.chat.id, 'post_id': post.code, 'post_owner': account_name, 'link_type': 'post',
                             'message_id': message.id, 'chat_id': message.chat.id,
                             'post_url': f"https://www.instagram.com/{downloader.media_type_links[post.media_type]}/{post.code}"
-                        }
-                    )
+                    })
             if not cursor:
                 log.info('[Bot]: full posts list from account %s retrieved', account_name)
                 tg.delete_message(message.chat.id, message.id)
