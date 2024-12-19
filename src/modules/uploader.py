@@ -88,10 +88,7 @@ class Uploader:
         log.info('[Uploader]: Preparing media files for transfer to the cloud...')
         for root, _, files in os.walk(f"{self.configuration['source-directory']}{sub_directory}"):
             for file in files:
-                transfers[file] = self.upload_to_cloud(
-                    source=os.path.join(root, file),
-                    destination=root.split('/')[1]
-                )
+                transfers[file] = self.upload_to_cloud(source=os.path.join(root, file), destination=root.split('/')[1])
                 if transfers[file] == 'uploaded':
                     os.remove(os.path.join(root, file))
                     result = 'completed'
