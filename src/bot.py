@@ -76,16 +76,16 @@ def start_command_handler(message: tg.telegram_types.Message, access_result: dic
         message (tg.telegram_types.Message): The message object containing chat information.
         access_result (dict): The dictionary containing the access result. Propagated from the access_control decorator.
     """
-    log.info('[Bot]: Processing start command for user %s...', message.user.id)
+    log.info('[Bot]: Processing start command for user %s...', message.chat.id)
     reply_markup = tg.create_inline_markup(ROLES_MAP.keys())
     start_message = tg.send_styled_message(
         chat_id=message.chat.id,
-        messages_template={'alias': 'start_message', 'kwargs': {'username': message.from_user.username, 'userid': message.user.id}},
+        messages_template={'alias': 'start_message', 'kwargs': {'username': message.from_user.username, 'userid': message.chat.id}},
         reply_markup=reply_markup,
     )
     bot.pin_chat_message(start_message.chat.id, start_message.id)
     bot.delete_message(message.chat.id, message.message_id)
-    update_status_message(user_id=message.user.id)
+    update_status_message(user_id=message.chat.id)
 
 
 # Callback query handler for InlineKeyboardButton
@@ -99,7 +99,7 @@ def bot_callback_query_handler(call: tg.callback_query, access_result: dict) -> 
         call (tg.callback_query): The callback query
         access_result (dict): The dictionary containing the access result. Propagated from the access_control decorator.
     """
-    log.info('[Bot]: Processing button %s for user %s...', call.data, call.message.user.id)
+    log.info('[Bot]: Processing button %s for user %s...', call.data, call.message.chat.id)
     alias = None
     if call.data == "Posts":
         alias = 'help_for_posts_list'
