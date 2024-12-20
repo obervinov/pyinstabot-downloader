@@ -12,7 +12,8 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 * 
 #### 🚀 Features
 * add new table `accounts` to the database for storing account public data
-* add the ability to retrieve the entire list of account posts and add it to the queue
+* add the feature to retrieve the entire list of account posts and add it to the queue
+* [Feature request: move user rights checking from `if` to native `decorators`](https://github.com/obervinov/pyinstabot-downloader/issues/117)
 
 
 ## v3.2.0 - 2024-11-21

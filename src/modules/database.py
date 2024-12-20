@@ -721,7 +721,7 @@ class DatabaseClient:
             following_count (int): The number of accounts the account is following.
             cursor (str): The cursor for the account.
         """
-        keys_to_keep = ['username', 'pk', 'full_name', 'media_count', 'follower_count', 'following_count']
+        keys_to_keep = ['username', 'pk', 'full_name', 'media_count', 'follower_count', 'following_count', 'cursor']
         filtered_dict = {key: data[key] for key in keys_to_keep if key in data}
         exist_account = self._select(table_name='accounts', columns=("id",), condition=f"username = '{data.get('username')}'")
 
