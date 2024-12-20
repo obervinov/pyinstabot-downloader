@@ -136,6 +136,9 @@ def post_code_handler(message: tg.telegram_types.Message, data: dict, access_res
         access_result (dict): The dictionary containing the access result. Propagated from the access_control decorator.
     """
     data['scheduled_time'] = access_result.get('rate_limits') or datetime.now()
+    if data['link_type'] == 'account':
+        # Delay for account parsing
+        data['scheduled_time'] += timedelta(minutes=60)
     status = database.add_message_to_queue(data)
     log.info('[Bot]: %s for user_id %s', status, data['user_id'])
 
@@ -201,7 +204,7 @@ def process_account(message: tg.telegram_types.Message, help_message: tg.telegra
             for post in posts_list:
                 if database.check_message_uniqueness(post_id=post.code, user_id=message.chat.id):
                     post_code_handler(message, data={
-                            'user_id': message.chat.id, 'post_id': post.code, 'post_owner': account_name, 'link_type': 'post',
+                            'user_id': message.chat.id, 'post_id': post.code, 'post_owner': account_name, 'link_type': 'account',
                             'message_id': message.id, 'chat_id': message.chat.id,
                             'post_url': f"https://www.instagram.com/{downloader.media_type_links[post.media_type]}/{post.code}"
                     })
