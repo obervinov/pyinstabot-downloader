@@ -211,7 +211,7 @@ def process_account(message: tg.telegram_types.Message, help_message: tg.telegra
                 tg.delete_message(message.chat.id, help_message.id)
                 break
             database.add_account_info({'username': account_name, 'cursor': cursor})
-            time.sleep(int(downloader.configuration['delay-requests']))
+            time.sleep(int(downloader.configuration['delay-requests']) * random.randint(5, 50))
 
 
 @users.access_control(flow='authz', role_id=ROLES_MAP['Reschedule Queue'])

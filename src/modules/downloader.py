@@ -402,4 +402,4 @@ class Downloader:
             (list) list of posts
         """
         log.info('[Downloader]: extracting the list of posts for the user pk %s...', user_id)
-        return self.client.user_medias_paginated(user_id=user_id, amount=9, end_cursor=cursor)
+        return self.client.user_medias_paginated(user_id=user_id, amount=6, end_cursor=cursor)
