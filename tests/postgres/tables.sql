@@ -51,6 +51,19 @@ CREATE TABLE processed (
     state VARCHAR (50) NOT NULL DEFAULT 'processed'
 );
 
+-- Schema for the accounts table
+CREATE TABLE accounts (
+    id serial PRIMARY KEY,
+    username VARCHAR (50) UNIQUE NOT NULL,
+    pk NUMERIC NOT NULL,
+    full_name VARCHAR (255) NOT NULL,
+    media_count INTEGER NOT NULL,
+    follower_count INTEGER NOT NULL,
+    following_count INTEGER NOT NULL,
+    cursor VARCHAR (255),
+    last_updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Schema for the migrations table
 CREATE TABLE migrations (
     id serial PRIMARY KEY,

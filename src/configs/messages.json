@@ -20,6 +20,10 @@
             "text": "{0} To get a backup copy of the list of posts, send links to posts in a list (each new link with a new message line). This message will be automatically split into a number of messages equal to the number of links and processed in the order of the queue.\n {1} Example:\n<code>https://www.instagram.com/p/QwEr_tY1234\nhttps://www.instagram.com/p/QwEr_tY1235\nhttps://www.instagram.com/p/QwEr_tY1236</code>",
             "args": [":information:", ":link:"]
         },
+        "help_for_account": {
+            "text": "{0} To get a backup copy of the list of posts from the account, send a link to the account. The bot will automatically collect all posts from the account and process them in the order of the queue.\n {1} Example:\n<code>https://www.instagram.com/username</code>",
+            "args": [":information:", ":link:"]
+        },
         "help_for_reschedule_queue": {
             "text": "{0} <b>To reschedule the processing of messages in the queue, simply send a list of messages with a modified processing time.\nfor example:</b>\n<code>q1wRty12345: scheduled for 2021-12-31 23:59:59\nq1wRty12346: scheduled for 2021-12-31 23:59:59\nq1wRty12347: scheduled for 2021-12-31 23:59:59</code>",
             "args": [":information:"]
