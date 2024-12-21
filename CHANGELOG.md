@@ -8,8 +8,6 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 **Full Changelog**: https://github.com/obervinov/pyinstabot-downloader/compare/v3.2.0...v3.3.0 by @obervinov in https://github.com/obervinov/pyinstabot-downloader/pull/123
 #### 🐛 Bug Fixes
 * small code formatting improvements
-#### 💥 Breaking Changes
-* 
 #### 🚀 Features
 * add new table `accounts` to the database for storing account public data
 * add the feature to retrieve the entire list of account posts and add it to the queue
