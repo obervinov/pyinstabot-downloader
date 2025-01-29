@@ -11,9 +11,9 @@
   jobs:
     create-release:
       if: github.event.pull_request.merged == true
-      uses: obervinov/_templates/.github/workflows/release.yaml@v2.1.0
+      uses: obervinov/_templates/.github/workflows/release.yaml@v2.1.1
   
     build-release-image:
       if: github.event.pull_request.merged == true
-      uses: obervinov/_templates/.github/workflows/docker.yaml@v2.1.0
+      uses: obervinov/_templates/.github/workflows/docker.yaml@v2.1.1
       needs: [create-release]
