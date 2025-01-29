@@ -40,6 +40,8 @@ class Downloader:
         :method exceptions_handler: decorator for handling exceptions in the Downloader class.
         :method login: authentication in instagram api.
         :method get_post_content: getting the content of a post.
+        :method get_account_info: getting information about the account.
+        :method get_account_posts: getting the content of a post from a specified User ID.
 
     Examples:
         >>> configuration = {
