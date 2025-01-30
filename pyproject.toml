@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pyinstabot-downloader"
-version = "3.3.0"
+version = "3.3.1"
 description = "This project is a Telegram bot that allows you to upload posts from your Instagram profile to clouds like any WebDav compatible cloud storage."
 authors = ["Bervinov Oleg <bervinov.ob@gmail.com>"]
 maintainers = ["Bervinov Oleg <bervinov.ob@gmail.com>"]
