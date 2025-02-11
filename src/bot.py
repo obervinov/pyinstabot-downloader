@@ -54,7 +54,7 @@ class UserManager:
         """
         return Users(vault=self.vault, rate_limits=rate_limits, storage_connection=self.database.get_connection())
 
-    def reset_users(self):
+    def reset_instances(self):
         """
         Resets the instances of the Users module.
         For handling the exception when the database connection is lost.
@@ -528,7 +528,7 @@ def main():
             tg.launch_bot()
         # Workaround for https://github.com/obervinov/pyinstabot-downloader/issues/118
         except database.error:
-            user_manager.reset_users()
+            user_manager.reset_instances()
         except TelegramExceptions.FailedToCreateInstance as telegram_api_exception:
             log.error('[Bot]: main thread failed, restart thread: %s', telegram_api_exception)
             time.sleep(5)
