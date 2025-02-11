@@ -45,10 +45,10 @@ class UserManager:
     def __init__(self, vault_obj: object, database_obj: DatabaseClient):
         self.vault = vault_obj
         self.database = database_obj
-        self.users_rl = self.create_users(rate_limits=True)
-        self.users = self.create_users(rate_limits=False)
+        self.users_rl = self.create_instances(rate_limits=True)
+        self.users = self.create_instances(rate_limits=False)
 
-    def create_users(self, rate_limits):
+    def create_instances(self, rate_limits):
         """
         Creates an instance of the Users module with the specified rate limits option.
         """
@@ -59,8 +59,8 @@ class UserManager:
         Resets the instances of the Users module.
         For handling the exception when the database connection is lost.
         """
-        self.users_rl = self.create_users(rate_limits=True)
-        self.users = self.create_users(rate_limits=False)
+        self.users_rl = self.create_instances(rate_limits=True)
+        self.users = self.create_instances(rate_limits=False)
 
 
 user_manager = UserManager(vault_obj=vault, database_obj=database)
