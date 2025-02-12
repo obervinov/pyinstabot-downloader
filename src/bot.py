@@ -45,22 +45,22 @@ class UserManager:
     def __init__(self, vault_obj: object, database_obj: DatabaseClient):
         self.vault = vault_obj
         self.database = database_obj
-        self.users_rl = self.create_instances(rate_limits=True)
-        self.users = self.create_instances(rate_limits=False)
+        self.users_rl = self.create_instance(rate_limits=True)
+        self.users = self.create_instance(rate_limits=False)
 
-    def create_instances(self, rate_limits):
+    def create_instance(self, rate_limits):
         """
         Creates an instance of the Users module with the specified rate limits option.
         """
         return Users(vault=self.vault, rate_limits=rate_limits, storage_connection=self.database.get_connection())
 
-    def reset_instances(self):
+    def recreate_instances(self):
         """
         Resets the instances of the Users module.
         For handling the exception when the database connection is lost.
         """
-        self.users_rl = self.create_instances(rate_limits=True)
-        self.users = self.create_instances(rate_limits=False)
+        self.users_rl = self.create_instance(rate_limits=True)
+        self.users = self.create_instance(rate_limits=False)
 
 
 user_manager = UserManager(vault_obj=vault, database_obj=database)
@@ -528,7 +528,7 @@ def main():
             tg.launch_bot()
         # Workaround for https://github.com/obervinov/pyinstabot-downloader/issues/118
         except database.error:
-            user_manager.reset_instances()
+            user_manager.recreate_instances()
         except TelegramExceptions.FailedToCreateInstance as telegram_api_exception:
             log.error('[Bot]: main thread failed, restart thread: %s', telegram_api_exception)
             time.sleep(5)
