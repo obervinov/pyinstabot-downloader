@@ -90,7 +90,7 @@ class DatabaseClient:
         self.json = json
         self.vault = vault
         self.db_role = db_role
-        self.errors = psycopg2.errors
+        self.error = psycopg2.Error
         self.database_connections = self.create_connection_pool()
 
         self._prepare_db()

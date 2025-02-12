@@ -35,10 +35,35 @@ bot = tg.telegram_bot
 database = DatabaseClient(vault=vault, db_role=VAULT_DB_ROLE)
 # Metrics exporter
 metrics = Metrics(port=METRICS_PORT, interval=METRICS_INTERVAL, metrics_prefix=TELEGRAM_BOT_NAME, vault=vault, database=database)
-# Users module with rate limits option
-users_rl = Users(vault=vault, rate_limits=True, storage_connection=database.get_connection())
-# Users module without rate limits option
-users = Users(vault=vault, storage_connection=database.get_connection())
+
+
+class UserManager:
+    """
+    Helper class for creating instances of the Users module with different rate limits options.
+    Created for handling this issue: https://github.com/obervinov/pyinstabot-downloader/issues/118
+    """
+    def __init__(self, vault_obj: object, database_obj: DatabaseClient):
+        self.vault = vault_obj
+        self.database = database_obj
+        self.users_rl = self.create_instance(rate_limits=True)
+        self.users = self.create_instance(rate_limits=False)
+
+    def create_instance(self, rate_limits):
+        """
+        Creates an instance of the Users module with the specified rate limits option.
+        """
+        return Users(vault=self.vault, rate_limits=rate_limits, storage_connection=self.database.get_connection())
+
+    def recreate_instances(self):
+        """
+        Resets the instances of the Users module.
+        For handling the exception when the database connection is lost.
+        """
+        self.users_rl = self.create_instance(rate_limits=True)
+        self.users = self.create_instance(rate_limits=False)
+
+
+user_manager = UserManager(vault_obj=vault, database_obj=database)
 
 # Client for download content from instagram
 # If API disabled, the mock object will be used
@@ -67,7 +92,7 @@ else:
 
 # Bot commands #####################################################################################################################
 @bot.message_handler(commands=['start'])
-@users.access_control(flow='auth')
+@user_manager.users.access_control(flow='auth')
 def start_command_handler(message: tg.telegram_types.Message, access_result: dict) -> None:
     """
     Processes the main logic of the 'start' command under access control.
@@ -90,13 +115,13 @@ def start_command_handler(message: tg.telegram_types.Message, access_result: dic
 
 # Callback query handler for InlineKeyboardButton
 @bot.callback_query_handler(func=lambda call: True)
-@users.access_control(flow='auth')
+@user_manager.users.access_control(flow='auth')
 def bot_callback_query_handler(call: tg.callback_query, access_result: dict) -> None:
     """
     Processes the button press from the user.
 
     Args:
-        call (tg.callback_query): The callback query
+        call (tg.callback_query): The callback query§
         access_result (dict): The dictionary containing the access result. Propagated from the access_control decorator.
     """
     log.info('[Bot]: Processing button %s for user %s...', call.data, call.message.chat.id)
@@ -119,7 +144,7 @@ def bot_callback_query_handler(call: tg.callback_query, access_result: dict) -> 
 
 
 # Button handlers ###################################################################################################################
-@users_rl.access_control(flow='authz', role_id=ROLES_MAP['Posts'])
+@user_manager.users_rl.access_control(flow='authz', role_id=ROLES_MAP['Posts'])
 def post_code_handler(message: tg.telegram_types.Message, data: dict, access_result: dict = None) -> None:
     """
     Processes the post code from the user's message.
@@ -143,7 +168,7 @@ def post_code_handler(message: tg.telegram_types.Message, data: dict, access_res
     log.info('[Bot]: %s for user_id %s', status, data['user_id'])
 
 
-@users.access_control(flow='authz', role_id=ROLES_MAP['Posts'])
+@user_manager.users.access_control(flow='authz', role_id=ROLES_MAP['Posts'])
 def process_posts(message: tg.telegram_types.Message, help_message: tg.telegram_types.Message, access_result: dict) -> None:
     """
     Process a single or multiple posts from the user's message.
@@ -179,7 +204,7 @@ def process_posts(message: tg.telegram_types.Message, help_message: tg.telegram_
         tg.delete_message(message.chat.id, help_message.id)
 
 
-@users.access_control(flow='authz', role_id=ROLES_MAP['Account'])
+@user_manager.users.access_control(flow='authz', role_id=ROLES_MAP['Account'])
 def process_account(message: tg.telegram_types.Message, help_message: tg.telegram_types.Message, access_result: dict) -> None:
     """
     Processes the user's account posts and adds them to the queue for download.
@@ -217,7 +242,7 @@ def process_account(message: tg.telegram_types.Message, help_message: tg.telegra
             time.sleep(int(downloader.configuration['delay-requests']) * random.randint(5, 50))
 
 
-@users.access_control(flow='authz', role_id=ROLES_MAP['Reschedule Queue'])
+@user_manager.users.access_control(flow='authz', role_id=ROLES_MAP['Reschedule Queue'])
 def reschedule_queue(message: tg.telegram_types.Message, help_message: tg.telegram_types.Message, access_result: dict) -> None:
     """
     Manually reschedules the queue for the user.
@@ -501,6 +526,9 @@ def main():
     while True:
         try:
             tg.launch_bot()
+        # Workaround for https://github.com/obervinov/pyinstabot-downloader/issues/118
+        except database.error:
+            user_manager.recreate_instances()
         except TelegramExceptions.FailedToCreateInstance as telegram_api_exception:
             log.error('[Bot]: main thread failed, restart thread: %s', telegram_api_exception)
             time.sleep(5)
