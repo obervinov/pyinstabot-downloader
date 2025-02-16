@@ -342,7 +342,7 @@ def update_status_message(user_id: str = None) -> None:
                 log.info('[Bot]: `status_message` for user %s has been updated', user_id)
 
             elif not diff_between_messages:
-                log.info('[Bot]: `status_message` for user %s is actual', user_id)
+                log.debug('[Bot]: `status_message` for user %s is actual', user_id)
                 database.keep_message(
                     message_id=exist_status_message[0],
                     chat_id=exist_status_message[1],
@@ -526,12 +526,14 @@ def main():
     while True:
         try:
             tg.launch_bot()
-        # Workaround for https://github.com/obervinov/pyinstabot-downloader/issues/118
-        except database.error:
-            user_manager.recreate_instances()
         except TelegramExceptions.FailedToCreateInstance as telegram_api_exception:
             log.error('[Bot]: main thread failed, restart thread: %s', telegram_api_exception)
             time.sleep(5)
+        # Workaround for https://github.com/obervinov/pyinstabot-downloader/issues/118
+        # pylint: disable=broad-exception-caught
+        except Exception as exception:
+            log.error('[Bot]: Recreating instances of the Users module: %s', exception)
+            user_manager.recreate_instances()
 
 
 if __name__ == "__main__":
