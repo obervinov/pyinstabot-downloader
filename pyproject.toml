@@ -26,7 +26,7 @@ webdavclient3 = "^3"
 prometheus-client = "^0"
 logger = { git = "https://github.com/obervinov/logger-package.git", tag = "v2.0.0" }
 vault  = { git = "https://github.com/obervinov/vault-package.git", tag = "v4.0.1" }
-users = { git = "https://github.com/obervinov/users-package.git", branch = "v4.1.0" }
+users = { git = "https://github.com/obervinov/users-package.git", tag = "v4.1.0" }
 telegram = { git = "https://github.com/obervinov/telegram-package.git", tag = "v3.0.1" }
 
 [tool.poetry.group.dev.dependencies]

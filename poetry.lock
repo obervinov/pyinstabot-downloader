@@ -1097,7 +1097,7 @@ vault = {git = "https://github.com/obervinov/vault-package.git", tag = "v4.0.1"}
 type = "git"
 url = "https://github.com/obervinov/users-package.git"
 reference = "v4.1.0"
-resolved_reference = "50533355a3a66a646efcb27810630441c0f4fb8c"
+resolved_reference = "d1864cebcd8100d3e5d72fa3379b98eb2f0e2251"
 
 [[package]]
 name = "vault"
@@ -1137,4 +1137,4 @@ requests = "*"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "687263e68742be7a6667c0b83312ff40ed08edc3545eb98d95fc526a11d25b32"
+content-hash = "c209d443338c9a7433f328e98bc9643a9ea91f7766dba02c715d3c6f1c275b41"
