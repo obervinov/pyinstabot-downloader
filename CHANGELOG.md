@@ -3,6 +3,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/) and this project adheres to [Semantic Versioning](http://semver.org/).
 
 
+## v3.3.3 - 2025-02-21
+### What's Changed
+**Full Changelog**: https://github.com/obervinov/pyinstabot-downloader/compare/v3.3.2...v3.3.3 by @obervinov in https://github.com/obervinov/pyinstabot-downloader/pull/129
+#### 🐛 Bug Fixes
+* [Bug: Critical error when rotating credentials from the database](https://github.com/obervinov/pyinstabot-downloader/issues/118)
+#### 🚀 Features
+* bump dependencies versions
+
 ## v3.3.2 - 2025-02-12
 ### What's Changed
 **Full Changelog**: https://github.com/obervinov/pyinstabot-downloader/compare/v3.3.1...v3.3.2 by @obervinov in https://github.com/obervinov/pyinstabot-downloader/pull/128
