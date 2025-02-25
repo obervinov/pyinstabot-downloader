@@ -4,9 +4,26 @@ This module processes the content uploaded from Instagram
 and uploads the found media files (image, video) to the destination storage.
 """
 import os
+import time
+import webdav3
 from webdav3.client import Client as WebDavClient
 from logger import log
 from .exceptions import WrongVaultInstance, FailedInitUploaderInstance
+
+
+def exception_handler(method):
+    """
+    A decorator that catches the connection error to the webdav storage and tries to reconnect.
+    """
+    def wrapper(self, *args, **kwargs):
+        try:
+            return method(self, *args, **kwargs)
+        except webdav3.exceptions.NoConnection as connection_exception:
+            log.error('[Uploader]: Connection error to the WebDav storage: %s', str(connection_exception))
+            time.sleep(15)
+            log.info('[Uploader]: New attempt to reconnect to the WebDav storage after 15 seconds...')
+            return method(self, *args, **kwargs)
+    return wrapper
 
 
 class Uploader:
@@ -97,6 +114,7 @@ class Uploader:
         log.info('[Uploader]: List of all transfers %s', transfers)
         return result
 
+    @exception_handler
     def upload_to_cloud(
         self,
         source: str = None,
