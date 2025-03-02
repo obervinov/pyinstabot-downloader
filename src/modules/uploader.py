@@ -20,7 +20,7 @@ def exception_handler(method):
             return method(self, *args, **kwargs)
         except webdav3.exceptions.NoConnection as connection_exception:
             log.error('[Uploader]: Connection error to the WebDav storage: %s', str(connection_exception))
-            time.sleep(15)
+            time.sleep(60)
             log.info('[Uploader]: New attempt to reconnect to the WebDav storage after 15 seconds...')
             return method(self, *args, **kwargs)
     return wrapper
