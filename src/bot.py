@@ -361,15 +361,15 @@ def get_user_messages(user_id: str = None) -> dict:
     processed = database.get_user_processed(user_id=user_id)
 
     queue_string = ''
-    if queue[:10]:
-        for item in queue[:10]:
+    if queue[:5]:
+        for item in queue[:5]:
             queue_string += f"+ <code>{item['post_id']}: scheduled for {item['scheduled_time']}</code>\n"
     else:
         queue_string = '<code>queue is empty</code>'
 
     processed_string = ''
-    if processed[-10:]:
-        for item in processed[-10:]:
+    if processed[-5:]:
+        for item in processed[-5:]:
             processed_string += f"* <code>{item['post_id']}: {item['state']} at {item['timestamp']}</code>\n"
     else:
         processed_string = '<code>processed is empty</code>'

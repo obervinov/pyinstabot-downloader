@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 #### 🚀 Features
 * bump dependencies versions
 * add the exception handling for the `Uploader()` class
+* reduce the number of elements on the custom widget (took up too much space in the message)
 
 ## v3.3.2 - 2025-02-12
 ### What's Changed
