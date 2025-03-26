@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pyinstabot-downloader"
-version = "3.3.2"
+version = "3.3.3"
 description = "This project is a Telegram bot that allows you to upload posts from your Instagram profile to clouds like any WebDav compatible cloud storage."
 authors = ["Bervinov Oleg <bervinov.ob@gmail.com>"]
 maintainers = ["Bervinov Oleg <bervinov.ob@gmail.com>"]
@@ -25,9 +25,9 @@ mock = "^5"
 webdavclient3 = "^3"
 prometheus-client = "^0"
 logger = { git = "https://github.com/obervinov/logger-package.git", tag = "v2.0.0" }
-vault  = { git = "https://github.com/obervinov/vault-package.git", tag = "v4.0.0" }
-users = { git = "https://github.com/obervinov/users-package.git", tag = "v4.0.2" }
-telegram = { git = "https://github.com/obervinov/telegram-package.git", tag = "v3.0.0" }
+vault  = { git = "https://github.com/obervinov/vault-package.git", tag = "v4.0.1" }
+users = { git = "https://github.com/obervinov/users-package.git", tag = "v4.1.1" }
+telegram = { git = "https://github.com/obervinov/telegram-package.git", tag = "v3.0.1" }
 
 [tool.poetry.group.dev.dependencies]
 pylint = "^3"
