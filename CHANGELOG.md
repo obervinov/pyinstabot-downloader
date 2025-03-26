@@ -13,6 +13,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 * add the exception handling for the `Uploader()` class
 * reduce the number of elements on the custom widget (took up too much space in the message)
 
+
 ## v3.3.2 - 2025-02-12
 ### What's Changed
 **Full Changelog**: https://github.com/obervinov/pyinstabot-downloader/compare/v3.3.1...v3.3.2 by @obervinov in https://github.com/obervinov/pyinstabot-downloader/pull/128
