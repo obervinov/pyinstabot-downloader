@@ -1,4 +1,4 @@
-FROM python:3.12.9
+FROM python:3.12.10
 
 ### External argumetns ###
 ARG PROJECT_DESCRIPTION

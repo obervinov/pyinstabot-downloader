@@ -61,7 +61,8 @@ class Downloader:
         ...         'app_version': '269.0.0.18.75', 'version_code': '314665256',
         ...         'manufacturer': 'OnePlus', 'model': '6T Dev', 'device': 'devitron', 'cpu': 'qcom', 'dpi': '480dpi', 'resolution': '1080x1920',
         ...         'android_release': '8.0.0', 'android_version': '26'
-        ...     }
+        ...     },
+        ...     'challenge-timeout': 7200
         ... }
         >>> vault = Vault()
         >>> downloader = Downloader(configuration, vault)
@@ -100,6 +101,7 @@ class Downloader:
                     :param resolution (str): screen resolution.
                     :param android_release (str): android release version.
                     :param android_version (str): android version.
+                :param challenge-timeout (int): sleep time if the challenge is required.
             :param vault (object): instance of vault for reading configuration downloader-api.
         """
         if not vault:
@@ -251,6 +253,7 @@ class Downloader:
         """
         def wrapper(self, *args, **kwargs):
             random_shift = random.randint(600, 7200)
+            challenge_timeout = int(self.configuration.get('challenge-timeout', 7200))
             try:
                 return method(self, *args, **kwargs)
             except LoginRequired:
@@ -259,8 +262,9 @@ class Downloader:
                 log.info('[Downloader]: re-authenticate after timeout due to login required')
                 self.login(method='relogin')
             except ChallengeRequired:
-                log.error('[Downloader]: instagram API requires challenge in browser. Retry after %s minutes', round(random_shift/60))
-                time.sleep(random_shift)
+                log.error('[Downloader]: instagram API requires challenge. Waiting %s minutes...', round(challenge_timeout/60))
+                log.warning('[Downloader]: you may need to complete a challenge in a browser')
+                time.sleep(challenge_timeout)
                 log.info('[Downloader]: re-authenticate after timeout due to challenge required')
                 self.login()
             except PleaseWaitFewMinutes:
