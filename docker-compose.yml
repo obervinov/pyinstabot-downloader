@@ -46,7 +46,7 @@ services:
             args:
                 PROJECT_NAME: pyinstabot-downloader
                 PROJECT_DESCRIPTION: "This project is a Telegram bot that allows you to upload posts from your Instagram profile to clouds like any WebDav compatible cloud storage."
-                PROJECT_VERSION: latest
+                PROJECT_VERSION: 3.3.4
         container_name: pyinstabot-downloader
         restart: always
         environment:
