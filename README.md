@@ -123,7 +123,8 @@ This project is a Telegram bot that allows you to upload posts from your Instagr
     "session-file": "session.json",
     "timezone-offset": "10800",
     "request-timeout": "10",
-    "device-settings": {"app_version": "269.0.0.18.75", "version_code": "314665256", "manufacturer": "OnePlus", "model": "6T Dev", "device": "devitron", "cpu": "qcom", "dpi": "480dpi", "resolution": "1080x1920", "android_release": "8.0.0", "android_version": "26"}
+    "device-settings": {"app_version": "269.0.0.18.75", "version_code": "314665256", "manufacturer": "OnePlus", "model": "6T Dev", "device": "devitron", "cpu": "qcom", "dpi": "480dpi", "resolution": "1080x1920", "android_release": "8.0.0", "android_version": "26"},
+    "challenge-timeout": "7200"
   }
 
   ```
@@ -152,6 +153,7 @@ This project is a Telegram bot that allows you to upload posts from your Instagr
     - `resolution`: the resolution of the device
     - `android_release`: the android release version of the device
     - `android_version`: the android api version of the device
+  - `challenge-timeout`: the timeout if the challenge is happened (in seconds)
   </br>
 
 - `configuration/uploader-api`: uploader module configuration (for upload content to the target storage)

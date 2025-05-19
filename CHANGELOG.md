@@ -3,6 +3,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/) and this project adheres to [Semantic Versioning](http://semver.org/).
 
 
+## v3.3.4 - 2025-05-19
+### What's Changed
+**Full Changelog**: https://github.com/obervinov/pyinstabot-downloader/compare/v3.3.3...v3.3.4 by @obervinov in https://github.com/obervinov/pyinstabot-downloader/pull/130
+#### 🐛 Bug Fixes
+* increase the default challenge timeout for the `Downloader()` class
+#### 🚀 Features
+* support values for the `challenge_timeout` parameter in the Vault configuration
+
+
 ## v3.3.3 - 2025-03-26
 ### What's Changed
 **Full Changelog**: https://github.com/obervinov/pyinstabot-downloader/compare/v3.3.2...v3.3.3 by @obervinov in https://github.com/obervinov/pyinstabot-downloader/pull/129
