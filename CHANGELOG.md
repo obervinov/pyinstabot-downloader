@@ -10,7 +10,8 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 * increase the default challenge timeout for the `Downloader()` class
 #### 🚀 Features
 * support values for the `challenge_timeout` parameter in the Vault configuration
-
+* bump dependencies versions
+* bump base image to `python:3.12.10`
 
 ## v3.3.3 - 2025-03-26
 ### What's Changed
