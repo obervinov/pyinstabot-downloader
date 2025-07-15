@@ -3,6 +3,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/) and this project adheres to [Semantic Versioning](http://semver.org/).
 
 
+## v3.3.5 - 2025-07-15
+### What's Changed
+**Full Changelog**: https://github.com/obervinov/pyinstabot-downloader/compare/v3.3.4...v3.3.5 by @obervinov in https://github.com/obervinov/pyinstabot-downloader/pull/145
+#### 🐛 Bug Fixes
+* 
+#### 🚀 Features
+* bump dependencies versions
+* bump base image to `python:3.12.11`
+
+
 ## v3.3.4 - 2025-05-19
 ### What's Changed
 **Full Changelog**: https://github.com/obervinov/pyinstabot-downloader/compare/v3.3.3...v3.3.4 by @obervinov in https://github.com/obervinov/pyinstabot-downloader/pull/130
