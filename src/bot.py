@@ -405,7 +405,6 @@ def queue_handler_thread() -> None:
     log.info('[Queue-handler-thread]: started thread for queue handler')
 
     while True:
-        time.sleep(QUEUE_FREQUENCY)
         message = database.get_message_from_queue(datetime.now())
 
         if message is not None:
@@ -480,6 +479,7 @@ def queue_handler_thread() -> None:
                 )
         else:
             log.info("[Queue-handler-thread] no messages in the queue for processing at the moment, waiting...")
+        time.sleep(QUEUE_FREQUENCY)
 
 
 # Main #############################################################################################################################
