@@ -400,6 +400,7 @@ def status_message_updater_thread() -> None:
             raise FailedMessagesStatusUpdater(exception_context) from exception
 
 
+# pylint: disable=too-many-branches, too-many-statements
 def queue_handler_thread() -> None:
     """Handler thread to process messages from the queue at the specified time"""
     log.info('[Queue-handler-thread]: started thread for queue handler')
@@ -407,82 +408,125 @@ def queue_handler_thread() -> None:
     while True:
         message = database.get_message_from_queue(datetime.now())
 
-        if message is not None:
-            try:
-                download_status = message[9]
-                upload_status = message[10]
-                post_id = message[2]
-                owner_id = message[4]
-            except IndexError as exception:
-                log.error('[Queue-handler-thread] failed to extract data: %s\nmessage: %s', exception, message)
-                break
-
-            log.info('[Queue-handler-thread] starting handler for post %s...', message[2])
-            # download the contents of an instagram post to a temporary folder
-            if download_status not in ['completed', 'source_not_found', 'not_supported']:
-                download_metadata = downloader.get_post_content(shortcode=post_id)
-                owner_id = download_metadata['owner']
-                download_status = download_metadata['status']
-                database.update_message_state_in_queue(
-                    post_id=post_id,
-                    state='processing',
-                    download_status=download_status,
-                    upload_status=upload_status,
-                    post_owner=owner_id
-                )
-            # downloader couldn't find the post for some reason
-            if download_status == 'source_not_found':
-                database.update_message_state_in_queue(
-                    post_id=post_id,
-                    state='processed',
-                    download_status=download_status,
-                    upload_status=download_status,
-                    post_owner=owner_id
-                )
-            # downloader couldn't download the post for some reason
-            if download_status == 'not_supported':
-                database.update_message_state_in_queue(
-                    post_id=post_id,
-                    state='not_supported',
-                    download_status='not_supported',
-                    upload_status='not_supported',
-                    post_owner=owner_id
-                )
-            # upload the received content to the destination storage
-            if upload_status != 'completed' and download_status == 'completed':
-                upload_status = uploader.run_transfers(sub_directory=owner_id)
-                database.update_message_state_in_queue(
-                    post_id=post_id,
-                    state='processing',
-                    download_status=download_status,
-                    upload_status=upload_status,
-                    post_owner=owner_id
-                )
-            # mark item in queue as processed
-            if download_status == 'completed' and upload_status == 'completed':
-                database.update_message_state_in_queue(
-                    post_id=post_id,
-                    state='processed',
-                    download_status=download_status,
-                    upload_status=upload_status,
-                    post_owner=owner_id
-                )
-                log.info('[Queue-handler-thread] the post %s has been processed successfully', post_id)
-            elif download_status == 'source_not_found' and upload_status == 'source_not_found':
-                log.warning('[Queue-handler-thread] the post %s not found, message was marked as processed', post_id)
-            elif download_status == 'not_supported' and upload_status == 'not_supported':
-                log.errors('[Queue-handler-thread] the post %s is not supported, message was excluded from processing', post_id)
-            else:
-                log.warning(
-                    '[Queue-handler-thread] the post %s has not been processed yet (download: %s, uploader: %s)',
-                    post_id, download_status, upload_status
-                )
-        else:
+        if message is None:
             log.info("[Queue-handler-thread] no messages in the queue for processing at the moment, waiting...")
+            time.sleep(QUEUE_FREQUENCY)
+            continue
+
+        try:
+            (_, _, post_id, _, owner_id, _, _, _, _, download_status, upload_status) = message
+
+        except (IndexError, ValueError) as exception:
+            log.error('[Queue-handler-thread] failed to extract data from message: %s\nmessage: %s', exception, message)
+            continue
+
+        log.info(
+            '[Queue-handler-thread] starting handler for post %s (Current D_Status: %s, U_Status: %s)...',
+            post_id, download_status, upload_status
+        )
+
+        if download_status not in ['completed', 'source_not_found', 'not_supported']:
+            log.info('[Queue-handler-thread] Attempting to download content for post %s', post_id)
+            try:
+                download_metadata = downloader.get_post_content(shortcode=post_id)
+                owner_id = download_metadata.get('owner', owner_id)
+                new_download_status = download_metadata.get('status', 'error')
+                database.update_message_state_in_queue(
+                    post_id=post_id,
+                    state='processing',
+                    download_status=new_download_status,
+                    upload_status=upload_status,
+                    post_owner=owner_id
+                )
+                download_status = new_download_status
+
+            # pylint: disable=broad-exception-caught
+            except Exception as error:
+                log.error('[Queue-handler-thread] Download failed for post %s: %s', post_id, error)
+                download_status = 'download_error'
+                database.update_message_state_in_queue(
+                    post_id=post_id,
+                    state='error',
+                    download_status=download_status,
+                    upload_status=upload_status,
+                    post_owner=owner_id
+                )
+                continue
+
+        if download_status == 'completed':
+            log.info('[Queue-handler-thread] Download completed for post %s. Checking upload status...', post_id)
+            if upload_status != 'completed':
+                log.info('[Queue-handler-thread] Attempting to upload content for post %s (owner: %s)', post_id, owner_id)
+                try:
+                    new_upload_status = uploader.run_transfers(sub_directory=owner_id)
+                    database.update_message_state_in_queue(
+                        post_id=post_id,
+                        state='processing',
+                        download_status=download_status,
+                        upload_status=new_upload_status,
+                        post_owner=owner_id
+                    )
+                    upload_status = new_upload_status
+                # pylint: disable=broad-exception-caught
+                except Exception as error:
+                    log.error('[Queue-handler-thread] Upload failed for post %s: %s', post_id, error)
+                    upload_status = 'upload_error'
+                    database.update_message_state_in_queue(
+                        post_id=post_id,
+                        state='error',
+                        download_status=download_status,
+                        upload_status=upload_status,
+                        post_owner=owner_id
+                    )
+                    continue
+            else:
+                log.info('[Queue-handler-thread] Upload already completed for post %s. Skipping upload step.', post_id)
+
+        elif download_status == 'source_not_found':
+            log.warning('[Queue-handler-thread] Post %s not found. Marking as processed with status "source_not_found".', post_id)
+            database.update_message_state_in_queue(
+                post_id=post_id,
+                state='processed',
+                download_status='source_not_found',
+                upload_status='source_not_found',
+                post_owner=owner_id
+            )
+            continue
+
+        elif download_status == 'not_supported':
+            log.warning('[Queue-handler-thread] Post %s is not supported. Marking as "not_supported".', post_id)
+            database.update_message_state_in_queue(
+                post_id=post_id,
+                state='not_supported',
+                download_status='not_supported',
+                upload_status='not_supported',
+                post_owner=owner_id
+            )
+            continue
+
+        elif download_status == 'download_error':
+            log.error('[Queue-handler-thread] Download error occurred for post %s. Skipping further processing.', post_id)
+            continue
+
+        if download_status == 'completed' and upload_status == 'completed':
+            database.update_message_state_in_queue(
+                post_id=post_id,
+                state='processed',
+                download_status=download_status,
+                upload_status=upload_status,
+                post_owner=owner_id
+            )
+            log.info('[Queue-handler-thread] Post %s has been processed successfully (download: completed, upload: completed).', post_id)
+        elif upload_status == 'upload_error':
+            log.error('[Queue-handler-thread] Upload error occurred for post %s. Message state remains "error".', post_id)
+        else:
+            log.warning(
+                '[Queue-handler-thread] Post %s has not been fully processed yet (Download: %s, Upload: %s). Will retry.',
+                post_id, download_status, upload_status
+            )
         time.sleep(QUEUE_FREQUENCY)
 
 
-# Main #############################################################################################################################
 def main():
     """The main entry point of the project"""
     # Thread for processing queue

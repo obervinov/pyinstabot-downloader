@@ -7,8 +7,10 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 ### What's Changed
 **Full Changelog**: https://github.com/obervinov/pyinstabot-downloader/compare/v3.3.4...v3.3.5 by @obervinov in https://github.com/obervinov/pyinstabot-downloader/pull/145
 #### 🐛 Bug Fixes
-* 
+* fix the waiting time after the bot has been started
+* rewrite the logic of the `queue_handler_thread()` method for preventing the bot from processing recursively post that has stack in `download_status = 'completed'`
 #### 🚀 Features
+* add handling for exception when instagram api or proxy is not available
 * bump dependencies versions
 * bump base image to `python:3.12.11`
 
