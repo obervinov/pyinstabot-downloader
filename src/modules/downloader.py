@@ -12,7 +12,9 @@ from pathlib import Path
 from urllib3.exceptions import ReadTimeoutError
 from requests.exceptions import ConnectionError as RequestsConnectionError
 from instagrapi import Client
-from instagrapi.exceptions import LoginRequired, ClientRequestTimeout, MediaNotFound, MediaUnavailable, PleaseWaitFewMinutes, ChallengeRequired, ClientConnectionError
+from instagrapi.exceptions import (
+    LoginRequired, ClientRequestTimeout, MediaNotFound, MediaUnavailable, PleaseWaitFewMinutes, ChallengeRequired, ClientConnectionError
+)
 from logger import log
 from .exceptions import WrongVaultInstance, FailedCreateDownloaderInstance, FailedAuthInstagram, FailedDownloadPost
 
