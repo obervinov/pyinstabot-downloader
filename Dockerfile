@@ -1,6 +1,6 @@
 FROM python:3.12.11
 
-### External argumetns ###
+### External arguments ###
 ARG PROJECT_DESCRIPTION
 ARG PROJECT_NAME
 ARG PROJECT_VERSION
