@@ -27,3 +27,7 @@ VAULT_DB_ROLE = f"{TELEGRAM_BOT_NAME}"
 # REGEX patterns
 REGEX_SPECIFIC_LINK = r'^https://www\.instagram\.com/(p|reel)/.*'
 REGEX_PROFILE_LINK = r'^https://www\.instagram\.com/.*'
+
+# Mock statuses for handling failed messages
+UPLOADER_ERROR_STATUS = 'upload_error'
+DOWNLOADER_ERROR_STATUS = 'download_error'

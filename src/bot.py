@@ -15,8 +15,8 @@ from telegram import TelegramBot, exceptions as TelegramExceptions
 from users import Users
 from vault import VaultClient
 from configs.constants import (
-    TELEGRAM_BOT_NAME, TELEGRAM_BOT_VERSION, ROLES_MAP, QUEUE_FREQUENCY, STATUSES_MESSAGE_FREQUENCY,
-    METRICS_PORT, METRICS_INTERVAL, VAULT_DB_ROLE, REGEX_SPECIFIC_LINK, REGEX_PROFILE_LINK
+    TELEGRAM_BOT_NAME, TELEGRAM_BOT_VERSION, ROLES_MAP, QUEUE_FREQUENCY, STATUSES_MESSAGE_FREQUENCY, METRICS_PORT, METRICS_INTERVAL,
+    VAULT_DB_ROLE, REGEX_SPECIFIC_LINK, REGEX_PROFILE_LINK, UPLOADER_ERROR_STATUS, DOWNLOADER_ERROR_STATUS
 )
 from modules.database import DatabaseClient
 from modules.exceptions import FailedMessagesStatusUpdater
@@ -445,7 +445,7 @@ def queue_handler_thread() -> None:
             # pylint: disable=broad-exception-caught
             except Exception as error:
                 log.error('[Queue-handler-thread] Download failed for post %s: %s', post_id, error)
-                download_status = 'download_error'
+                download_status = DOWNLOADER_ERROR_STATUS
                 database.update_message_state_in_queue(
                     post_id=post_id,
                     state='error',
@@ -473,7 +473,7 @@ def queue_handler_thread() -> None:
                 # pylint: disable=broad-exception-caught
                 except Exception as error:
                     log.error('[Queue-handler-thread] Upload failed for post %s: %s', post_id, error)
-                    upload_status = 'upload_error'
+                    upload_status = UPLOADER_ERROR_STATUS
                     database.update_message_state_in_queue(
                         post_id=post_id,
                         state='error',
