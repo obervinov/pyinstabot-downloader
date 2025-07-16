@@ -22,3 +22,7 @@ METRICS_INTERVAL = 30
 
 # Vault Database Engine constants
 VAULT_DB_ROLE = f"{TELEGRAM_BOT_NAME}"
+
+# REGEX patterns
+REGEX_SPECIFIC_LINK = r'^https://www\.instagram\.com/(p|reel)/.*'
+REGEX_PROFILE_LINK = r'^https://www\.instagram\.com/.*'

@@ -15,7 +15,8 @@ from telegram import TelegramBot, exceptions as TelegramExceptions
 from users import Users
 from vault import VaultClient
 from configs.constants import (
-    TELEGRAM_BOT_NAME, ROLES_MAP, QUEUE_FREQUENCY, STATUSES_MESSAGE_FREQUENCY, METRICS_PORT, METRICS_INTERVAL, VAULT_DB_ROLE
+    TELEGRAM_BOT_NAME, ROLES_MAP, QUEUE_FREQUENCY, STATUSES_MESSAGE_FREQUENCY, METRICS_PORT, METRICS_INTERVAL, VAULT_DB_ROLE,
+    REGEX_SPECIFIC_LINK, REGEX_PROFILE_LINK
 )
 from modules.database import DatabaseClient
 from modules.exceptions import FailedMessagesStatusUpdater
@@ -154,7 +155,7 @@ def process_posts(message: tg.telegram_types.Message, help_message: tg.telegram_
     cleanup_messages = True
     for link in message.text.split('\n'):
         # Verify that the link is a post link
-        if re.match(r'^https://www\.instagram\.com/(p|reel)/.*', message.text):
+        if re.match(REGEX_SPECIFIC_LINK, message.text):
             post_id = link.split('/')[4]
             # Verify that the post id is correct
             if len(post_id) == 11 and re.match(r'^[a-zA-Z0-9_-]+$', post_id):
@@ -187,7 +188,7 @@ def process_account(message: tg.telegram_types.Message, help_message: tg.telegra
         help_message (telegram.telegram_types.Message, optional): The help message to be deleted.
         access_result (dict): The dictionary containing the access result. Propagated from the access_control decorator.
     """
-    if re.match(r'^https://www\.instagram\.com/.*', message.text):
+    if re.match(REGEX_PROFILE_LINK, message.text):
         account_name = message.text.split('/')[3].split('?')[0]
         account_id, cursor = database.get_account_info(username=account_name)
         if not account_id:
@@ -418,6 +419,7 @@ def queue_handler_thread() -> None:
 
         except (IndexError, ValueError) as exception:
             log.error('[Queue-handler-thread] failed to extract data from message: %s\nmessage: %s', exception, message)
+            time.sleep(QUEUE_FREQUENCY)
             continue
 
         log.info(
@@ -451,6 +453,7 @@ def queue_handler_thread() -> None:
                     upload_status=upload_status,
                     post_owner=owner_id
                 )
+                time.sleep(QUEUE_FREQUENCY)
                 continue
 
         if download_status == 'completed':
@@ -478,6 +481,7 @@ def queue_handler_thread() -> None:
                         upload_status=upload_status,
                         post_owner=owner_id
                     )
+                    time.sleep(QUEUE_FREQUENCY)
                     continue
             else:
                 log.info('[Queue-handler-thread] Upload already completed for post %s. Skipping upload step.', post_id)
@@ -491,6 +495,7 @@ def queue_handler_thread() -> None:
                 upload_status='source_not_found',
                 post_owner=owner_id
             )
+            time.sleep(QUEUE_FREQUENCY)
             continue
 
         elif download_status == 'not_supported':
@@ -502,10 +507,12 @@ def queue_handler_thread() -> None:
                 upload_status='not_supported',
                 post_owner=owner_id
             )
+            time.sleep(QUEUE_FREQUENCY)
             continue
 
         elif download_status == 'download_error':
             log.error('[Queue-handler-thread] Download error occurred for post %s. Skipping further processing.', post_id)
+            time.sleep(QUEUE_FREQUENCY)
             continue
 
         if download_status == 'completed' and upload_status == 'completed':
