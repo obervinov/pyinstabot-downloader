@@ -415,7 +415,12 @@ def queue_handler_thread() -> None:
             continue
 
         try:
-            (_, _, post_id, _, owner_id, _, _, _, _, download_status, upload_status) = message
+            # Extracting required data from the message
+            # tuple: (id, user_id, post_id, post_url, post_owner, link_type, message_id, chat_id, scheduled_time, download_status, upload_status, timestamp, state)
+            post_id = message[2]
+            owner_id = message[4]
+            download_status = message[9]
+            upload_status = message[10]
 
         except (IndexError, ValueError) as exception:
             log.error('[Queue-handler-thread] failed to extract data from message: %s\nmessage: %s', exception, message)
