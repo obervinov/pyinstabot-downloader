@@ -50,13 +50,10 @@ services:
         container_name: pyinstabot-downloader
         restart: always
         environment:
-            - TELEGRAM_BOT_NAME=pyinstabot-downloader
             - VAULT_APPROLE_ID=${VAULT_APPROLE_ID}
             - VAULT_APPROLE_SECRET_ID=${VAULT_APPROLE_SECRET_ID}
             - VAULT_ADDR=${VAULT_ADDR}
             - VAULT_AUTH_TYPE=approle
-            - VAULT_NAMESPACE=pyinstabot-downloader
-            - MESSAGES_CONFIG=configs/messages.json
         volumes:
             - ../.config/instaloader:/home/pyinstabot-downloader/.config/instaloader
         depends_on:

@@ -14,7 +14,19 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 * bump dependencies versions
 * bump base image to `python:3.12.11`
 * other small improvements
-
+* add the additional environment variables into constants file:
+  - `TELEGRAM_BOT_NAME`
+  - `TELEGRAM_BOT_VERSION`
+  - `TELEGRAM_BOT_QUEUE_FREQUENCY`
+  - `TELEGRAM_BOT_STATUSES_MESSAGE_FREQUENCY`
+  - `TELEGRAM_BOT_METRICS_PORT`
+  - `TELEGRAM_BOT_METRICS_INTERVAL`
+#### 💥 Breaking Changes
+* set the predefined environment variables for the bot in the `Dockerfile` and `docker-compose.yml` files: 
+  - `TELEGRAM_BOT_NAME`
+  - `TELEGRAM_BOT_VERSION`
+  - `MESSAGES_CONFIG`
+  - `VAULT_NAMESPACE`
 
 ## v3.3.4 - 2025-05-19
 ### What's Changed

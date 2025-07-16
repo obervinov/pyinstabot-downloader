@@ -55,5 +55,11 @@ RUN curl -sSL https://install.python-poetry.org | python -
 RUN poetry install
 ENV PYTHONPATH=/home/${PROJECT_NAME}/app/src:/home/${PROJECT_NAME}/app/.venv/lib/python3.12/site-packages
 
+### Bot predefined environment variables ###
+ENV TELEGRAM_BOT_NAME=${PROJECT_NAME}
+ENV TELEGRAM_BOT_VERSION=${PROJECT_VERSION}
+ENV MESSAGES_CONFIG=/home/${PROJECT_NAME}/app/src/configs/messages.json
+ENV VAULT_NAMESPACE=${PROJECT_NAME}
+
 ### Entrypoint ###
 CMD [ "python3", "src/bot.py" ]

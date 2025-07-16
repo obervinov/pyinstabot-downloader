@@ -15,8 +15,8 @@ from telegram import TelegramBot, exceptions as TelegramExceptions
 from users import Users
 from vault import VaultClient
 from configs.constants import (
-    TELEGRAM_BOT_NAME, ROLES_MAP, QUEUE_FREQUENCY, STATUSES_MESSAGE_FREQUENCY, METRICS_PORT, METRICS_INTERVAL, VAULT_DB_ROLE,
-    REGEX_SPECIFIC_LINK, REGEX_PROFILE_LINK
+    TELEGRAM_BOT_NAME, TELEGRAM_BOT_VERSION, ROLES_MAP, QUEUE_FREQUENCY, STATUSES_MESSAGE_FREQUENCY,
+    METRICS_PORT, METRICS_INTERVAL, VAULT_DB_ROLE, REGEX_SPECIFIC_LINK, REGEX_PROFILE_LINK
 )
 from modules.database import DatabaseClient
 from modules.exceptions import FailedMessagesStatusUpdater
@@ -549,6 +549,7 @@ def main():
     # Run bot
     while True:
         try:
+            log.info('[Bot]: bot is starting: %s v%s', TELEGRAM_BOT_NAME, TELEGRAM_BOT_VERSION)
             tg.launch_bot()
         except TelegramExceptions.FailedToCreateInstance as telegram_api_exception:
             log.error('[Bot]: main thread failed, restart thread: %s', telegram_api_exception)
