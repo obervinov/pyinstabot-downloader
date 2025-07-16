@@ -8,13 +8,13 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 **Full Changelog**: https://github.com/obervinov/pyinstabot-downloader/compare/v3.3.4...v3.3.5 by @obervinov in https://github.com/obervinov/pyinstabot-downloader/pull/145
 #### 🐛 Bug Fixes
 * fix the waiting time after the bot has been started
-* rewrite the logic of the `queue_handler_thread()` method for preventing the bot from processing recursively post that has stack in `download_status = 'completed'`
+* major rewrite of queue_handler_thread logic with improved error handling and flow control
 #### 🚀 Features
-* add handling for exception when instagram api or proxy is not available
+* add `ClientConnectionError` exception handling for Instagram API connectivity issues
 * bump dependencies versions
 * bump base image to `python:3.12.11`
 * other small improvements
-* add the additional environment variables into constants file:
+* convert hardcoded constants to configurable environment variables:
   - `TELEGRAM_BOT_NAME`
   - `TELEGRAM_BOT_VERSION`
   - `TELEGRAM_BOT_QUEUE_FREQUENCY`
@@ -22,7 +22,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
   - `TELEGRAM_BOT_METRICS_PORT`
   - `TELEGRAM_BOT_METRICS_INTERVAL`
 #### 💥 Breaking Changes
-* set the predefined environment variables for the bot in the `Dockerfile` and `docker-compose.yml` files: 
+* added predefined environment variables to the `Dockerfile`:
   - `TELEGRAM_BOT_NAME`
   - `TELEGRAM_BOT_VERSION`
   - `MESSAGES_CONFIG`
