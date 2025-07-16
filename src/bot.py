@@ -554,7 +554,7 @@ def main():
     # Run bot
     while True:
         try:
-            log.info('[Bot]: bot is starting: %s v%s', TELEGRAM_BOT_NAME, TELEGRAM_BOT_VERSION)
+            log.info('[Bot]: Bot Name: %s, Bot version: %s', TELEGRAM_BOT_NAME, TELEGRAM_BOT_VERSION)
             tg.launch_bot()
         except TelegramExceptions.FailedToCreateInstance as telegram_api_exception:
             log.error('[Bot]: main thread failed, restart thread: %s', telegram_api_exception)

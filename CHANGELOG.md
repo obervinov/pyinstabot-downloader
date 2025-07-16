@@ -10,6 +10,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 * fix the waiting time after the bot has been started
 * major rewrite of queue_handler_thread logic with improved error handling and flow control
 #### 🚀 Features
+* optimize the image size by removing unnecessary files and dependencies
 * add `ClientConnectionError` exception handling for Instagram API connectivity issues
 * bump dependencies versions
 * bump base image to `python:3.12.11`
