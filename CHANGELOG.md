@@ -13,7 +13,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 * optimize the image size by removing unnecessary files and dependencies
 * add `ClientConnectionError` exception handling for Instagram API connectivity issues
 * bump dependencies versions
-* bump base image to `python:3.12.11`
+* replace base image to `python:3.12.11-slim`
 * other small improvements
 * convert hardcoded constants to configurable environment variables:
   - `TELEGRAM_BOT_NAME`
