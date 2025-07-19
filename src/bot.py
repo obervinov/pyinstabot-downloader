@@ -8,6 +8,7 @@ import threading
 import time
 import random
 import string
+import traceback
 
 from mock import MagicMock
 from logger import log
@@ -450,6 +451,7 @@ def queue_handler_thread() -> None:
             # pylint: disable=broad-exception-caught
             except Exception as error:
                 log.error('[Queue-handler-thread] Download failed for post %s: %s', post_id, error)
+                log.debug('[Queue-handler-thread] Exception traceback: %s', traceback.format_exc())
                 download_status = DOWNLOADER_ERROR_STATUS
                 database.update_message_state_in_queue(
                     post_id=post_id,
