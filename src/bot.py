@@ -156,7 +156,7 @@ def process_posts(message: tg.telegram_types.Message, help_message: tg.telegram_
     cleanup_messages = True
     for link in message.text.split('\n'):
         # Verify that the link is a post link
-        if re.match(REGEX_SPECIFIC_LINK, message.text):
+        if re.match(REGEX_SPECIFIC_LINK, link):
             post_id = link.split('/')[4]
             # Verify that the post id is correct
             if len(post_id) == 11 and re.match(r'^[a-zA-Z0-9_-]+$', post_id):
