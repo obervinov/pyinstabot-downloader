@@ -478,6 +478,7 @@ def queue_handler_thread() -> None:
                 # pylint: disable=broad-exception-caught
                 except Exception as error:
                     log.error('[Queue-handler-thread] Upload failed for post %s: %s', post_id, error)
+                    log.debug('[Queue-handler-thread] Exception traceback: %s', traceback.format_exc())
                     upload_status = UPLOADER_ERROR_STATUS
                     database.update_message_state_in_queue(
                         post_id=post_id,
