@@ -427,6 +427,7 @@ class DatabaseClient:
 
         Returns:
             tuple: A tuple containing the message from the queue.
+            (id, user_id, post_id, post_url, post_owner, link_type, message_id, chat_id, scheduled_time, download_status, upload_status, timestamp, state)
 
         Examples:
             >>> database.get_message_from_queue('2022-01-01 12:00:00')

@@ -3,6 +3,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/) and this project adheres to [Semantic Versioning](http://semver.org/).
 
 
+## v3.3.5 - 2025-07-19
+### What's Changed
+**Full Changelog**: https://github.com/obervinov/pyinstabot-downloader/compare/v3.3.4...v3.3.5 by @obervinov in https://github.com/obervinov/pyinstabot-downloader/pull/145
+#### 🐛 Bug Fixes
+* fix the waiting time after the bot has been started
+* major rewrite of queue_handler_thread logic with improved error handling and flow control
+#### 🚀 Features
+* optimize the image size by removing unnecessary files and dependencies
+* add `ClientConnectionError` exception handling for Instagram API connectivity issues
+* bump dependencies versions
+* replace base image to `python:3.12.11-slim`
+* other small improvements
+* convert hardcoded constants to configurable environment variables:
+  - `TELEGRAM_BOT_NAME`
+  - `TELEGRAM_BOT_VERSION`
+  - `TELEGRAM_BOT_QUEUE_FREQUENCY`
+  - `TELEGRAM_BOT_STATUSES_MESSAGE_FREQUENCY`
+  - `TELEGRAM_BOT_METRICS_PORT`
+  - `TELEGRAM_BOT_METRICS_INTERVAL`
+#### 💥 Breaking Changes
+* added predefined environment variables to the `Dockerfile`:
+  - `TELEGRAM_BOT_NAME`
+  - `TELEGRAM_BOT_VERSION`
+  - `MESSAGES_CONFIG`
+  - `VAULT_NAMESPACE`
+
 ## v3.3.4 - 2025-05-19
 ### What's Changed
 **Full Changelog**: https://github.com/obervinov/pyinstabot-downloader/compare/v3.3.3...v3.3.4 by @obervinov in https://github.com/obervinov/pyinstabot-downloader/pull/130

@@ -8,6 +8,7 @@ import threading
 import time
 import random
 import string
+import traceback
 
 from mock import MagicMock
 from logger import log
@@ -15,7 +16,8 @@ from telegram import TelegramBot, exceptions as TelegramExceptions
 from users import Users
 from vault import VaultClient
 from configs.constants import (
-    TELEGRAM_BOT_NAME, ROLES_MAP, QUEUE_FREQUENCY, STATUSES_MESSAGE_FREQUENCY, METRICS_PORT, METRICS_INTERVAL, VAULT_DB_ROLE
+    TELEGRAM_BOT_NAME, TELEGRAM_BOT_VERSION, ROLES_MAP, QUEUE_FREQUENCY, STATUSES_MESSAGE_FREQUENCY, METRICS_PORT, METRICS_INTERVAL,
+    VAULT_DB_ROLE, REGEX_SPECIFIC_LINK, REGEX_PROFILE_LINK, UPLOADER_ERROR_STATUS, DOWNLOADER_ERROR_STATUS
 )
 from modules.database import DatabaseClient
 from modules.exceptions import FailedMessagesStatusUpdater
@@ -154,7 +156,7 @@ def process_posts(message: tg.telegram_types.Message, help_message: tg.telegram_
     cleanup_messages = True
     for link in message.text.split('\n'):
         # Verify that the link is a post link
-        if re.match(r'^https://www\.instagram\.com/(p|reel)/.*', message.text):
+        if re.match(REGEX_SPECIFIC_LINK, link):
             post_id = link.split('/')[4]
             # Verify that the post id is correct
             if len(post_id) == 11 and re.match(r'^[a-zA-Z0-9_-]+$', post_id):
@@ -187,7 +189,7 @@ def process_account(message: tg.telegram_types.Message, help_message: tg.telegra
         help_message (telegram.telegram_types.Message, optional): The help message to be deleted.
         access_result (dict): The dictionary containing the access result. Propagated from the access_control decorator.
     """
-    if re.match(r'^https://www\.instagram\.com/.*', message.text):
+    if re.match(REGEX_PROFILE_LINK, message.text):
         account_name = message.text.split('/')[3].split('?')[0]
         account_id, cursor = database.get_account_info(username=account_name)
         if not account_id:
@@ -400,89 +402,146 @@ def status_message_updater_thread() -> None:
             raise FailedMessagesStatusUpdater(exception_context) from exception
 
 
+# pylint: disable=too-many-branches, too-many-statements
 def queue_handler_thread() -> None:
     """Handler thread to process messages from the queue at the specified time"""
     log.info('[Queue-handler-thread]: started thread for queue handler')
 
     while True:
-        time.sleep(QUEUE_FREQUENCY)
         message = database.get_message_from_queue(datetime.now())
 
-        if message is not None:
-            try:
-                download_status = message[9]
-                upload_status = message[10]
-                post_id = message[2]
-                owner_id = message[4]
-            except IndexError as exception:
-                log.error('[Queue-handler-thread] failed to extract data: %s\nmessage: %s', exception, message)
-                break
-
-            log.info('[Queue-handler-thread] starting handler for post %s...', message[2])
-            # download the contents of an instagram post to a temporary folder
-            if download_status not in ['completed', 'source_not_found', 'not_supported']:
-                download_metadata = downloader.get_post_content(shortcode=post_id)
-                owner_id = download_metadata['owner']
-                download_status = download_metadata['status']
-                database.update_message_state_in_queue(
-                    post_id=post_id,
-                    state='processing',
-                    download_status=download_status,
-                    upload_status=upload_status,
-                    post_owner=owner_id
-                )
-            # downloader couldn't find the post for some reason
-            if download_status == 'source_not_found':
-                database.update_message_state_in_queue(
-                    post_id=post_id,
-                    state='processed',
-                    download_status=download_status,
-                    upload_status=download_status,
-                    post_owner=owner_id
-                )
-            # downloader couldn't download the post for some reason
-            if download_status == 'not_supported':
-                database.update_message_state_in_queue(
-                    post_id=post_id,
-                    state='not_supported',
-                    download_status='not_supported',
-                    upload_status='not_supported',
-                    post_owner=owner_id
-                )
-            # upload the received content to the destination storage
-            if upload_status != 'completed' and download_status == 'completed':
-                upload_status = uploader.run_transfers(sub_directory=owner_id)
-                database.update_message_state_in_queue(
-                    post_id=post_id,
-                    state='processing',
-                    download_status=download_status,
-                    upload_status=upload_status,
-                    post_owner=owner_id
-                )
-            # mark item in queue as processed
-            if download_status == 'completed' and upload_status == 'completed':
-                database.update_message_state_in_queue(
-                    post_id=post_id,
-                    state='processed',
-                    download_status=download_status,
-                    upload_status=upload_status,
-                    post_owner=owner_id
-                )
-                log.info('[Queue-handler-thread] the post %s has been processed successfully', post_id)
-            elif download_status == 'source_not_found' and upload_status == 'source_not_found':
-                log.warning('[Queue-handler-thread] the post %s not found, message was marked as processed', post_id)
-            elif download_status == 'not_supported' and upload_status == 'not_supported':
-                log.errors('[Queue-handler-thread] the post %s is not supported, message was excluded from processing', post_id)
-            else:
-                log.warning(
-                    '[Queue-handler-thread] the post %s has not been processed yet (download: %s, uploader: %s)',
-                    post_id, download_status, upload_status
-                )
-        else:
+        if message is None:
             log.info("[Queue-handler-thread] no messages in the queue for processing at the moment, waiting...")
+            time.sleep(QUEUE_FREQUENCY)
+            continue
+
+        try:
+            # Extracting required data from the message
+            # tuple: (id, user_id, post_id, post_url, post_owner, link_type, message_id, chat_id, scheduled_time, download_status, upload_status, timestamp, state)
+            post_id = message[2]
+            owner_id = message[4]
+            download_status = message[9]
+            upload_status = message[10]
+
+        except (IndexError, ValueError) as exception:
+            log.error('[Queue-handler-thread] failed to extract data from message: %s\nmessage: %s', exception, message)
+            time.sleep(QUEUE_FREQUENCY)
+            continue
+
+        log.info(
+            '[Queue-handler-thread] starting handler for post %s (Current D_Status: %s, U_Status: %s)...',
+            post_id, download_status, upload_status
+        )
+
+        if download_status not in ['completed', 'source_not_found', 'not_supported']:
+            log.info('[Queue-handler-thread] Attempting to download content for post %s', post_id)
+            try:
+                download_metadata = downloader.get_post_content(shortcode=post_id)
+                owner_id = download_metadata.get('owner', owner_id)
+                new_download_status = download_metadata.get('status', 'error')
+                database.update_message_state_in_queue(
+                    post_id=post_id,
+                    state='processing',
+                    download_status=new_download_status,
+                    upload_status=upload_status,
+                    post_owner=owner_id
+                )
+                download_status = new_download_status
+
+            # pylint: disable=broad-exception-caught
+            except Exception as error:
+                log.error('[Queue-handler-thread] Download failed for post %s: %s', post_id, error)
+                log.debug('[Queue-handler-thread] Exception traceback: %s', traceback.format_exc())
+                download_status = DOWNLOADER_ERROR_STATUS
+                database.update_message_state_in_queue(
+                    post_id=post_id,
+                    state='error',
+                    download_status=download_status,
+                    upload_status=upload_status,
+                    post_owner=owner_id
+                )
+                time.sleep(QUEUE_FREQUENCY)
+                continue
+
+        if download_status == 'completed':
+            log.info('[Queue-handler-thread] Download completed for post %s. Checking upload status...', post_id)
+            if upload_status != 'completed':
+                log.info('[Queue-handler-thread] Attempting to upload content for post %s (owner: %s)', post_id, owner_id)
+                try:
+                    new_upload_status = uploader.run_transfers(sub_directory=owner_id)
+                    database.update_message_state_in_queue(
+                        post_id=post_id,
+                        state='processing',
+                        download_status=download_status,
+                        upload_status=new_upload_status,
+                        post_owner=owner_id
+                    )
+                    upload_status = new_upload_status
+                # pylint: disable=broad-exception-caught
+                except Exception as error:
+                    log.error('[Queue-handler-thread] Upload failed for post %s: %s', post_id, error)
+                    log.debug('[Queue-handler-thread] Exception traceback: %s', traceback.format_exc())
+                    upload_status = UPLOADER_ERROR_STATUS
+                    database.update_message_state_in_queue(
+                        post_id=post_id,
+                        state='error',
+                        download_status=download_status,
+                        upload_status=upload_status,
+                        post_owner=owner_id
+                    )
+                    time.sleep(QUEUE_FREQUENCY)
+                    continue
+            else:
+                log.info('[Queue-handler-thread] Upload already completed for post %s. Skipping upload step.', post_id)
+
+        elif download_status == 'source_not_found':
+            log.warning('[Queue-handler-thread] Post %s not found. Marking as processed with status "source_not_found".', post_id)
+            database.update_message_state_in_queue(
+                post_id=post_id,
+                state='processed',
+                download_status='source_not_found',
+                upload_status='source_not_found',
+                post_owner=owner_id
+            )
+            time.sleep(QUEUE_FREQUENCY)
+            continue
+
+        elif download_status == 'not_supported':
+            log.warning('[Queue-handler-thread] Post %s is not supported. Marking as "not_supported".', post_id)
+            database.update_message_state_in_queue(
+                post_id=post_id,
+                state='not_supported',
+                download_status='not_supported',
+                upload_status='not_supported',
+                post_owner=owner_id
+            )
+            time.sleep(QUEUE_FREQUENCY)
+            continue
+
+        elif download_status == 'download_error':
+            log.error('[Queue-handler-thread] Download error occurred for post %s. Skipping further processing.', post_id)
+            time.sleep(QUEUE_FREQUENCY)
+            continue
+
+        if download_status == 'completed' and upload_status == 'completed':
+            database.update_message_state_in_queue(
+                post_id=post_id,
+                state='processed',
+                download_status=download_status,
+                upload_status=upload_status,
+                post_owner=owner_id
+            )
+            log.info('[Queue-handler-thread] Post %s has been processed successfully (download: completed, upload: completed).', post_id)
+        elif upload_status == 'upload_error':
+            log.error('[Queue-handler-thread] Upload error occurred for post %s. Message state remains "error".', post_id)
+        else:
+            log.warning(
+                '[Queue-handler-thread] Post %s has not been fully processed yet (Download: %s, Upload: %s). Will retry.',
+                post_id, download_status, upload_status
+            )
+        time.sleep(QUEUE_FREQUENCY)
 
 
-# Main #############################################################################################################################
 def main():
     """The main entry point of the project"""
     # Thread for processing queue
@@ -498,6 +557,7 @@ def main():
     # Run bot
     while True:
         try:
+            log.info('[Bot]: Bot Name: %s, Bot version: %s', TELEGRAM_BOT_NAME, TELEGRAM_BOT_VERSION)
             tg.launch_bot()
         except TelegramExceptions.FailedToCreateInstance as telegram_api_exception:
             log.error('[Bot]: main thread failed, restart thread: %s', telegram_api_exception)

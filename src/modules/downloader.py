@@ -12,7 +12,9 @@ from pathlib import Path
 from urllib3.exceptions import ReadTimeoutError
 from requests.exceptions import ConnectionError as RequestsConnectionError
 from instagrapi import Client
-from instagrapi.exceptions import LoginRequired, ClientRequestTimeout, MediaNotFound, MediaUnavailable, PleaseWaitFewMinutes, ChallengeRequired
+from instagrapi.exceptions import (
+    LoginRequired, ClientRequestTimeout, MediaNotFound, MediaUnavailable, PleaseWaitFewMinutes, ChallengeRequired, ClientConnectionError
+)
 from logger import log
 from .exceptions import WrongVaultInstance, FailedCreateDownloaderInstance, FailedAuthInstagram, FailedDownloadPost
 
@@ -272,7 +274,7 @@ class Downloader:
                 time.sleep(random_shift)
                 log.info('[Downloader]: retry after timeout due to restriction')
                 self.login(method='relogin')
-            except (ReadTimeoutError, RequestsConnectionError, ClientRequestTimeout):
+            except (ReadTimeoutError, RequestsConnectionError, ClientRequestTimeout, ClientConnectionError):
                 log.error('[Downloader]: timeout error downloading post content. Retry after 1 minute')
                 time.sleep(60)
             return method(self, *args, **kwargs)

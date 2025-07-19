@@ -68,7 +68,12 @@ This project is a Telegram bot that allows you to upload posts from your Instagr
 | Variable  | Description | Default value |
 | ------------- | ------------- | ------------- |
 | `LOGGER_LEVEL` | [The logging level of the logging module](https://docs.python.org/3/library/logging.html#logging-levels) | `INFO` |
-| `TELEGRAM_BOT_NAME` | The name of the bot, used to determine the unique mount point in the vault | `pyinstabot-downloader` |
+| `TELEGRAM_BOT_NAME` | The name of the bot, used to determine the unique mount point in the vault and to show in the logs and metrics | `pyinstabot-downloader` |
+| `TELEGRAM_BOT_VERSION` | The version of the bot, used to show in the logs and metrics | `undefined` |
+| `TELEGRAM_BOT_QUEUE_FREQUENCY` | The frequency of processing the queue in seconds | `60` |
+| `TELEGRAM_BOT_STATUSES_MESSAGE_FREQUENCY` | The frequency of sending status messages in seconds | `15` |
+| `TELEGRAM_BOT_METRICS_PORT` | The port for the metrics server | `8000` |
+| `TELEGRAM_BOT_METRICS_INTERVAL` | The interval for collecting metrics in seconds | `30` |
 | `MESSAGES_CONFIG` | The path to the message template file | `src/configs/messages.json` |
 | `VAULT_*` | All supported vault environment variables can be found [here](https://github.com/obervinov/vault-package/tree/v3.0.0?tab=readme-ov-file#-supported-environment-variables) | - |
 </br>

@@ -1,6 +1,6 @@
-FROM python:3.12.10
+FROM python:3.12.11-slim
 
-### External argumetns ###
+### External arguments ###
 ARG PROJECT_DESCRIPTION
 ARG PROJECT_NAME
 ARG PROJECT_VERSION
@@ -32,11 +32,9 @@ RUN useradd -m -d /home/${PROJECT_NAME} -s /bin/bash ${PROJECT_NAME} && \
     chown -R ${PROJECT_NAME}:${PROJECT_NAME} /home/${PROJECT_NAME}
 
 ### Prepare tools and fix vulnerabilities ###
-RUN apt-get update && apt-get upgrade -y && \
-    apt-get install -y --no-install-recommends \
-        git curl && \
+RUN apt-get update && apt-get upgrade -y --no-install-recommends && \
+    apt-get install -y --no-install-recommends git curl && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
-RUN pip3 install --upgrade pip setuptools
 
 ### Switching context ###
 USER ${PROJECT_NAME}
@@ -52,8 +50,14 @@ COPY LICENSE ./
 
 ### Installing poetry and python dependeces ###
 RUN curl -sSL https://install.python-poetry.org | python -
-RUN poetry install
+RUN poetry install --no-directory --no-cache --without=dev && rm -fr /home/${PROJECT_NAME}/.cache
 ENV PYTHONPATH=/home/${PROJECT_NAME}/app/src:/home/${PROJECT_NAME}/app/.venv/lib/python3.12/site-packages
+
+### Bot predefined environment variables ###
+ENV TELEGRAM_BOT_NAME=${PROJECT_NAME}
+ENV TELEGRAM_BOT_VERSION=${PROJECT_VERSION}
+ENV MESSAGES_CONFIG=/home/${PROJECT_NAME}/app/src/configs/messages.json
+ENV VAULT_NAMESPACE=${PROJECT_NAME}
 
 ### Entrypoint ###
 CMD [ "python3", "src/bot.py" ]

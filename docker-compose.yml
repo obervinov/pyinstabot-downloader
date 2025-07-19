@@ -46,17 +46,14 @@ services:
             args:
                 PROJECT_NAME: pyinstabot-downloader
                 PROJECT_DESCRIPTION: "This project is a Telegram bot that allows you to upload posts from your Instagram profile to clouds like any WebDav compatible cloud storage."
-                PROJECT_VERSION: 3.3.4
+                PROJECT_VERSION: 3.3.5
         container_name: pyinstabot-downloader
         restart: always
         environment:
-            - TELEGRAM_BOT_NAME=pyinstabot-downloader
             - VAULT_APPROLE_ID=${VAULT_APPROLE_ID}
             - VAULT_APPROLE_SECRET_ID=${VAULT_APPROLE_SECRET_ID}
             - VAULT_ADDR=${VAULT_ADDR}
             - VAULT_AUTH_TYPE=approle
-            - VAULT_NAMESPACE=pyinstabot-downloader
-            - MESSAGES_CONFIG=configs/messages.json
         volumes:
             - ../.config/instaloader:/home/pyinstabot-downloader/.config/instaloader
         depends_on:
