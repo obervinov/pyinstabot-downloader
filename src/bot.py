@@ -363,20 +363,20 @@ def get_user_messages(user_id: str = None) -> dict:
     processed = database.get_user_processed(user_id=user_id)
 
     queue_string = ''
-    if queue[:5]:
-        for item in queue[:5]:
-            queue_string += f"+ <code>{item['post_id']}: scheduled for {item['scheduled_time']}</code>\n"
+    if queue.get('messages'):
+        for item in queue['messages']:
+            queue_string += f"    |- <code>{item['post_id']}: waiting until {str(item['scheduled_time']).split('.', maxsplit=1)[0]}</code>\n"
     else:
         queue_string = '<code>queue is empty</code>'
 
     processed_string = ''
-    if processed[-5:]:
-        for item in processed[-5:]:
-            processed_string += f"* <code>{item['post_id']}: {item['state']} at {item['timestamp']}</code>\n"
+    if processed.get('messages'):
+        for item in processed['messages']:
+            processed_string += f"    |- <code>{item['post_id']} at {str(item['timestamp']).split('.', maxsplit=1)[0]}</code>\n"
     else:
         processed_string = '<code>processed is empty</code>'
 
-    return {'queue_list': queue_string, 'processed_list': processed_string, 'queue_count': len(queue), 'processed_count': len(processed)}
+    return {'queue_list': queue_string, 'processed_list': processed_string, 'queue_count': queue.get('counter', 0), 'processed_count': processed.get('counter', 0)}
 
 
 # Threads ###########################################################################################################################
@@ -411,7 +411,7 @@ def queue_handler_thread() -> None:
         message = database.get_message_from_queue(datetime.now())
 
         if message is None:
-            log.info("[Queue-handler-thread] no messages in the queue for processing at the moment, waiting...")
+            log.debug("[Queue-handler-thread] no messages in the queue for processing at the moment, waiting...")
             time.sleep(QUEUE_FREQUENCY)
             continue
 

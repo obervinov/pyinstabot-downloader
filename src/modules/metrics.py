@@ -83,19 +83,15 @@ class Metrics():
         """
         The method updates the gauge with the number of processed and queued messages.
         """
-        processed_messages_count = 0
-        queue_messages_count = 0
+        processed_messages = 0
+        queue_messages = 0
         users_dict = self.database.get_users(only_allowed=False)
 
         for user in users_dict:
-            processed_messages = self.database.get_user_processed(user_id=user['user_id'])
-            queue_messages = self.database.get_user_queue(user_id=user['user_id'])
-            if processed_messages:
-                processed_messages_count += len(processed_messages)
-            if queue_messages:
-                queue_messages_count += len(queue_messages)
-        self.processed_messages_counter.set(processed_messages_count)
-        self.queue_length_gauge.set(queue_messages_count)
+            processed_messages += self.database.get_user_processed(user_id=user['user_id']).get('counter', 0)
+            queue_messages += self.database.get_user_queue(user_id=user['user_id']).get('counter', 0)
+        self.processed_messages_counter.set(processed_messages)
+        self.queue_length_gauge.set(queue_messages)
 
     def run(self, threads: list) -> None:
         """

@@ -45,6 +45,7 @@ class Uploader:
                 :param password (str): password for authentication in the target storage.
                 :param source-directory (str): the path to the local directory with media content for uploading.
                 :param destination-directory (str): a subdirectory in the cloud storage where the content will be uploaded.
+                :param widget-share-link (bool): enable or disable the sharing link in the user widget.
             :param vault (object): instance of vault for reading authorization data.
 
         Returns:
@@ -56,7 +57,8 @@ class Uploader:
             ...     'password': 'my_password',
             ...     'url': 'https://webdav.example.com/directory',
             ...     'source-directory': '/path/to/source/directory',
-            ...     'destination-directory': '/path/to/destination/directory'
+            ...     'destination-directory': '/path/to/destination/directory',
+            ...     'widget-share-link': True  # Optional, if you want to add a sharing link to the user widget
             ... }
             >>> vault = Vault()
             >>> uploader = Uploader(configuration, vault)
@@ -147,3 +149,26 @@ class Uploader:
             return "uploaded"
         log.error('[Uploader]: failed to transfer in WebDav directory: %s', source)
         return None
+
+    @exception_handler
+    def get_share_link(self) -> str | None:
+        """
+        The method generates a sharing link to the uploaded content in the target storage.
+        Used in the user widget to provide a link to the uploaded content.
+
+        Args:
+            :param sub_directory (str): the name of the subdirectory in the source directory with media content.
+
+        Returns:
+            (str) 'https://webdav.example.com/s/qwerty123'
+                or
+            (str) 'disabled'
+        """
+        if not self.configuration.get('widget-share-link', False):
+            return 'disabled'
+
+        # pylint: disable=no-member
+        # I don't know why the pylint can't find the publishing method (will come back to this later)
+        share_link = self.storage.publish(self.configuration['source-directory'])
+        log.info('[Uploader]: Generated public link: %s', share_link)
+        return share_link

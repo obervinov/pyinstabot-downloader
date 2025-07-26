@@ -257,7 +257,7 @@ def test_get_user_queue(database_class):
 
     # Validate the extraction of the user queue (now directly a list)
     user_queue = database_class.get_user_queue(user_id=user_id)
-    expected_response = sorted([
+    expected_messages_list = sorted([
         {
             'post_id': entry['post_id'],
             'scheduled_time': entry['scheduled_time']
@@ -265,9 +265,9 @@ def test_get_user_queue(database_class):
         for entry in data
     ], key=lambda x: x['scheduled_time'])
 
-    assert user_queue is not None
-    assert len(user_queue) == len(data)
-    assert user_queue == expected_response
+    assert user_queue.get('messages') is not None
+    assert user_queue.get('counter') == len(data)
+    assert user_queue.get('messages') == expected_messages_list
 
 
 @pytest.mark.order(10)
@@ -332,14 +332,14 @@ def test_get_user_processed_data(database_class, postgres_instance):
     user_queue = database_class.get_user_queue(user_id=user_id)
 
     for message in data:
-        if user_queue:
-            for q_message in user_queue:
+        if user_queue.get('messages'):
+            for q_message in user_queue['messages']:
                 assert message['post_id'] != q_message['post_id']
 
-        if user_processed:
+        if user_processed.get('messages'):
             found = False
-            assert len(user_processed) == len(data)
-            for p_message in user_processed:
+            assert len(user_processed['messages']) == len(data)
+            for p_message in user_processed['messages']:
                 if message['post_id'] == p_message['post_id']:
                     found = True
             if not found:
