@@ -6,11 +6,15 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 ## v3.3.6 - 2025-07-26
 ### What's Changed
 **Full Changelog**: https://github.com/obervinov/pyinstabot-downloader/compare/v3.3.5...v3.3.6 by @obervinov in https://github.com/obervinov/pyinstabot-downloader/pull/146
+#### 💥 Breaking Changes
+* reduce the number of items on the user widget to 3 items (from 5 items) in the `get_user_processed` and `get_user_queue` methods of the `Database` class
 #### 🐛 Bug Fixes
 * rewrite not optimal logic in the `get_user_processed` and `get_user_queue` methods of the `Database` class (limit is 10000 items and retrieve all items from the table each time)
-* 
 #### 🚀 Features
 * update dependencies versions
+* small improvements of user widget
+* add function for adding sharing link to the user widget (destination storage with content)
+
 
 ## v3.3.5 - 2025-07-19
 ### What's Changed
@@ -38,6 +42,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
   - `MESSAGES_CONFIG`
   - `VAULT_NAMESPACE`
 
+
 ## v3.3.4 - 2025-05-19
 ### What's Changed
 **Full Changelog**: https://github.com/obervinov/pyinstabot-downloader/compare/v3.3.3...v3.3.4 by @obervinov in https://github.com/obervinov/pyinstabot-downloader/pull/130
@@ -47,6 +52,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 * support values for the `challenge_timeout` parameter in the Vault configuration
 * bump dependencies versions
 * bump base image to `python:3.12.10`
+
 
 ## v3.3.3 - 2025-03-26
 ### What's Changed

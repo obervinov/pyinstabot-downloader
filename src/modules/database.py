@@ -543,9 +543,10 @@ class DatabaseClient:
         self._update(table_name='queue', values=f"scheduled_time = '{scheduled_time}'", condition=f"post_id = '{post_id}' AND user_id = '{user_id}'")
         return f"{post_id}: scheduled time updated"
 
-    def get_user_queue(self, user_id: str = None, limit: int = 5) -> dict:
+    def get_user_queue(self, user_id: str = None, limit: int = 3) -> dict:
         """
         Get messages from the queue table for the specified user.
+        Returns the last 3 messages and total number of messages in the queue table for the user.
 
         Args:
             user_id (str): The ID of the user.
@@ -568,10 +569,10 @@ class DatabaseClient:
                 result.append({'post_id': message[0], 'scheduled_time': message[1]})
         return {'counter': messages_count, 'messages': result}
 
-    def get_user_processed(self, user_id: str = None, limit: int = 5) -> dict:
+    def get_user_processed(self, user_id: str = None, limit: int = 3) -> dict:
         """
         Get data from the processed table for the specified user.
-        It returns the last five messages and total number of messages in the processed table for the user.
+        It returns the last 3 messages and total number of messages in the processed table for the user.
         It is used to display the last messages sent by the bot to the user.
 
         Args:
@@ -588,7 +589,7 @@ class DatabaseClient:
         result = []
         messages_list = self._select(
             table_name='processed', columns=("post_id", "timestamp", "state"),
-            condition=f"user_id = '{user_id}'", order_by='timestamp ASC', limit=limit
+            condition=f"user_id = '{user_id}'", order_by='timestamp DESC', limit=limit
         )
         messages_count = self._count(table_name='processed', condition=f"user_id = '{user_id}'")
         if messages_list:

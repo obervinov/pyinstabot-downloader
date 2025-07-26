@@ -170,7 +170,8 @@ This project is a Telegram bot that allows you to upload posts from your Instagr
     "password": "qwerty123",
     "source-directory": "data/",
     "username": "username1",
-    "url": "https://webdav.example.com/directory"
+    "url": "https://webdav.example.com/directory",
+    "widget-share-link": "True"
   }
   ```
 
@@ -181,6 +182,7 @@ This project is a Telegram bot that allows you to upload posts from your Instagr
   - `enabled`: the status of the uploader module
   - `username`: the username of the webdav account
   - `password`: the password of the webdav account
+  - `widget-share-link`: enable or disable the sharing link in the user widget (if enabled, the bot will generate a link to the uploaded content in the target storage and add it to the user widget)
   </br>
 
 - `configuration/users/<telegram_user_id>`: users permissions and attributes
