@@ -167,6 +167,8 @@ class Uploader:
         if not self.configuration.get('widget-share-link', False):
             return 'disabled'
 
+        # pylint: disable=no-member
+        # I don't know why the pylint can't find the publishing method (will come back to this later)
         share_link = self.storage.publish(self.configuration['source-directory'])
         log.info('[Uploader]: Generated public link: %s', share_link)
         return share_link
