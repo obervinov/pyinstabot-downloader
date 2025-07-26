@@ -61,7 +61,7 @@ class DatabaseClient:
                                                                  if the state is 'processed'.
         update_schedule_time_in_queue(post_id, user_id, scheduled_time): Update the scheduled time of a message in the queue table.
         get_user_queue(user_id): Get messages from the queue table for the specified user.
-        get_user_processed(user_id): Get last ten messages from the processed table for the specified user.
+        get_user_processed(user_id): Get processed messages from the processed table for the specified user.
         check_message_uniqueness(post_id, user_id): Check if a message with the given post ID and chat ID already exists in the queue.
         keep_message(message_id, chat_id, message_content, **kwargs): Add a message to the messages table in the database.
         get_users(only_allowed): Get a list of users from the users table in the database.
@@ -312,6 +312,29 @@ class DatabaseClient:
         return response if response else None
 
     @reconnect_on_exception
+    def _count(self, table_name: str = None, condition: str = None) -> int:
+        """
+        Count the number of rows in a table based on a condition.
+
+        Args:
+            table_name (str): The name of the table to count rows from.
+            condition (str): The condition to use for counting rows.
+
+        Returns:
+            int: The number of rows that match the condition.
+
+        Examples:
+            >>> _count(table_name='users', condition="username='john_doe'")
+            1
+        """
+        conn = self.get_connection()
+        with conn.cursor() as cursor:
+            cursor.execute(f"SELECT COUNT(*) FROM {table_name} WHERE {condition}")
+            count = cursor.fetchone()[0]
+        self.close_connection(conn)
+        return count
+
+    @reconnect_on_exception
     def _update(self, table_name: str = None, values: str = None, condition: str = None) -> None:
         """
         Update the specified table with the given values of values based on the specified condition.
@@ -520,53 +543,58 @@ class DatabaseClient:
         self._update(table_name='queue', values=f"scheduled_time = '{scheduled_time}'", condition=f"post_id = '{post_id}' AND user_id = '{user_id}'")
         return f"{post_id}: scheduled time updated"
 
-    def get_user_queue(self, user_id: str = None) -> dict:
+    def get_user_queue(self, user_id: str = None, limit: int = 5) -> dict:
         """
         Get messages from the queue table for the specified user.
 
         Args:
             user_id (str): The ID of the user.
+            limit (int): The maximum number of messages to retrieve.
 
         Returns:
-            dict: A list of dictionaries containing the messages from the queue table for the specified user.
+            dict: A dictionary containing the total number of messages and a list of the messages from the queue table for the specified user.
 
         Examples:
             >>> get_user_queue(user_id='12345')
-            [{'post_id': '123456789', 'scheduled_time': '2022-01-01 12:00:00'}]
+            {'counter': 1, 'messages': [{'post_id': '123456789', 'scheduled_time': '2022-01-01 12:00:00'}]}
         """
         result = []
-        queue = self._select(
-            table_name='queue', columns=("post_id", "scheduled_time"), condition=f"user_id = '{user_id}'", order_by='scheduled_time ASC', limit=10000
+        messages_list = self._select(
+            table_name='queue', columns=("post_id", "scheduled_time"), condition=f"user_id = '{user_id}'", order_by='scheduled_time ASC', limit=limit
         )
-        if queue:
-            for message in queue:
+        messages_count = self._count(table_name='queue', condition=f"user_id = '{user_id}'")
+        if messages_list:
+            for message in messages_list:
                 result.append({'post_id': message[0], 'scheduled_time': message[1]})
-        return result
+        return {'counter': messages_count, 'messages': result}
 
-    def get_user_processed(self, user_id: str = None) -> dict:
+    def get_user_processed(self, user_id: str = None, limit: int = 5) -> dict:
         """
-        Get last ten messages from the processed table for the specified user.
+        Get data from the processed table for the specified user.
+        It returns the last five messages and total number of messages in the processed table for the user.
         It is used to display the last messages sent by the bot to the user.
 
         Args:
             user_id (str): The ID of the user.
+            limit (int): The maximum number of messages to retrieve.
 
         Returns:
-            dict: A list of dictionaries containing the last ten messages from the processed table for the specified user.
+            dict: A dictionary containing the total number of messages and a list of the last five messages sent to the user.
 
         Examples:
             >>> get_user_processed(user_id='12345')
-            [{'post_id': '123456789', 'timestamp': '2022-01-01 12:00:00', 'state': 'processed'}]
+            {'counter': 1, 'messages': [{'post_id': '123456789', 'timestamp': '2022-01-01 12:00:00', 'state': 'processed'}]}
         """
         result = []
-        processed = self._select(
+        messages_list = self._select(
             table_name='processed', columns=("post_id", "timestamp", "state"),
-            condition=f"user_id = '{user_id}'", order_by='timestamp ASC', limit=10000
+            condition=f"user_id = '{user_id}'", order_by='timestamp ASC', limit=limit
         )
-        if processed:
-            for message in processed:
+        messages_count = self._count(table_name='processed', condition=f"user_id = '{user_id}'")
+        if messages_list:
+            for message in messages_list:
                 result.append({'post_id': message[0], 'timestamp': message[1], 'state': message[2]})
-        return result
+        return {'counter': messages_count, 'messages': result}
 
     def check_message_uniqueness(self, post_id: str = None, user_id: str = None) -> bool:
         """

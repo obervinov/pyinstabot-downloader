@@ -363,20 +363,20 @@ def get_user_messages(user_id: str = None) -> dict:
     processed = database.get_user_processed(user_id=user_id)
 
     queue_string = ''
-    if queue[:5]:
-        for item in queue[:5]:
+    if queue.get('messages'):
+        for item in queue['messages']:
             queue_string += f"+ <code>{item['post_id']}: scheduled for {item['scheduled_time']}</code>\n"
     else:
         queue_string = '<code>queue is empty</code>'
 
     processed_string = ''
-    if processed[-5:]:
-        for item in processed[-5:]:
+    if processed.get('messages'):
+        for item in processed['messages']:
             processed_string += f"* <code>{item['post_id']}: {item['state']} at {item['timestamp']}</code>\n"
     else:
         processed_string = '<code>processed is empty</code>'
 
-    return {'queue_list': queue_string, 'processed_list': processed_string, 'queue_count': len(queue), 'processed_count': len(processed)}
+    return {'queue_list': queue_string, 'processed_list': processed_string, 'queue_count': queue.get('counter', 0), 'processed_count': processed.get('counter', 0)}
 
 
 # Threads ###########################################################################################################################
