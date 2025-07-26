@@ -365,14 +365,14 @@ def get_user_messages(user_id: str = None) -> dict:
     queue_string = ''
     if queue.get('messages'):
         for item in queue['messages']:
-            queue_string += f"  |- <code>{item['post_id']}: will be processed at {str(item['scheduled_time']).split('.', maxsplit=1)[0]}</code>\n"
+            queue_string += f"    |- <code>{item['post_id']}: waiting until {str(item['scheduled_time']).split('.', maxsplit=1)[0]}</code>\n"
     else:
         queue_string = '<code>queue is empty</code>'
 
     processed_string = ''
     if processed.get('messages'):
         for item in processed['messages']:
-            processed_string += f"  |- <code>{item['post_id']} at {str(item['timestamp']).split('.', maxsplit=1)[0]}</code>\n"
+            processed_string += f"    |- <code>{item['post_id']} at {str(item['timestamp']).split('.', maxsplit=1)[0]}</code>\n"
     else:
         processed_string = '<code>processed is empty</code>'
 

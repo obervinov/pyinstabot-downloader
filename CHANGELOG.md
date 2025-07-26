@@ -13,7 +13,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 #### 🚀 Features
 * update dependencies versions
 * small improvements of user widget
-* add support for links to the target storage to the widget 
+* add a link display to the target storage (to the user widget)
 
 
 ## v3.3.5 - 2025-07-19
