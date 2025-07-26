@@ -267,7 +267,7 @@ def test_get_user_queue(database_class):
 
     assert user_queue.get('messages') is not None
     assert user_queue.get('counter') == len(data)
-    assert user_queue.messages == expected_messages_list
+    assert user_queue.get('messages') == expected_messages_list
 
 
 @pytest.mark.order(10)
