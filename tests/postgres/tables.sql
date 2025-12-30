@@ -84,3 +84,14 @@ CREATE TABLE messages (
     message_content_hash VARCHAR (64) NOT NULL,
     state VARCHAR (50) NOT NULL DEFAULT 'added'
 );
+
+-- Schema for the users_tokens table
+CREATE TABLE users_tokens (
+    id serial PRIMARY KEY,
+    user_id VARCHAR (50) NOT NULL,
+    token_hash VARCHAR (128) NOT NULL,
+    token_salt VARCHAR (64) NOT NULL,
+    token_expires_at TIMESTAMP NOT NULL,
+    token_used BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);

@@ -15,11 +15,14 @@ ROLES_MAP = {
     'Reschedule Queue': 'reschedule_queue',
 }
 
-# Time intervals and ports (in seconds)
+# Metric time intervals and ports (in seconds)
 QUEUE_FREQUENCY = int(os.environ.get('TELEGRAM_BOT_QUEUE_FREQUENCY', 60))
 STATUSES_MESSAGE_FREQUENCY = int(os.environ.get('TELEGRAM_BOT_STATUSES_MESSAGE_FREQUENCY', 15))
 METRICS_PORT = int(os.environ.get('TELEGRAM_BOT_METRICS_PORT', 8000))
 METRICS_INTERVAL = int(os.environ.get('TELEGRAM_BOT_METRICS_INTERVAL', 30))
+
+# WebUI constants
+WEBUI_PORT = int(os.environ.get('TELEGRAM_BOT_WEBUI_PORT', 8080))
 
 # Vault Database Engine constants
 VAULT_DB_ROLE = f"{TELEGRAM_BOT_NAME}"
