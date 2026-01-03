@@ -4,6 +4,7 @@ import sys
 import importlib
 import json
 import time
+from datetime import datetime
 import psycopg2
 from psycopg2 import pool
 from logger import log
@@ -388,6 +389,69 @@ class DatabaseClient:
                 else:
                     log.info('[Database]: No stale status messages found')
 
+    @staticmethod
+    def create_queue_message_data(
+        user_id: str,
+        post_id: str,
+        post_url: str,
+        link_type: str,
+        message_id: str,
+        chat_id: str,
+        scheduled_time: datetime | str = None,
+        post_owner: str = 'undefined',
+        download_status: str = 'not started',
+        upload_status: str = 'not started'
+    ) -> dict:
+        """
+        Create a standardized data dictionary for adding a message to the queue.
+        This ensures consistency between bot.py and webui.py when adding posts to the queue.
+
+        Args:
+            user_id (str): The user ID of the message sender.
+            post_id (str): The ID of the post (shortcode for posts, username for profiles).
+            post_url (str): The URL of the post.
+            link_type (str): The type of link ('post', 'profile', 'account').
+            message_id (str): The message ID (Telegram message ID or webui_{post_id}).
+            chat_id (str): The chat ID.
+            scheduled_time (datetime | str, optional): Scheduled time for processing. Defaults to now.
+            post_owner (str, optional): The username of the post owner. Defaults to 'undefined'.
+            download_status (str, optional): Download status. Defaults to 'not started'.
+            upload_status (str, optional): Upload status. Defaults to 'not started'.
+
+        Returns:
+            dict: A standardized data dictionary for queue message insertion.
+
+        Examples:
+            >>> data = DatabaseClient.create_queue_message_data(
+            ...     user_id='123456',
+            ...     post_id='ABC123xyz',
+            ...     post_url='https://www.instagram.com/p/ABC123xyz/',
+            ...     link_type='post',
+            ...     message_id='12345',
+            ...     chat_id='123456'
+            ... )
+            >>> database.add_message_to_queue(data)
+        """
+        if scheduled_time is None:
+            scheduled_time = datetime.now()
+
+        # Convert datetime to string if needed
+        if isinstance(scheduled_time, datetime):
+            scheduled_time = scheduled_time.strftime('%Y-%m-%d %H:%M:%S')
+
+        return {
+            'user_id': user_id,
+            'post_id': post_id,
+            'post_url': post_url.split('?')[0],
+            'post_owner': post_owner,
+            'link_type': link_type,
+            'message_id': message_id,
+            'chat_id': chat_id,
+            'scheduled_time': scheduled_time,
+            'download_status': download_status,
+            'upload_status': upload_status
+        }
+
     def add_message_to_queue(self, data: dict = None) -> str:
         """
         Add a message to the queue table in the database.
@@ -597,7 +661,7 @@ class DatabaseClient:
                 result.append({'post_id': message[0], 'timestamp': message[1], 'state': message[2]})
         return {'counter': messages_count, 'messages': result}
 
-    def get_accounts(self, limit: int = 20, offset: int = 0) -> dict:
+    def get_accounts(self, limit: int = 20, offset: int = 0, sort_by: str = 'last_updated', sort_order: str = 'desc') -> dict:
         """
         Get accounts data from the accounts table with pagination.
         Returns account metadata including username, pk, full_name, counters, cursor, and last_updated.
@@ -614,16 +678,38 @@ class DatabaseClient:
             {'counter': 42, 'accounts': [{'username': 'example', 'pk': 123456, ...}]}
         """
         result = []
+
+        sort_field_map = {
+            'posts': 'media_count',
+            'posts_downloaded': 'posts_downloaded',
+            'followers': 'follower_count',
+            'following': 'following_count',
+            'last_updated': 'last_updated'
+        }
+
+        # Validate sort column and order to prevent SQL injection
+        sort_field = sort_field_map.get(sort_by, 'last_updated')
+        sort_direction = 'DESC' if str(sort_order).lower() == 'desc' else 'ASC'
+        order_by = f"{sort_field} {sort_direction}"
+
         accounts_list = self._select(
             table_name='accounts',
-            columns=('username', 'pk', 'full_name', 'media_count', 'follower_count', 'following_count', 'cursor', 'last_updated'),
-            order_by='last_updated DESC',
+            columns=('username', 'pk', 'full_name', 'media_count', 'follower_count', 'following_count', 'last_updated'),
+            order_by=order_by,
             limit=limit,
             offset=offset
         )
         accounts_count = self._count(table_name='accounts', condition='TRUE')
         if accounts_list:
             for account in accounts_list:
+                # Count downloaded posts for this account owner
+                downloaded_count_result = self._select(
+                    table_name='processed',
+                    columns=('COUNT(*)',),
+                    condition=f"post_owner = '{account[0]}'"
+                )
+                posts_downloaded = downloaded_count_result[0][0] if downloaded_count_result else 0
+
                 result.append({
                     'username': account[0],
                     'pk': account[1],
@@ -631,10 +717,49 @@ class DatabaseClient:
                     'media_count': account[3],
                     'follower_count': account[4],
                     'following_count': account[5],
-                    'cursor': account[6],
-                    'last_updated': account[7]
+                    'last_updated': account[6],
+                    'posts_downloaded': posts_downloaded
                 })
         return {'counter': accounts_count, 'accounts': result}
+
+    def get_user_processed_stats(self, user_id: str = None) -> dict:
+        """
+        Get statistics about processed posts for a user, grouped by post owner.
+        Calculates the count of posts processed from each owner.
+
+        Args:
+            user_id (str): The ID of the user.
+
+        Returns:
+            dict: A dictionary containing labels (owner names) and counts.
+                  Returns empty dict if no processed items with owners exist.
+
+        Examples:
+            >>> get_user_processed_stats(user_id='12345')
+            {'labels': ['owner1', 'owner2'], 'counts': [5, 3]}
+        """
+        all_processed = self._select(
+            table_name='processed',
+            columns=('post_owner',),
+            condition=f"user_id = '{user_id}' AND post_owner IS NOT NULL AND post_owner != ''"
+        )
+
+        if not all_processed:
+            return {'labels': [], 'counts': []}
+
+        # Count occurrences of each owner
+        owner_counts = {}
+        for row in all_processed:
+            owner = row[0]
+            owner_counts[owner] = owner_counts.get(owner, 0) + 1
+
+        # Sort by count descending and limit to top 25
+        sorted_owners = sorted(owner_counts.items(), key=lambda x: x[1], reverse=True)[:25]
+
+        return {
+            'labels': [owner for owner, _ in sorted_owners],
+            'counts': [count for _, count in sorted_owners]
+        }
 
     def check_message_uniqueness(self, post_id: str = None, user_id: str = None) -> bool:
         """

@@ -62,6 +62,25 @@
             background: rgba(255, 255, 255, 0.1);
         }
         
+        .github-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: background 0.2s;
+        }
+        
+        .github-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
         .container {
             max-width: 1400px;
             margin: 0 auto;
@@ -123,6 +142,19 @@
         .username {
             font-weight: 600;
             color: #667eea;
+        }
+
+        .sortable {
+            color: #374151;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .sort-indicator {
+            font-size: 11px;
+            color: #9ca3af;
         }
         
         .number {
@@ -187,7 +219,11 @@
             <img src="/static/logo.png" alt="Logo" class="logo">
             <h1>Instagram Accounts</h1>
         </div>
-        <div>
+        <div style="display: flex; align-items: center; gap: 16px;">
+            <a href="https://github.com/obervinov/pyinstabot-downloader" target="_blank" rel="noopener noreferrer" class="github-btn">
+                <span>🐙</span>
+                <span>GitHub</span>
+            </a>
             <a href="/dashboard" class="nav-link">← Back to Dashboard</a>
         </div>
     </div>
@@ -206,23 +242,53 @@
                         <th>Username</th>
                         <th>PK</th>
                         <th>Full Name</th>
-                        <th>Posts</th>
-                        <th>Followers</th>
-                        <th>Following</th>
-                        <th>Cursor</th>
-                        <th>Last Updated</th>
+                        <th>
+                            {% set next_order_posts = 'asc' if sort_by == 'posts' and sort_order == 'desc' else 'desc' %}
+                            <a class="sortable" href="?sort_by=posts&sort_order={{ next_order_posts }}&limit={{ limit }}">
+                                Posts
+                                {% if sort_by == 'posts' %}<span class="sort-indicator">{{ '▲' if sort_order == 'asc' else '▼' }}</span>{% endif %}
+                            </a>
+                        </th>
+                        <th>
+                            {% set next_order_posts_downloaded = 'asc' if sort_by == 'posts_downloaded' and sort_order == 'desc' else 'desc' %}
+                            <a class="sortable" href="?sort_by=posts_downloaded&sort_order={{ next_order_posts_downloaded }}&limit={{ limit }}">
+                                Posts Downloaded
+                                {% if sort_by == 'posts_downloaded' %}<span class="sort-indicator">{{ '▲' if sort_order == 'asc' else '▼' }}</span>{% endif %}
+                            </a>
+                        </th>
+                        <th>
+                            {% set next_order_followers = 'asc' if sort_by == 'followers' and sort_order == 'desc' else 'desc' %}
+                            <a class="sortable" href="?sort_by=followers&sort_order={{ next_order_followers }}&limit={{ limit }}">
+                                Followers
+                                {% if sort_by == 'followers' %}<span class="sort-indicator">{{ '▲' if sort_order == 'asc' else '▼' }}</span>{% endif %}
+                            </a>
+                        </th>
+                        <th>
+                            {% set next_order_following = 'asc' if sort_by == 'following' and sort_order == 'desc' else 'desc' %}
+                            <a class="sortable" href="?sort_by=following&sort_order={{ next_order_following }}&limit={{ limit }}">
+                                Following
+                                {% if sort_by == 'following' %}<span class="sort-indicator">{{ '▲' if sort_order == 'asc' else '▼' }}</span>{% endif %}
+                            </a>
+                        </th>
+                        <th>
+                            {% set next_order_updated = 'asc' if sort_by == 'last_updated' and sort_order == 'desc' else 'desc' %}
+                            <a class="sortable" href="?sort_by=last_updated&sort_order={{ next_order_updated }}&limit={{ limit }}">
+                                Last Updated
+                                {% if sort_by == 'last_updated' %}<span class="sort-indicator">{{ '▲' if sort_order == 'asc' else '▼' }}</span>{% endif %}
+                            </a>
+                        </th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for account in accounts %}
                     <tr>
-                        <td class="username">{{ account.username }}</td>
+                        <td class="username"><a href="https://www.instagram.com/{{ account.username }}/" target="_blank" rel="noopener noreferrer" class="username">{{ account.username }}</a></td>
                         <td class="number">{{ account.pk }}</td>
                         <td>{{ account.full_name }}</td>
                         <td class="number">{{ account.media_count }}</td>
+                        <td class="number">{{ account.posts_downloaded }}</td>
                         <td class="number">{{ account.follower_count }}</td>
                         <td class="number">{{ account.following_count }}</td>
-                        <td class="number">{{ account.cursor or '-' }}</td>
                         <td class="timestamp">{{ account.last_updated }}</td>
                     </tr>
                     {% endfor %}
@@ -233,7 +299,7 @@
         {% if total > limit %}
         <div class="pagination">
             {% if page > 1 %}
-            <a href="?page={{ page - 1 }}">← Previous</a>
+            <a href="?page={{ page - 1 }}&sort_by={{ sort_by }}&sort_order={{ sort_order }}&limit={{ limit }}">← Previous</a>
             {% endif %}
             
             {% set total_pages = (total + limit - 1) // limit %}
@@ -241,14 +307,14 @@
                 {% if p == page %}
                 <span class="current">{{ p }}</span>
                 {% elif p == 1 or p == total_pages or (p >= page - 2 and p <= page + 2) %}
-                <a href="?page={{ p }}">{{ p }}</a>
+                <a href="?page={{ p }}&sort_by={{ sort_by }}&sort_order={{ sort_order }}&limit={{ limit }}">{{ p }}</a>
                 {% elif p == page - 3 or p == page + 3 %}
                 <span>...</span>
                 {% endif %}
             {% endfor %}
             
             {% if page < total_pages %}
-            <a href="?page={{ page + 1 }}">Next →</a>
+            <a href="?page={{ page + 1 }}&sort_by={{ sort_by }}&sort_order={{ sort_order }}&limit={{ limit }}">Next →</a>
             {% endif %}
         </div>
         {% endif %}

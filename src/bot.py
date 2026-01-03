@@ -182,10 +182,14 @@ def process_posts(message: tg.telegram_types.Message, help_message: tg.telegram_
             # Verify that the post id is correct
             if len(post_id) == 11 and re.match(r'^[a-zA-Z0-9_-]+$', post_id):
                 if database.check_message_uniqueness(post_id=post_id, user_id=message.chat.id):
-                    post_code_handler(message, data={
-                            'user_id': message.chat.id, 'post_id': post_id, 'post_owner': 'undefined', 'link_type': 'post',
-                            'message_id': message.id, 'chat_id': message.chat.id, 'post_url': link.split('?')[0]
-                    })
+                    post_code_handler(message, data=database.create_queue_message_data(
+                        user_id=message.chat.id,
+                        post_id=post_id,
+                        post_url=link.split('?')[0],
+                        link_type='post',
+                        message_id=message.id,
+                        chat_id=message.chat.id
+                    ))
             else:
                 cleanup_messages = False
                 log.error('[Bot]: post id %s from user %s is wrong', post_id, message.chat.id)
@@ -224,11 +228,15 @@ def process_account(message: tg.telegram_types.Message, help_message: tg.telegra
             log.info('[Bot]: received %s posts from account %s', len(posts_list), account_name)
             for post in posts_list:
                 if database.check_message_uniqueness(post_id=post.code, user_id=message.chat.id):
-                    post_code_handler(message, data={
-                            'user_id': message.chat.id, 'post_id': post.code, 'post_owner': account_name, 'link_type': 'account',
-                            'message_id': message.id, 'chat_id': message.chat.id,
-                            'post_url': f"https://www.instagram.com/{downloader.media_type_links[post.media_type]}/{post.code}"
-                    })
+                    post_code_handler(message, data=database.create_queue_message_data(
+                        user_id=message.chat.id,
+                        post_id=post.code,
+                        post_url=f"https://www.instagram.com/{downloader.media_type_links[post.media_type]}/{post.code}",
+                        link_type='account',
+                        message_id=message.id,
+                        chat_id=message.chat.id,
+                        post_owner=account_name
+                    ))
             if not cursor:
                 log.info('[Bot]: full posts list from account %s retrieved', account_name)
                 tg.delete_message(message.chat.id, message.id)
@@ -571,14 +579,15 @@ def main():
     # Thread for update status message
     thread_status_message = threading.Thread(target=status_message_updater_thread, args=(), name="MessageUpdaterThread")
     thread_status_message.start()
+    # Thread for WebUI if enabled
+    if webui_enabled == 'True':
+        thread_webui = threading.Thread(target=webui.run, daemon=True, name="WebUIThread")
+        thread_webui.start()
+
     # Thread for export metrics
     threads = threading.enumerate()
     thread_metrics = threading.Thread(target=metrics.run, args=(threads,), name="MetricsThread")
     thread_metrics.start()
-
-    if webui_enabled == 'True':
-        thread_webui = threading.Thread(target=webui.run, daemon=True, name="WebUIThread")
-        thread_webui.start()
 
     # Run bot
     while True:

@@ -7,7 +7,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 ### What's Changed
 **Full Changelog**: https://github.com/obervinov/pyinstabot-downloader/compare/v3.3.6...v3.4.0 by @obervinov in https://github.com/obervinov/pyinstabot-downloader/pull/156
 #### 🚀 Features
-* **WebUI Implementation**: Added FastAPI-based web interface with complete feature parity to Telegram bot (doc/README_WEBUI.md):
+* **WebUI Implementation**: Added FastAPI-based web interface with complete feature parity to Telegram bot (see details in doc/README_WEBUI.md):
   - Token-based authentication using users-package v4.2.0
   - Telegram Login Widget integration for OAuth
   - User dashboard with statistics (queue count, total downloaded, last 24h downloads)

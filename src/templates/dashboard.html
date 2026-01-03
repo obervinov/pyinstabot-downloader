@@ -85,6 +85,25 @@
             background: rgba(255, 255, 255, 0.3);
         }
         
+        .github-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: background 0.2s;
+        }
+        
+        .github-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
         .container {
             max-width: 1200px;
             margin: 0 auto;
@@ -326,14 +345,20 @@
             <img src="/static/logo.png" alt="Instagram Downloader" class="logo">
             <h1>Instagram Downloader</h1>
         </div>
-        <div class="user-info">
-            {% if user.photo_url %}
-            <img src="{{ user.photo_url }}" alt="User" class="user-avatar">
-            {% else %}
-            <div class="user-avatar">{{ user.first_name[0] if user.first_name else '?' }}</div>
-            {% endif %}
-            <span>{{ user.first_name }}</span>
-            <a href="/logout"><button class="logout-btn">Logout</button></a>
+        <div style="display: flex; align-items: center; gap: 24px;">
+            <a href="https://github.com/obervinov/pyinstabot-downloader" target="_blank" class="github-btn">
+                <span>🐙</span>
+                <span>GitHub</span>
+            </a>
+            <div class="user-info">
+                {% if user.photo_url %}
+                <img src="{{ user.photo_url }}" alt="User" class="user-avatar">
+                {% else %}
+                <div class="user-avatar">{{ user.first_name[0] if user.first_name else 'U' }}</div>
+                {% endif %}
+                <span>{{ user.first_name }}</span>
+                <a href="/logout"><button class="logout-btn">Logout</button></a>
+            </div>
         </div>
     </div>
     

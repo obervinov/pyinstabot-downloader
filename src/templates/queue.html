@@ -62,6 +62,25 @@
             background: rgba(255, 255, 255, 0.1);
         }
         
+        .github-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: background 0.2s;
+        }
+        
+        .github-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
         .container {
             max-width: 1200px;
             margin: 0 auto;
@@ -189,7 +208,11 @@
             <img src="/static/logo.png" alt="Logo" class="logo">
             <h1>Queue</h1>
         </div>
-        <div>
+        <div style="display: flex; align-items: center; gap: 16px;">
+            <a href="https://github.com/obervinov/pyinstabot-downloader" target="_blank" rel="noopener noreferrer" class="github-btn">
+                <span>🐙</span>
+                <span>GitHub</span>
+            </a>
             <a href="/dashboard" class="nav-link">← Back to Dashboard</a>
         </div>
     </div>

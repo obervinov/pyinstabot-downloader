@@ -456,7 +456,6 @@ class WebUI:
                 url (str): Instagram post/profile URL(s)
             """
             import re
-            from modules.tools import get_hash
             from configs.constants import REGEX_SPECIFIC_LINK, REGEX_PROFILE_LINK
 
             user_id = str(user['id'])
@@ -482,18 +481,30 @@ class WebUI:
                     # Apply rate limits for each link
                     scheduled_time = datetime.now()
                     access_result = self.users_rl.user_access_check(user_id=user_id)
+                    log.debug('[WebUI]: Rate limit check for user %s link %d: %s', user_id, idx + 1, access_result)
                     rate_limit_time = access_result.get('rate_limits')
                     if rate_limit_time and isinstance(rate_limit_time, datetime):
                         scheduled_time = rate_limit_time
                         log.info('[WebUI]: Rate limit applied for user %s link %d, scheduled for %s', user_id, idx + 1, scheduled_time)
 
-                    # Validate URL format
+                    # Remove query parameters
+                    clean_url = single_url.split('?')[0]
+
+                    # Validate URL format and extract post_id/username
                     if re.match(REGEX_SPECIFIC_LINK, single_url):
                         link_type = 'post'
-                        post_id = get_hash(single_url)
+                        post_id = clean_url.split('/')[4]
+                        # Validate post_id (Instagram shortcodes are 11 characters)
+                        if len(post_id) != 11 or not re.match(r'^[a-zA-Z0-9_-]+$', post_id):
+                            results['errors'].append({'url': single_url, 'error': 'Invalid post shortcode format'})
+                            continue
                     elif re.match(REGEX_PROFILE_LINK, single_url):
                         link_type = 'profile'
-                        post_id = get_hash(single_url)
+                        post_id = clean_url.split('/')[3]
+                        # Validate username
+                        if not post_id or not re.match(r'^[a-zA-Z0-9._]+$', post_id):
+                            results['errors'].append({'url': single_url, 'error': 'Invalid username format'})
+                            continue
                     else:
                         results['errors'].append({'url': single_url, 'error': 'Invalid Instagram URL'})
                         continue
@@ -503,19 +514,16 @@ class WebUI:
                         results['errors'].append({'url': single_url, 'error': 'Already in queue or processed'})
                         continue
 
-                    # Add to queue
-                    data = {
-                        'user_id': user_id,
-                        'post_id': post_id,
-                        'post_url': single_url,
-                        'post_owner': None,  # Will be filled by downloader
-                        'link_type': link_type,
-                        'message_id': f"web_{post_id}",
-                        'chat_id': user_id,
-                        'scheduled_time': scheduled_time.strftime('%Y-%m-%d %H:%M:%S') if isinstance(scheduled_time, datetime) else scheduled_time,
-                        'download_status': 'not started',
-                        'upload_status': 'not started'
-                    }
+                    # Create standardized queue message data
+                    data = self.database.create_queue_message_data(
+                        user_id=user_id,
+                        post_id=post_id,
+                        post_url=single_url,
+                        link_type=link_type,
+                        message_id=f"webui_{post_id}",
+                        chat_id=user_id,
+                        scheduled_time=scheduled_time
+                    )
 
                     self.database.add_message_to_queue(data=data)
                     log.info('[WebUI]: User %s submitted link %d: %s (%s)', user_id, idx + 1, single_url, post_id)
@@ -615,7 +623,7 @@ class WebUI:
         ):
             """
             Full processed page with pagination.
-            
+
             Query params:
                 page (int): Page number (default: 1)
                 limit (int): Items per page (default: 20)
@@ -647,13 +655,18 @@ class WebUI:
                         'upload_status': msg[6]
                     })
 
+            # Get statistics by owner
+            stats_data = self.database.get_user_processed_stats(user_id=user_id)
+            stats = stats_data if stats_data['labels'] else None
+
             context = {
                 "request": request,
                 "user": user,
                 "messages": result,
                 "total": total,
                 "page": page,
-                "limit": limit
+                "limit": limit,
+                "stats": stats
             }
 
             return self.templates.TemplateResponse("processed.html", context)
@@ -663,19 +676,26 @@ class WebUI:
             request: Request,
             page: int = 1,
             limit: int = 20,
+            sort_by: str = 'last_updated',
+            sort_order: str = 'desc',
             user: dict = Depends(self.get_current_user)
         ):
             """
             Accounts page showing Instagram profile metadata.
             Global table (not user-specific).
- 
+
             Query params:
                 page (int): Page number (default: 1)
                 limit (int): Items per page (default: 20)
             """
             offset = (page - 1) * limit
 
-            accounts_data = self.database.get_accounts(limit=limit, offset=offset)
+            accounts_data = self.database.get_accounts(
+                limit=limit,
+                offset=offset,
+                sort_by=sort_by,
+                sort_order=sort_order
+            )
 
             # Convert datetime objects to ISO format for template
             for account in accounts_data['accounts']:
@@ -688,7 +708,9 @@ class WebUI:
                 "accounts": accounts_data['accounts'],
                 "total": accounts_data['counter'],
                 "page": page,
-                "limit": limit
+                "limit": limit,
+                "sort_by": sort_by,
+                "sort_order": sort_order
             }
 
             return self.templates.TemplateResponse("accounts.html", context)

@@ -32,3 +32,6 @@ REGEX_PROFILE_LINK = r'^https://www\.instagram\.com/.*'
 # Mock statuses for handling failed messages
 UPLOADER_ERROR_STATUS = 'upload_error'
 DOWNLOADER_ERROR_STATUS = 'download_error'
+
+# WebUI settings
+WEBUI_PORT = int(os.environ.get('WEBUI_PORT', 8080))
