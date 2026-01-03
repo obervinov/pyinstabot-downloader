@@ -13,6 +13,7 @@ ROLES_MAP = {
     'Posts': 'posts',
     'Account': 'account',
     'Reschedule Queue': 'reschedule_queue',
+    'WebUI Access': 'webui_access',
 }
 
 # Time intervals and ports (in seconds)

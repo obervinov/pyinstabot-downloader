@@ -14,6 +14,7 @@
 ## Table of contents
 - [About this project](#-about-this-project)
 - [Project architecture](#-project-architecture)
+- [Web UI](#web-ui)
 - [Requirements](#-requirements)
 - [Environment variables](#-environment-variables)
 - [Prepare and configure environment](#-prepare-and-configure-environment)
@@ -46,6 +47,13 @@ This project is a Telegram bot that allows you to upload posts from your Instagr
 
 **Code structure**
 ![Diagram](doc/diagram-structure.png)
+</br>
+
+## Web UI
+FastAPI-based dashboard for Telegram login, per-user stats, queue views, and link submission.
+
+- Token login available: run `/webui_login` in Telegram to generate one-time tokens for the WebUI.
+- [Web UI guide](doc/README_WEBUI.md)
 </br>
 
 ## <img src="https://github.com/obervinov/_templates/blob/v1.2.2/icons/requirements.png" width="25" title="requirements"> Requirements

@@ -17,7 +17,7 @@ from users import Users
 from vault import VaultClient
 from configs.constants import (
     TELEGRAM_BOT_NAME, TELEGRAM_BOT_VERSION, ROLES_MAP, QUEUE_FREQUENCY, STATUSES_MESSAGE_FREQUENCY, METRICS_PORT, METRICS_INTERVAL,
-    VAULT_DB_ROLE, REGEX_SPECIFIC_LINK, REGEX_PROFILE_LINK, UPLOADER_ERROR_STATUS, DOWNLOADER_ERROR_STATUS
+    VAULT_DB_ROLE, REGEX_SPECIFIC_LINK, REGEX_PROFILE_LINK, UPLOADER_ERROR_STATUS, DOWNLOADER_ERROR_STATUS, WEBUI_PORT
 )
 from modules.database import DatabaseClient
 from modules.exceptions import FailedMessagesStatusUpdater
@@ -25,6 +25,7 @@ from modules.tools import get_hash
 from modules.downloader import Downloader
 from modules.uploader import Uploader
 from modules.metrics import Metrics
+from modules.webui import WebUI
 
 
 # Vault client
@@ -37,9 +38,11 @@ bot = tg.telegram_bot
 database = DatabaseClient(vault=vault, db_role=VAULT_DB_ROLE)
 # Metrics exporter
 metrics = Metrics(port=METRICS_PORT, interval=METRICS_INTERVAL, metrics_prefix=TELEGRAM_BOT_NAME, vault=vault, database=database)
+
 # Users manager instance
 users_rl = Users(vault={'instance': vault, 'role': f"{VAULT_DB_ROLE}-users-rl"}, rate_limits=True)
 users = Users(vault={'instance': vault, 'role': f"{VAULT_DB_ROLE}-users"}, rate_limits=False)
+
 # Client for download content from instagram
 # If API disabled, the mock object will be used
 downloader_api_enabled = vault.kv2engine.read_secret(path='configuration/downloader-api').get('enabled', False)
@@ -63,6 +66,15 @@ else:
     log.warning('[Bot]: Uploader API is disabled, using mock object, because enabled flag is %s', uploader_api_enabled)
     uploader = MagicMock()
     uploader.run_transfers.return_value = 'completed'
+
+# WebUI instance
+# If WebUI disabled, nothing will be created
+webui_enabled = (vault.kv2engine.read_secret(path='configuration/webui') or {}).get('enabled', False)
+if webui_enabled == 'True':
+    log.info('[Bot]: WebUI is enabled: %s', webui_enabled)
+    webui = WebUI(
+        database=database, vault=vault, users={'auth': users, 'rate_limited': users_rl}, port=WEBUI_PORT
+    )
 
 
 # Bot commands #####################################################################################################################
@@ -110,6 +122,15 @@ def bot_callback_query_handler(call: tg.callback_query, access_result: dict) -> 
     elif call.data == "Reschedule Queue":
         alias = 'help_for_reschedule_queue'
         method = reschedule_queue
+    elif call.data == "WebUI Access":
+        # Issue token without authorize method
+        token = users.issue_token(user_id=str(call.message.chat.id), ttl_minutes=webui.token_ttl)
+        tg.send_styled_message(
+            chat_id=call.message.chat.id,
+            messages_template={'alias': 'webui_token', 'kwargs': {'token': token, 'ttl_minutes': webui.token_ttl}}
+        )
+        log.info('[Bot]: Issued WebUI token for user %s via button', call.message.chat.id)
+        return
     else:
         log.error('[Bot]: Handler for button %s not found', call.data)
         alias = 'unknown_command'
@@ -554,6 +575,11 @@ def main():
     threads = threading.enumerate()
     thread_metrics = threading.Thread(target=metrics.run, args=(threads,), name="MetricsThread")
     thread_metrics.start()
+
+    if webui_enabled == 'True':
+        thread_webui = threading.Thread(target=webui.run, daemon=True, name="WebUIThread")
+        thread_webui.start()
+
     # Run bot
     while True:
         try:

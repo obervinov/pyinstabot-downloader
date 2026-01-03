@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Accounts - Pyinstabot Downloader</title>
+    <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+    <link rel="icon" type="image/png" sizes="16x16" href="/static/favicon-16x16.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32x32.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/static/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/static/android-chrome-192x192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="/static/android-chrome-512x512.png">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f5f7fa;
+            color: #333;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .logo {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+        
+        .header h1 {
+            font-size: 24px;
+        }
+        
+        .nav-link {
+            color: white;
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            transition: background 0.2s;
+        }
+        
+        .nav-link:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+        
+        .page-header {
+            margin-bottom: 24px;
+        }
+        
+        .page-header h2 {
+            font-size: 28px;
+            color: #1f2937;
+            margin-bottom: 8px;
+        }
+        
+        .page-header p {
+            color: #6b7280;
+            font-size: 14px;
+        }
+        
+        .table-wrapper {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            overflow-x: auto;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        th {
+            background: #f9fafb;
+            padding: 12px 16px;
+            text-align: left;
+            font-size: 13px;
+            font-weight: 600;
+            color: #374151;
+            border-bottom: 2px solid #e5e7eb;
+            white-space: nowrap;
+        }
+        
+        td {
+            padding: 12px 16px;
+            border-bottom: 1px solid #f3f4f6;
+            font-size: 14px;
+        }
+        
+        tr:last-child td {
+            border-bottom: none;
+        }
+        
+        tr:hover {
+            background: #f9fafb;
+        }
+        
+        .username {
+            font-weight: 600;
+            color: #667eea;
+        }
+        
+        .number {
+            font-family: 'Courier New', monospace;
+            color: #6b7280;
+        }
+        
+        .timestamp {
+            color: #9ca3af;
+            font-size: 13px;
+        }
+        
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            margin-top: 24px;
+        }
+        
+        .pagination a, .pagination span {
+            padding: 8px 12px;
+            background: white;
+            border-radius: 6px;
+            text-decoration: none;
+            color: #667eea;
+            font-size: 14px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        
+        .pagination span.current {
+            background: #667eea;
+            color: white;
+        }
+        
+        .pagination a:hover {
+            background: #f3f4f6;
+        }
+        
+        .empty-state {
+            background: white;
+            border-radius: 12px;
+            padding: 48px;
+            text-align: center;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        
+        .empty-state-icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+        }
+        
+        .empty-state p {
+            color: #9ca3af;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-left">
+            <img src="/static/logo.png" alt="Logo" class="logo">
+            <h1>Instagram Accounts</h1>
+        </div>
+        <div>
+            <a href="/dashboard" class="nav-link">← Back to Dashboard</a>
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="page-header">
+            <h2>Tracked Accounts ({{ total }})</h2>
+            <p>Instagram profile metadata and statistics</p>
+        </div>
+        
+        {% if accounts %}
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Username</th>
+                        <th>PK</th>
+                        <th>Full Name</th>
+                        <th>Posts</th>
+                        <th>Followers</th>
+                        <th>Following</th>
+                        <th>Cursor</th>
+                        <th>Last Updated</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for account in accounts %}
+                    <tr>
+                        <td class="username">{{ account.username }}</td>
+                        <td class="number">{{ account.pk }}</td>
+                        <td>{{ account.full_name }}</td>
+                        <td class="number">{{ account.media_count }}</td>
+                        <td class="number">{{ account.follower_count }}</td>
+                        <td class="number">{{ account.following_count }}</td>
+                        <td class="number">{{ account.cursor or '-' }}</td>
+                        <td class="timestamp">{{ account.last_updated }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        {% if total > limit %}
+        <div class="pagination">
+            {% if page > 1 %}
+            <a href="?page={{ page - 1 }}">← Previous</a>
+            {% endif %}
+            
+            {% set total_pages = (total + limit - 1) // limit %}
+            {% for p in range(1, total_pages + 1) %}
+                {% if p == page %}
+                <span class="current">{{ p }}</span>
+                {% elif p == 1 or p == total_pages or (p >= page - 2 and p <= page + 2) %}
+                <a href="?page={{ p }}">{{ p }}</a>
+                {% elif p == page - 3 or p == page + 3 %}
+                <span>...</span>
+                {% endif %}
+            {% endfor %}
+            
+            {% if page < total_pages %}
+            <a href="?page={{ page + 1 }}">Next →</a>
+            {% endif %}
+        </div>
+        {% endif %}
+        
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-state-icon">👤</div>
+            <p>No accounts tracked yet</p>
+        </div>
+        {% endif %}
+    </div>
+</body>
+</html>

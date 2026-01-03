@@ -597,6 +597,45 @@ class DatabaseClient:
                 result.append({'post_id': message[0], 'timestamp': message[1], 'state': message[2]})
         return {'counter': messages_count, 'messages': result}
 
+    def get_accounts(self, limit: int = 20, offset: int = 0) -> dict:
+        """
+        Get accounts data from the accounts table with pagination.
+        Returns account metadata including username, pk, full_name, counters, cursor, and last_updated.
+
+        Args:
+            limit (int): The maximum number of accounts to retrieve (default: 20).
+            offset (int): The number of accounts to skip (default: 0).
+
+        Returns:
+            dict: A dictionary containing the total count and list of accounts with their metadata.
+
+        Examples:
+            >>> get_accounts(limit=10, offset=0)
+            {'counter': 42, 'accounts': [{'username': 'example', 'pk': 123456, ...}]}
+        """
+        result = []
+        accounts_list = self._select(
+            table_name='accounts',
+            columns=('username', 'pk', 'full_name', 'media_count', 'follower_count', 'following_count', 'cursor', 'last_updated'),
+            order_by='last_updated DESC',
+            limit=limit,
+            offset=offset
+        )
+        accounts_count = self._count(table_name='accounts', condition='TRUE')
+        if accounts_list:
+            for account in accounts_list:
+                result.append({
+                    'username': account[0],
+                    'pk': account[1],
+                    'full_name': account[2],
+                    'media_count': account[3],
+                    'follower_count': account[4],
+                    'following_count': account[5],
+                    'cursor': account[6],
+                    'last_updated': account[7]
+                })
+        return {'counter': accounts_count, 'accounts': result}
+
     def check_message_uniqueness(self, post_id: str = None, user_id: str = None) -> bool:
         """
         Check if a message with the given post ID and chat ID already exists in the queue.
