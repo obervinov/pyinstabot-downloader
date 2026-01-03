@@ -3,18 +3,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/) and this project adheres to [Semantic Versioning](http://semver.org/).
 
 
-## v3..6 - 2025-07-26
+## v3.4.0 - 2026-01-03
 ### What's Changed
-**Full Changelog**: https://github.com/obervinov/pyinstabot-downloader/compare/v3.3.5...v3.3.6 by @obervinov in https://github.com/obervinov/pyinstabot-downloader/pull/146
-#### 💥 Breaking Changes
-* reduce the number of items on the user widget to 3 items (from 5 items) in the `get_user_processed` and `get_user_queue` methods of the `Database` class
-* change log level for the some redundant messages in the `queue_handler_thread` method
-#### 🐛 Bug Fixes
-* rewrite not optimal logic in the `get_user_processed` and `get_user_queue` methods of the `Database` class (limit is 10000 items and retrieve all items from the table each time)
+**Full Changelog**: https://github.com/obervinov/pyinstabot-downloader/compare/v3.3.6...v3.4.0 by @obervinov in https://github.com/obervinov/pyinstabot-downloader/pull/156
 #### 🚀 Features
-* update dependencies versions
-* small improvements of user widget
-* add a link display to the target storage (to the user widget)
+* **WebUI Implementation**: Added FastAPI-based web interface with complete feature parity to Telegram bot (doc/README_WEBUI.md):
+  - Token-based authentication using users-package v4.2.0
+  - Telegram Login Widget integration for OAuth
+  - User dashboard with statistics (queue count, total downloaded, last 24h downloads)
+  - Multi-link submission with per-link rate limiting
+  - Full queue and processed message views with pagination
+  - Global Instagram accounts metadata page
+  - Responsive design with logo and favicon support
+* **Database Enhancements**:
+  - Added `get_accounts()` public method for retrieving Instagram account metadata with pagination
+  - Added `users_tokens` table schema for token-based authentication
+#### 💥 Breaking Changes
+* New environment variable: `WEBUI_PORT` for web server configuration
+* Added Vault configuration path: `configuration/webui` (session-secret, token-ttl)
+#### 📦 Dependencies
+* Bumped users-package to v4.2.0 (token authentication support)
+* Added FastAPI, Uvicorn, and Starlette dependencies for WebUI
 
 
 ## v3.3.6 - 2025-07-26
