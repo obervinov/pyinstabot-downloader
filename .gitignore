@@ -1,3 +1,4 @@
+.*.local.sh
 .vscode
 .DS_Store
 *.tmp

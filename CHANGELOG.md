@@ -3,6 +3,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/) and this project adheres to [Semantic Versioning](http://semver.org/).
 
 
+## v3..6 - 2025-07-26
+### What's Changed
+**Full Changelog**: https://github.com/obervinov/pyinstabot-downloader/compare/v3.3.5...v3.3.6 by @obervinov in https://github.com/obervinov/pyinstabot-downloader/pull/146
+#### 💥 Breaking Changes
+* reduce the number of items on the user widget to 3 items (from 5 items) in the `get_user_processed` and `get_user_queue` methods of the `Database` class
+* change log level for the some redundant messages in the `queue_handler_thread` method
+#### 🐛 Bug Fixes
+* rewrite not optimal logic in the `get_user_processed` and `get_user_queue` methods of the `Database` class (limit is 10000 items and retrieve all items from the table each time)
+#### 🚀 Features
+* update dependencies versions
+* small improvements of user widget
+* add a link display to the target storage (to the user widget)
+
+
 ## v3.3.6 - 2025-07-26
 ### What's Changed
 **Full Changelog**: https://github.com/obervinov/pyinstabot-downloader/compare/v3.3.5...v3.3.6 by @obervinov in https://github.com/obervinov/pyinstabot-downloader/pull/146
