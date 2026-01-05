@@ -690,16 +690,26 @@ class DatabaseClient:
         # Validate sort column and order to prevent SQL injection
         sort_field = sort_field_map.get(sort_by, 'last_updated')
         sort_direction = 'DESC' if str(sort_order).lower() == 'desc' else 'ASC'
-        order_by = f"{sort_field} {sort_direction}"
 
-        accounts_list = self._select(
-            table_name='accounts',
-            columns=('username', 'pk', 'full_name', 'media_count', 'follower_count', 'following_count', 'last_updated'),
-            order_by=order_by,
-            limit=limit,
-            offset=offset
-        )
+        # For posts_downloaded, we need to fetch all and sort in Python since it's calculated
+        if sort_field == 'posts_downloaded':
+            # Fetch all accounts without limit/offset for in-memory sorting
+            accounts_list = self._select(
+                table_name='accounts',
+                columns=('username', 'pk', 'full_name', 'media_count', 'follower_count', 'following_count', 'last_updated')
+            )
+        else:
+            order_by = f"{sort_field} {sort_direction}"
+            accounts_list = self._select(
+                table_name='accounts',
+                columns=('username', 'pk', 'full_name', 'media_count', 'follower_count', 'following_count', 'last_updated'),
+                order_by=order_by,
+                limit=limit,
+                offset=offset
+            )
+
         accounts_count = self._count(table_name='accounts', condition='TRUE')
+
         if accounts_list:
             for account in accounts_list:
                 # Count downloaded posts for this account owner
@@ -720,6 +730,13 @@ class DatabaseClient:
                     'last_updated': account[6],
                     'posts_downloaded': posts_downloaded
                 })
+
+        # Sort by posts_downloaded in Python if needed
+        if sort_field == 'posts_downloaded':
+            result.sort(key=lambda x: x['posts_downloaded'], reverse=(sort_direction == 'DESC'))
+            # Apply pagination after sorting
+            result = result[offset:offset + limit]
+
         return {'counter': accounts_count, 'accounts': result}
 
     def get_user_processed_stats(self, user_id: str = None) -> dict:

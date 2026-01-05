@@ -4,6 +4,7 @@ It displays queue/processed messages, user statistics, and accepts new link subm
 Authentication is handled via Telegram Login Widget.
 """
 import os
+import random
 import hashlib
 import hmac
 import time
@@ -302,11 +303,19 @@ class WebUI:
                 log.warning('[WebUI]: Access denied for user %s via token', user_id)
                 raise HTTPException(status_code=403, detail="Access denied")
 
+            # Generate random DiceBear avatar if photo_url is missing
+            username = token_data.get('username', str(user_id))
+            photo_url = token_data.get('photo_url', '')
+            if not photo_url:
+                styles = ['adventurer', 'avataaars', 'lorelei', 'micah', 'notionists', 'pixel-art']
+                style = random.choice(styles)
+                photo_url = f"https://api.dicebear.com/7.x/{style}/svg?seed={username}"
+
             request.session['user'] = {
                 'id': user_id,
                 'first_name': token_data.get('username', ''),
-                'username': token_data.get('username', ''),
-                'photo_url': token_data.get('photo_url', '')
+                'username': username,
+                'photo_url': photo_url
             }
 
             log.info('[WebUI]: User %s authenticated successfully via token', user_id)
