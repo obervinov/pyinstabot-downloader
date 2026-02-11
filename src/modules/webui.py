@@ -16,6 +16,7 @@ from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 from logger import log
+from src.configs.constants import ROLES_MAP
 import uvicorn
 
 
@@ -484,24 +485,16 @@ class WebUI:
 
             results = {'success': [], 'errors': []}
 
-            # Process each URL with per-link rate limiting
+            # Process each URL with per-link authorization and rate limiting
             for idx, single_url in enumerate(urls):
                 try:
-                    # Apply rate limits for each link
-                    scheduled_time = datetime.now()
-                    access_result = self.users_rl.user_access_check(user_id=user_id)
-                    log.debug('[WebUI]: Rate limit check for user %s link %d: %s', user_id, idx + 1, access_result)
-                    rate_limit_time = access_result.get('rate_limits')
-                    if rate_limit_time and isinstance(rate_limit_time, datetime):
-                        scheduled_time = rate_limit_time
-                        log.info('[WebUI]: Rate limit applied for user %s link %d, scheduled for %s', user_id, idx + 1, scheduled_time)
-
                     # Remove query parameters
                     clean_url = single_url.split('?')[0]
 
-                    # Validate URL format and extract post_id/username
+                    # Validate URL format and determine link type
                     if re.match(REGEX_SPECIFIC_LINK, single_url):
                         link_type = 'post'
+                        required_role = ROLES_MAP['Posts']  # 'posts'
                         post_id = clean_url.split('/')[4]
                         # Validate post_id (Instagram shortcodes are 11 characters)
                         if len(post_id) != 11 or not re.match(r'^[a-zA-Z0-9_-]+$', post_id):
@@ -509,6 +502,7 @@ class WebUI:
                             continue
                     elif re.match(REGEX_PROFILE_LINK, single_url):
                         link_type = 'profile'
+                        required_role = ROLES_MAP['Account']  # 'account'
                         post_id = clean_url.split('/')[3]
                         # Validate username
                         if not post_id or not re.match(r'^[a-zA-Z0-9._]+$', post_id):
@@ -517,6 +511,29 @@ class WebUI:
                     else:
                         results['errors'].append({'url': single_url, 'error': 'Invalid Instagram URL'})
                         continue
+
+                    # Check authorization and apply rate limits for each link
+                    # Note: This works with both users-package v4.2.0 (requires role_id) and v4.3.0+ (role_id optional)
+                    access_result = self.users_rl.user_access_check(
+                        user_id=user_id,
+                        role_id=required_role,
+                        chat_id=user_id,
+                        message_id=f"webui_{link_type}_{idx+1}"
+                    )
+                    log.debug('[WebUI]: Authorization and rate limit check for user %s link %d (%s): %s', user_id, idx + 1, link_type, access_result)
+
+                    # Check permissions
+                    if access_result.get('permissions') != 'allowed':
+                        results['errors'].append({'url': single_url, 'error': f"No permission for {link_type} downloads"})
+                        log.warning('[WebUI]: User %s denied access to %s (role: %s)', user_id, link_type, required_role)
+                        continue
+
+                    # Apply rate limits
+                    scheduled_time = datetime.now()
+                    rate_limit_time = access_result.get('rate_limits')
+                    if rate_limit_time and isinstance(rate_limit_time, datetime):
+                        scheduled_time = rate_limit_time
+                        log.info('[WebUI]: Rate limit applied for user %s link %d, scheduled for %s', user_id, idx + 1, scheduled_time)
 
                     # Check uniqueness
                     if not self.database.check_message_uniqueness(post_id=post_id, user_id=user_id):
