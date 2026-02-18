@@ -104,6 +104,21 @@
             background: rgba(255, 255, 255, 0.3);
         }
         
+        .nav-link {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 14px;
+            transition: background 0.2s;
+            white-space: nowrap;
+        }
+        
+        .nav-link:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
         .container {
             max-width: 1200px;
             margin: 0 auto;
@@ -257,9 +272,9 @@
         }
         
         .status.waiting { background: #fef3c7; color: #92400e; }
+        .status.error { background: #fee2e2; color: #991b1b; }
         .status.processing { background: #dbeafe; color: #1e40af; }
         .status.completed { background: #d1fae5; color: #065f46; }
-        .status.error { background: #fee2e2; color: #991b1b; }
         
         .message-meta {
             font-size: 14px;
@@ -345,7 +360,10 @@
             <img src="/static/logo.png" alt="Instagram Downloader" class="logo">
             <h1>Instagram Downloader</h1>
         </div>
-        <div style="display: flex; align-items: center; gap: 24px;">
+        <div style="display: flex; align-items: center; gap: 16px;">
+            <a href="/queue" class="nav-link">📋 Queue</a>
+            <a href="/processed" class="nav-link">✅ Processed</a>
+            <a href="/accounts" class="nav-link">👥 Accounts</a>
             <a href="https://github.com/obervinov/pyinstabot-downloader" target="_blank" class="github-btn">
                 <span>🐙</span>
                 <span>GitHub</span>
@@ -377,15 +395,6 @@
                 <h3>Last 24 Hours</h3>
                 <div class="stat-value">{{ last_24h_count }}</div>
             </div>
-        </div>
-        
-        <!-- Quick Actions -->
-        <div style="display: flex; justify-content: center; margin: 24px 0;">
-            <a href="/accounts" style="text-decoration: none;">
-                <button style="padding: 12px 24px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3); transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
-                    👤 View Tracked Accounts
-                </button>
-            </a>
         </div>
         
         <!-- Submit New Link Form -->
@@ -489,7 +498,13 @@
                 <div class="message-item">
                     <div class="message-header">
                         <span class="post-id">{{ msg.post_id }}</span>
+                        {% if msg.state == 'error' or msg.download_status == 'download_error' or msg.upload_status == 'upload_error' %}
+                        <span class="status error">Error</span>
+                        {% elif msg.state == 'processing' %}
+                        <span class="status processing">Processing</span>
+                        {% else %}
                         <span class="status waiting">Waiting</span>
+                        {% endif %}
                     </div>
                     <div class="message-meta">
                         Scheduled: {{ msg.scheduled_time }}
@@ -497,11 +512,12 @@
                 </div>
                 {% endfor %}
             </div>
-            {% if queue_count > 5 %}
+            {% endif %}
+            
+            {% if queue_count > 0 %}
             <div style="text-align: center; margin-top: 16px;">
                 <a href="/queue" style="color: #667eea; text-decoration: none;">View all {{ queue_count }} items →</a>
             </div>
-            {% endif %}
             {% else %}
             <div class="empty-state">
                 <div class="empty-state-icon">📭</div>

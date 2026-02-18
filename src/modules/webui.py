@@ -588,6 +588,82 @@ class WebUI:
                     'results': results
                 }, status_code=400)
 
+        @self.app.post("/api/retry/{post_id}")
+        async def retry_post(
+            post_id: str,
+            user: dict = Depends(self.get_current_user)
+        ):
+            """
+            Reset the status of a failed post to retry downloading.
+
+            Args:
+                post_id (str): The ID of the post to retry.
+
+            Returns:
+                JSONResponse: Success or error message.
+            """
+            user_id = str(user['id'])
+
+            # Verify the post belongs to this user
+            existing = self.database._select(
+                table_name='queue',
+                columns=('user_id', 'state', 'download_status', 'upload_status'),
+                condition=f"post_id = '{post_id}'",
+                limit=1
+            )
+
+            if not existing:
+                return JSONResponse({
+                    'status': 'error',
+                    'message': 'Post not found in queue'
+                }, status_code=404)
+
+            if existing[0][0] != user_id:
+                return JSONResponse({
+                    'status': 'error',
+                    'message': 'Not authorized to retry this post'
+                }, status_code=403)
+
+            # Check if post is actually in error state
+            state, download_status, upload_status = existing[0][1], existing[0][2], existing[0][3]
+            is_error = state == 'error' or download_status == 'download_error' or upload_status == 'upload_error'
+
+            if not is_error:
+                return JSONResponse({
+                    'status': 'error',
+                    'message': 'Post is not in error state'
+                }, status_code=400)
+
+            try:
+                # Reset statuses to initial state
+                self.database.update_message_state_in_queue(
+                    post_id=post_id,
+                    state='waiting',
+                    download_status='not started',
+                    upload_status='not started'
+                )
+
+                # Reschedule to now
+                self.database.update_schedule_time_in_queue(
+                    post_id=post_id,
+                    user_id=user_id,
+                    scheduled_time=datetime.now()
+                )
+
+                log.info(f"[webui] Post {post_id} reset for retry by user {user_id}")
+
+                return JSONResponse({
+                    'status': 'success',
+                    'message': 'Post reset successfully, will be retried soon'
+                })
+
+            except Exception as e:
+                log.error(f"[webui] Failed to retry post {post_id}: {e}")
+                return JSONResponse({
+                    'status': 'error',
+                    'message': f'Failed to reset post: {str(e)}'
+                }, status_code=500)
+
         @self.app.get("/queue", response_class=HTMLResponse)
         async def queue_page(
             request: Request,

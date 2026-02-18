@@ -18,7 +18,6 @@ packages = [{include = "src"}]
 
 [tool.poetry.dependencies]
 python = "^3.12"
-instagrapi = "2.1.5"
 pillow = "^11"
 psycopg2-binary = "^2"
 mock = "^5"
@@ -33,6 +32,8 @@ logger = { git = "https://github.com/obervinov/logger-package.git", tag = "v2.0.
 vault  = { git = "https://github.com/obervinov/vault-package.git", tag = "v4.0.3" }
 users = { git = "https://github.com/obervinov/users-package.git", tag = "v4.2.0" }
 telegram = { git = "https://github.com/obervinov/telegram-package.git", tag = "v3.0.4" }
+instagrapi = { git = "https://github.com/obervinov/instagrapi.git", branch = "fix/security-and-proxy" }
+
 
 [tool.poetry.group.dev.dependencies]
 pylint = "^4"

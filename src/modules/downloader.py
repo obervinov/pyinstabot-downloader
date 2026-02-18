@@ -11,10 +11,12 @@ import random
 from pathlib import Path
 from urllib3.exceptions import ReadTimeoutError
 from requests.exceptions import ConnectionError as RequestsConnectionError
+
 from instagrapi import Client
 from instagrapi.exceptions import (
-    LoginRequired, ClientRequestTimeout, MediaNotFound, MediaUnavailable, PleaseWaitFewMinutes, ChallengeRequired, ClientConnectionError
+    LoginRequired, ClientRequestTimeout, MediaNotFound, MediaUnavailable, PleaseWaitFewMinutes, ChallengeRequired, ClientConnectionError, ClientError
 )
+
 from logger import log
 from .exceptions import WrongVaultInstance, FailedCreateDownloaderInstance, FailedAuthInstagram, FailedDownloadPost
 
@@ -307,11 +309,7 @@ class Downloader:
         else:
             self._load_session(login_args)
 
-        # Check the status of the authentication
-        log.info('[Downloader]: checking the status of the authentication...')
-        self.client.get_timeline_feed()
         log.info('[Downloader]: authentication in the Instagram API was successful.')
-
         return 'logged_in'
 
     @exceptions_handler
@@ -338,7 +336,7 @@ class Downloader:
         log.info('[Downloader]: downloading the contents of the post %s...', shortcode)
         try:
             media_pk = self.client.media_pk_from_code(code=shortcode)
-            media_info = self.client.media_info(media_pk=media_pk).dict()
+            media_info = self.client.media_info_v1(media_pk=media_pk).dict()
             media_type = media_info['media_type']
             product_type = media_info.get('product_type')
             key = (media_type, 'any' if media_type in (1, 8) else product_type)
