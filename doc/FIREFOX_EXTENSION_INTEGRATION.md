@@ -204,21 +204,25 @@ Before deploying the extension, verify:
 
 ## Migration from Current Structure
 
-If you already have content in the current structure (one `.txt` per file):
+If you still have content in the old single-file layout (one `.txt` per file):
 
 ```
-# Current structure
+# Legacy structure
 1771595266053_ds221ai0.jpg
 1771595266053_ds221ai0.jpg.txt
 ```
 
-The processor **already supports this** through auto-detection:
-- It finds `.txt` files
-- Auto-detects paired media file (removes `.txt` extension)
-- Adds default `source: instagram`
-- Processes each file individually
+This layout is **no longer processed automatically**.
+The current processor only supports the grouped post structure described above, where each post has its own directory with media files plus a `metadata.txt` or `metadata.json` file.
 
-However, **carousels will be split into separate posts**. To fix this, migrate to the grouped structure.
+To migrate legacy content:
+
+1. Create one directory per post.
+2. Move all media files for that post into the directory.
+3. Replace per-file sidecar metadata with a single `metadata.txt` or `metadata.json`.
+4. Populate `post_id`, `source`, and `files` in the grouped metadata file.
+
+Until content is migrated, legacy single-file items will be skipped by the processor.
 
 ## Support for Future Platforms
 
