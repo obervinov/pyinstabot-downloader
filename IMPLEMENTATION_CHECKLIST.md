@@ -1,20 +1,33 @@
 # Implementation Checklist
 
-## ✅ Completed Tasks
+## ✅ Completed Features
 
-### Analysis Phase
+### Raw Content Processing Feature (Latest)
+- [x] Created content_processor.py module with base and specialized classes
+- [x] Implemented RawContentProcessor for WebDAV content organization
+- [x] Created InstagramRawAdapter for Instagram-specific logic
+- [x] Integrated ContentProcessor into WebUI class
+- [x] Added API endpoint POST /api/process-raw-content
+- [x] Added Dashboard UI section for processing with status display
+- [x] Comprehensive test suite (16+ test cases)
+- [x] Technical documentation (RAW_CONTENT_PROCESSING.md)
+- [x] Integration guide (RAW_CONTENT_INTEGRATION.md)
+
+### Previous - Rate Limiting Fixes
+
+#### Analysis Phase
 - [x] Identified root cause: users-package rate_limits calculation blocked on role_id=None
 - [x] Identified root cause: storage.py rate_limits column conditionally skipped
 - [x] Identified root cause: WebUI pre-flight checks instead of per-link checks
 - [x] Understood requirement: Rate limits must be per-link, not per-batch
 - [x] Documented execution flow and data patterns
 
-### Code Changes - users-package
+#### Code Changes - users-package
 - [x] users/users.py: Added elif condition to calculate rate_limits when role_id=None
 - [x] users/storage.py: Changed to always insert rate_limits column (NULL if None)
 - [x] Verified backward compatibility
 
-### Code Changes - pyinstabot-downloader
+#### Code Changes - pyinstabot-downloader
 - [x] ingestion.py: Added role_check_fn parameter to enqueue_links()
 - [x] ingestion.py: Added per-link role validation for posts
 - [x] ingestion.py: Added per-link role validation for accounts
@@ -24,7 +37,7 @@
 - [x] webui.py: Passed both callbacks to enqueue_links
 - [x] bot.py: Verified no changes needed (works with optional role_check_fn)
 
-### Validation
+#### Validation
 - [x] Syntax check: ingestion.py has no errors
 - [x] Syntax check: webui.py only style warnings (no functional errors)
 - [x] Logic flow: Verified per-link execution
@@ -32,7 +45,7 @@
 - [x] Backward compatibility: No breaking changes
 - [x] Database schema: users_requests supports all required fields
 
-### Documentation
+#### Documentation
 - [x] Created RATE_LIMIT_FIXES.md (detailed technical documentation)
 - [x] Created RATE_LIMITING_IMPLEMENTATION.md (quick reference)
 - [x] Created COMPLETION_REPORT.md (comprehensive summary)

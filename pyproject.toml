@@ -32,7 +32,7 @@ logger = { git = "https://github.com/obervinov/logger-package.git", tag = "v2.0.
 vault  = { git = "https://github.com/obervinov/vault-package.git", tag = "v4.0.3" }
 users = { git = "https://github.com/obervinov/users-package.git", tag = "v4.2.0" }
 telegram = { git = "https://github.com/obervinov/telegram-package.git", tag = "v3.0.4" }
-instagrapi = { git = "https://github.com/obervinov/instagrapi.git", branch = "fix/security-and-proxy" }
+instagrapi = { git = "https://github.com/obervinov/instagrapi.git", branch = "fix/cdn-downloads"}
 
 
 [tool.poetry.group.dev.dependencies]

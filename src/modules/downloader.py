@@ -19,6 +19,7 @@ from instagrapi.exceptions import (
 
 from logger import log
 from .exceptions import WrongVaultInstance, FailedCreateDownloaderInstance, FailedAuthInstagram, FailedDownloadPost
+from .anti_detection import AntiDetection
 
 
 class Downloader:
@@ -139,6 +140,18 @@ class Downloader:
             (2, 'igtv'): self.client.igtv_download, (8, 'any'): self.client.album_download
         }
         self.media_type_links = {1: 'p', 8: 'p', 2: 'reel'}
+
+        # Initialize anti-detection with configuration
+        anti_detection_config = self.configuration.get('anti-detection', {})
+        self.anti_detection = AntiDetection(
+            min_delay=anti_detection_config.get('min-delay', 0.5),
+            max_delay=anti_detection_config.get('max-delay', 3.0),
+            noise_probability=anti_detection_config.get('noise-probability', 0.15),
+            like_probability=anti_detection_config.get('like-probability', 0.05)
+        )
+        log.info('[Downloader]: anti-detection initialized (delays: %.1f-%.1fs, noise: %.0f%%, likes: %.0f%%)',
+                 self.anti_detection.min_delay, self.anti_detection.max_delay,
+                 self.anti_detection.noise_probability * 100, self.anti_detection.like_probability * 100)
 
         auth_status = self.login()
         if auth_status == 'logged_in':
@@ -335,20 +348,38 @@ class Downloader:
 
         log.info('[Downloader]: downloading the contents of the post %s...', shortcode)
         try:
+            # Add random delay before any requests
+            self.anti_detection.random_delay("media info fetch")
+
             media_pk = self.client.media_pk_from_code(code=shortcode)
-            media_info = self.client.media_info_v1(media_pk=media_pk).dict()
+            media_obj = self.client.media_info_v1(media_pk=media_pk)
+            media_info = media_obj.dict()
             media_type = media_info['media_type']
             product_type = media_info.get('product_type')
             key = (media_type, 'any' if media_type in (1, 8) else product_type)
             download_method = self.download_methods.get(key)
+            target_username = media_info['user']['username']
 
-            path = Path(f"data/{media_info['user']['username']}")
+            # Add profile viewing noise before download (simulates user checking profile)
+            if self.anti_detection.should_add_noise():
+                self.anti_detection.add_profile_noise(self.client, target_username)
+
+            path = Path(f"data/{target_username}")
             os.makedirs(path, exist_ok=True)
             status = None
 
             if download_method:
-                download_method(media_pk=media_pk, folder=path)
+                # Random delay before actual download
+                self.anti_detection.random_delay("content download")
+                download_method(media_pk=media_pk, folder=path, media=media_obj)
                 status = "completed"
+
+                # Post-download human behavior
+                if self.anti_detection.should_add_noise():
+                    self.anti_detection.add_feed_noise(self.client, self.configuration['username'])
+
+                if self.anti_detection.should_like_post():
+                    self.anti_detection.add_like_noise(self.client, self.configuration['username'])
             else:
                 log.error('[Downloader]: the media type is not supported for download: %s', media_info)
                 status = "not_supported"

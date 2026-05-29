@@ -1,0 +1,1157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Raw Content - Pyinstabot Downloader</title>
+    <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f7fa; color: #333; }
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 16px 24px; display: flex; justify-content: space-between; align-items: center; }
+        .header-left { display: flex; align-items: center; gap: 12px; }
+        .logo { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; }
+        .nav-link { color: white; text-decoration: none; padding: 8px 16px; border-radius: 6px; transition: background 0.2s; }
+        .nav-link:hover { background: rgba(255, 255, 255, 0.15); }
+        .container { max-width: 1600px; margin: 0 auto; padding: 24px; }
+        .card { background: white; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); padding: 20px; margin-bottom: 20px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+        .stat { background: #f9fafb; border-radius: 10px; padding: 14px; }
+        .stat .label { color: #6b7280; font-size: 12px; text-transform: uppercase; letter-spacing: .4px; }
+        .stat .value { font-size: 28px; font-weight: 700; color: #4f46e5; }
+        .controls { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 12px; }
+        .btn { border: 0; border-radius: 8px; padding: 10px 16px; color: white; font-weight: 600; cursor: pointer; }
+        .btn:disabled { opacity: .55; cursor: not-allowed; }
+        .btn.scan { background: #2563eb; }
+        .btn.process { background: #16a34a; }
+        .hint { font-size: 13px; color: #6b7280; margin-top: 8px; }
+        .alert { margin-top: 12px; padding: 12px; border-radius: 8px; display: none; }
+        .alert.show { display: block; }
+        .alert.success { background: #dcfce7; color: #166534; }
+        .alert.partial { background: #fef9c3; color: #854d0e; }
+        .alert.error { background: #fee2e2; color: #991b1b; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { text-align: left; padding: 10px; border-bottom: 1px solid #e5e7eb; font-size: 13px; }
+        th { color: #6b7280; font-weight: 600; }
+        .badge { display: inline-block; padding: 4px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+        .badge.scanned { background: #dbeafe; color: #1d4ed8; }
+        .badge.processing { background: #fef3c7; color: #92400e; }
+        .badge.completed { background: #dcfce7; color: #166534; }
+        .badge.error { background: #fee2e2; color: #991b1b; }
+        .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+        .empty { color: #9ca3af; text-align: center; padding: 28px 0; }
+        .progress-container { margin-top: 16px; padding: 16px; background: #f9fafb; border-radius: 8px; display: none; }
+        .progress-container.show { display: block; }
+        .progress-bar { width: 100%; height: 24px; background: #e5e7eb; border-radius: 12px; overflow: hidden; margin-top: 8px; }
+        .progress-fill { height: 100%; background: linear-gradient(90deg, #2563eb 0%, #7c3aed 100%); transition: width 0.3s ease; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 12px; }
+        .progress-text { color: #4b5563; font-size: 14px; margin-top: 6px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-left">
+            <img src="/static/logo.png" alt="Logo" class="logo">
+            <h1>Raw Content</h1>
+        </div>
+        <a href="/dashboard" class="nav-link">← Back to Dashboard</a>
+    </div>
+
+    <div class="container" x-data="rawContentPage()" @load="init()" x-init="init()">
+        <div class="card">
+            <h2 style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                <span>🔄 Batch Processing</span>
+            </h2>
+            <p class="hint" style="margin-top: 4px;">Scan and process raw content from WebDAV in two simple steps.</p>
+
+            {% if not content_processor_enabled %}
+            <div class="alert show error" style="margin-top: 12px;">⚠️ Raw content processor is not configured on this instance.</div>
+            {% endif %}
+
+            <div style="margin-top: 16px; padding: 12px; background: #f0f9ff; border-left: 3px solid #0284c7; border-radius: 6px;">
+                <div style="font-size: 13px; color: #0c4a6e; line-height: 1.6;">
+                    <strong>Step 1: Scan</strong> - Scans the WebDAV source directory and adds all candidates to queue<br>
+                    <strong>Step 2: Process</strong> - Processes queued items in batches, organizes files into structured directories
+                </div>
+            </div>
+
+            <div class="controls" style="margin-top: 14px;">
+                <button class="btn scan" @click="scan()" :disabled="busy || !enabled">📂 Scan Directory</button>
+                <button class="btn process" @click="processBatch()" :disabled="busy || !enabled">⚙️ Process Batch</button>
+            </div>
+
+            <div style="margin-top: 14px; padding: 12px; background: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 13px;">
+                    <div>
+                        <label style="display: block; color: #6b7280; font-weight: 500; margin-bottom: 4px;">Scan Limit:</label>
+                        <input type="number" x-model.number="scanLimit" min="10" max="10000" style="width: 100%; padding: 6px 8px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 12px;" placeholder="1000">
+                        <div class="hint" style="margin-top: 2px;">Items per scan</div>
+                    </div>
+                    <div>
+                        <label style="display: block; color: #6b7280; font-weight: 500; margin-bottom: 4px;">Batch Size:</label>
+                        <input type="number" x-model.number="batchSize" min="1" max="1000" style="width: 100%; padding: 6px 8px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 12px;" placeholder="50">
+                        <div class="hint" style="margin-top: 2px;">Items per batch</div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top: 12px;">
+                <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #4b5563; cursor: pointer;">
+                    <input type="checkbox" x-model="clearAll" style="cursor: pointer;">
+                    <span>🗑️ Clear ALL queue items before scan (including errors/completed)</span>
+                </label>
+            </div>
+
+            <div style="margin-top: 8px;">
+                <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #4b5563; cursor: pointer;">
+                    <input type="checkbox" x-model="newFormatOnly" style="cursor: pointer;">
+                    <span>🆕 Use new format only (ignore legacy, find only Firefox Extension items)</span>
+                </label>
+                <div style="font-size: 12px; color: #9ca3af; margin-top: 4px; margin-left: 24px;">
+                    Scans only for directory structure with metadata.txt/json (Firefox Extension format)
+                </div>
+            </div>
+
+            <div style="margin-top: 8px;">
+                <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #4b5563; cursor: pointer;">
+                    <input type="checkbox" x-model="dedupeBeforeProcess" style="cursor: pointer;">
+                    <span>🧹 Dedupe files before processing (safe mode, exact byte duplicates only)</span>
+                </label>
+                <div style="font-size: 12px; color: #9ca3af; margin-top: 4px; margin-left: 24px;">
+                    Removes only identical duplicate files inside one post and always keeps at least one copy
+                </div>
+            </div>
+
+            <div class="progress-container" :class="{ show: progress.show }" style="margin-top: 14px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <strong x-text="progress.title"></strong>
+                    <span style="font-size: 12px; color: #6b7280;" x-text="`${progress.percent}%`"></span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" :style="`width: ${progress.percent}%`"></div>
+                </div>
+                <div class="progress-text" x-text="progress.text"></div>
+            </div>
+
+            <div class="alert" :class="{ show: alert.show, success: alert.type==='success', partial: alert.type==='partial', error: alert.type==='error' }" style="margin-top: 12px;">
+                <strong x-text="alert.message"></strong>
+                <template x-if="alert.showRefresh === true">
+                    <div style="margin-top: 10px;">
+                        <button
+                            @click="refreshPage()"
+                            style="padding: 6px 12px; background: rgba(0,0,0,0.08); border: 1px solid rgba(0,0,0,0.15); border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;"
+                        >
+                            🔄 Refresh page
+                        </button>
+                    </div>
+                </template>
+                <template x-if="alert.details && alert.details.errors && alert.details.errors.length">
+                    <div style="margin-top: 6px;">
+                        <template x-for="err in alert.details.errors.slice(0, 5)" :key="err">
+                            <div style="font-size: 12px;">• <span x-text="err"></span></div>
+                        </template>
+                    </div>
+                </template>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3 style="display: flex; align-items: center; justify-content: space-between; cursor: pointer;" @click="showConfigEditor = !showConfigEditor">
+                <span>⚙️ Directory Configuration</span>
+                <span style="font-size: 18px;" x-text="showConfigEditor ? '▼' : '▶'"></span>
+            </h3>
+            <template x-if="showConfigEditor">
+                <div style="margin-top: 12px; padding: 14px; background: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb;">
+                    <div style="font-size: 13px; color: #6b7280; margin-bottom: 12px;">
+                        Configure WebDAV directories for raw content scanning and processing. Settings are saved persistently.
+                    </div>
+                    <div style="display: grid; gap: 12px;">
+                        <div>
+                            <label style="display: block; color: #4b5563; font-weight: 500; margin-bottom: 4px;">Source Directory:</label>
+                            <input
+                                type="text"
+                                x-model="config.source_dir"
+                                placeholder="e.g., /webdav/raw-content"
+                                style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; font-family: monospace;"
+                            >
+                            <div class="hint" style="margin-top: 4px;">WebDAV path where source files are located</div>
+                        </div>
+                        <div>
+                            <label style="display: block; color: #4b5563; font-weight: 500; margin-bottom: 4px;">Destination Directory:</label>
+                            <input
+                                type="text"
+                                x-model="config.dest_dir"
+                                placeholder="e.g., /webdav/processed-content"
+                                style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; font-family: monospace;"
+                            >
+                            <div class="hint" style="margin-top: 4px;">WebDAV path where processed files will be organized</div>
+                        </div>
+                        <div style="display: flex; gap: 8px;">
+                            <button
+                                @click="saveConfig()"
+                                :disabled="configBusy"
+                                style="flex: 1; padding: 8px; background: #2563eb; color: white; border: 0; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px;"
+                            >
+                                💾 Save Configuration
+                            </button>
+                            <button
+                                @click="loadConfig()"
+                                :disabled="configBusy"
+                                style="flex: 1; padding: 8px; background: #6366f1; color: white; border: 0; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px;"
+                            >
+                                🔄 Reload
+                            </button>
+                        </div>
+                        <template x-if="configAlert.show">
+                            <div :class="{'alert': true, 'show': true, 'success': configAlert.type === 'success', 'error': configAlert.type === 'error'}" style="margin-top: 8px;">
+                                <span x-text="configAlert.message"></span>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </template>
+        </div>
+
+        <div class="card">
+            <h3>Stats</h3>
+            <div class="grid" style="margin-top: 12px;">
+                <div class="stat"><div class="label">Total</div><div class="value">{{ stats.total }}</div></div>
+                <div class="stat"><div class="label">Scanned</div><div class="value">{{ stats.scanned }}</div></div>
+                <div class="stat"><div class="label">Processing</div><div class="value">{{ stats.processing }}</div></div>
+                <div class="stat"><div class="label">Completed</div><div class="value">{{ stats.completed }}</div></div>
+                <div class="stat"><div class="label">Error</div><div class="value">{{ stats.error }}</div></div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div style="display: flex; gap: 20px; border-bottom: 1px solid #e5e7eb; margin-bottom: 20px;">
+                <button @click="activeTab = 'found'" :class="activeTab === 'found' ? 'tab-active' : 'tab-inactive'" style="border: 0; background: none; padding: 12px 0; font-size: 14px; font-weight: 600; cursor: pointer; border-bottom: 3px solid transparent; position: relative; bottom: -1px;">
+                    📋 Found <span style="color: #6b7280; font-weight: 400;">(<span x-text="foundStats.scanned"></span>)</span>
+                </button>
+                <button @click="activeTab = 'processed'" :class="activeTab === 'processed' ? 'tab-active' : 'tab-inactive'" style="border: 0; background: none; padding: 12px 0; font-size: 14px; font-weight: 600; cursor: pointer; border-bottom: 3px solid transparent; position: relative; bottom: -1px;">
+                    ✅ Processed <span style="color: #6b7280; font-weight: 400;">(<span x-text="foundStats.completed"></span>)</span>
+                </button>
+                <button @click="activeTab = 'legacy'; loadLegacyPage(1)" :class="activeTab === 'legacy' ? 'tab-active' : 'tab-inactive'" style="border: 0; background: none; padding: 12px 0; font-size: 14px; font-weight: 600; cursor: pointer; border-bottom: 3px solid transparent; position: relative; bottom: -1px;">
+                    🧯 Legacy Errors <span style="color: #6b7280; font-weight: 400;">(<span x-text="legacyTotal"></span>)</span>
+                </button>
+            </div>
+
+            <style>
+                .tab-active { color: #2563eb; border-bottom-color: #2563eb !important; }
+                .tab-inactive { color: #6b7280; }
+            </style>
+
+            <!-- FOUND TAB -->
+            <template x-if="activeTab === 'found'">
+                <div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid #e5e7eb;">
+                        <div style="color: #6b7280; font-size: 13px;">
+                            <span x-text="`Page ${foundPage} • Showing ${foundItems.length} of ${foundTotal} • Selected: ${getSelectedCount()}`"></span>
+                        </div>
+                        <div style="display: flex; gap: 6px;">
+                            <button @click="foundPrevPage()" :disabled="foundPage === 1" style="padding: 6px 12px; background: #e5e7eb; border: 0; border-radius: 6px; cursor: pointer; font-size: 12px;" :style="foundPage === 1 ? 'opacity: 0.5; cursor: not-allowed;' : ''">← Previous</button>
+                            <button @click="foundNextPage()" :disabled="!foundHasMore" style="padding: 6px 12px; background: #e5e7eb; border: 0; border-radius: 6px; cursor: pointer; font-size: 12px;" :style="!foundHasMore ? 'opacity: 0.5; cursor: not-allowed;' : ''">Next →</button>
+                        </div>
+                    </div>
+
+                    <!-- Selection toolbar -->
+                    <template x-if="foundItems.length > 0">
+                        <div style="display: flex; gap: 8px; margin-bottom: 12px; padding: 8px; background: #f3f4f6; border-radius: 6px; flex-wrap: wrap; align-items: center;">
+                            <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                                <input type="checkbox" @change="toggleSelectAll()" :checked="selectAll" style="cursor: pointer; width: 18px; height: 18px;">
+                                <span style="font-size: 13px; font-weight: 600;">Select All</span>
+                            </label>
+                            <template x-if="getSelectedCount() > 0">
+                                <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                                    <button @click="clearSelection()" style="padding: 6px 10px; background: #e5e7eb; border: 0; border-radius: 4px; cursor: pointer; font-size: 12px;">Clear Selection</button>
+                                    <button @click="processSelected(true)" :disabled="busy" style="padding: 6px 10px; background: #3b82f6; color: white; border: 0; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600;">⚙️ Process Selected (Async)</button>
+                                    <button @click="processSelected(false)" :disabled="busy" style="padding: 6px 10px; background: #8b5cf6; color: white; border: 0; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600;">⚙️ Process Now</button>
+                                    <span style="font-size: 12px; color: #6b7280;">(<span x-text="getSelectedCount()"></span> selected)</span>
+                                </div>
+                            </template>
+                        </div>
+                    </template>
+
+                    <div style="overflow-x: auto;">
+                        <template x-if="foundItems.length > 0">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th style="width: 30px; text-align: center;">✓</th>
+                                        <th>ID</th>
+                                        <th>Item Name</th>
+                                        <th>Mode</th>
+                                        <th>Owner</th>
+                                        <th>Source</th>
+                                        <th>Post URL</th>
+                                        <th>Status</th>
+                                        <th>📦 Content Files</th>
+                                        <th>Files</th>
+                                        <th>Error Message</th>
+                                        <th>Updated</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <template x-for="item in foundItems" :key="item.id">
+                                        <tr :style="isItemSelected(item.id) ? 'background: #dbeafe;' : ''">
+                                            <td style="text-align: center;">
+                                                <input type="checkbox" @change="toggleItemSelection(item.id)" :checked="isItemSelected(item.id)" style="cursor: pointer; width: 18px; height: 18px;">
+                                            </td>
+                                            <td style="font-weight: 600; color: #4f46e5;"><span x-text="item.id"></span></td>
+                                            <td class="mono" style="max-width: 180px; overflow: hidden; text-overflow: ellipsis;"><span x-text="item.item_name"></span></td>
+                                            <td><span x-text="item.mode"></span></td>
+                                            <td class="mono" style="max-width: 100px; overflow: hidden; text-overflow: ellipsis;">
+                                                <span x-text="item.post_owner || '-'" :title="item.post_owner || ''"></span>
+                                            </td>
+                                            <td><span x-text="item.source || '-'"></span></td>
+                                            <td style="max-width: 180px; overflow: hidden; text-overflow: ellipsis;">
+                                                <template x-if="item.post_url">
+                                                    <a :href="item.post_url" target="_blank" rel="noopener noreferrer" style="color: #2563eb; text-decoration: none; font-size: 12px;" :title="item.post_url">open</a>
+                                                </template>
+                                                <template x-if="!item.post_url">
+                                                    <span style="color: #9ca3af;">-</span>
+                                                </template>
+                                            </td>
+                                            <td><span class="badge" :class="item.status" x-text="item.status"></span></td>
+                                            <td style="font-size: 12px; color: #4b5563; max-width: 200px;">
+                                                <template x-if="item.content_files && item.content_files.length > 0">
+                                                    <span x-text="item.content_files.slice(0, 3).join(', ') + (item.content_files.length > 3 ? ` +${item.content_files.length - 3} more` : '')"></span>
+                                                </template>
+                                                <template x-if="!item.content_files || item.content_files.length === 0">
+                                                    <span style="color: #9ca3af;">—</span>
+                                                </template>
+                                            </td>
+                                            <td style="text-align: center;"><span x-text="item.files_moved !== null ? item.files_moved : '-'"></span></td>
+                                            <td style="font-size: 12px; color: #dc2626;" :title="item.error_message || ''"><span x-text="item.error_message ? (item.error_message.substring(0, 30) + (item.error_message.length > 30 ? '...' : '')) : '-'"></span></td>
+                                            <td style="font-size: 12px; color: #6b7280;"><span x-text="item.updated_at ? new Date(item.updated_at).toLocaleString() : '-'"></span></td>
+                                            <td style="text-align: center; white-space: nowrap;">
+                                                <button @click="processItem(item.id)" style="padding: 4px 8px; background: #16a34a; color: white; border: 0; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600;" :disabled="busy || item.status === 'processing'">⚙️ Go</button>
+                                            </td>
+                                        </tr>
+                                    </template>
+                                </tbody>
+                            </table>
+                        </template>
+                        <template x-if="foundItems.length === 0">
+                            <div class="empty">📭 No raw items found. Run scan first.</div>
+                        </template>
+                    </div>
+                </div>
+            </template>
+
+            <!-- PROCESSED TAB -->
+            <template x-if="activeTab === 'processed'">
+                <div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid #e5e7eb;">
+                        <div style="color: #6b7280; font-size: 13px;">
+                            <span x-text="`Page ${processedPage} • Showing ${processedItems.length} of ${processedTotal}`"></span>
+                        </div>
+                        <div style="display: flex; gap: 6px;">
+                            <button @click="processedPrevPage()" :disabled="processedPage === 1" style="padding: 6px 12px; background: #e5e7eb; border: 0; border-radius: 6px; cursor: pointer; font-size: 12px;" :style="processedPage === 1 ? 'opacity: 0.5; cursor: not-allowed;' : ''">← Previous</button>
+                            <button @click="processedNextPage()" :disabled="!processedHasMore" style="padding: 6px 12px; background: #e5e7eb; border: 0; border-radius: 6px; cursor: pointer; font-size: 12px;" :style="!processedHasMore ? 'opacity: 0.5; cursor: not-allowed;' : ''">Next →</button>
+                        </div>
+                    </div>
+
+                    <div style="overflow-x: auto;">
+                        <template x-if="processedItems.length > 0">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Item Name</th>
+                                        <th>Mode</th>
+                                        <th>Files Moved</th>
+                                        <th>Destination</th>
+                                        <th>Completed</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <template x-for="item in processedItems" :key="item.id">
+                                        <tr>
+                                            <td style="font-weight: 600; color: #4f46e5;"><span x-text="item.id"></span></td>
+                                            <td class="mono" style="max-width: 250px; overflow: hidden; text-overflow: ellipsis;"><span x-text="item.item_name"></span></td>
+                                            <td><span x-text="item.mode"></span></td>
+                                            <td style="text-align: center;"><span x-text="item.files_moved || 0"></span></td>
+                                            <td class="mono" style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; font-size: 12px;"><span x-text="item.destination || '-'"></span></td>
+                                            <td style="font-size: 12px; color: #6b7280;"><span x-text="item.updated_at ? new Date(item.updated_at).toLocaleString() : '-'"></span></td>
+                                        </tr>
+                                    </template>
+                                </tbody>
+                            </table>
+                        </template>
+                        <template x-if="processedItems.length === 0">
+                            <div class="empty">✨ No processed items yet. Start processing to see results here.</div>
+                        </template>
+                    </div>
+                </div>
+            </template>
+
+            <!-- LEGACY TAB -->
+            <template x-if="activeTab === 'legacy'">
+                <div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid #e5e7eb;">
+                        <div style="color: #6b7280; font-size: 13px;">
+                            <span x-text="`Page ${legacyPage} • Showing ${legacyItems.length} of ${legacyTotal}`"></span>
+                            <span x-show="legacyRoot" style="margin-left: 8px;">• Root: <span class="mono" x-text="legacyRoot"></span></span>
+                        </div>
+                        <div style="display: flex; gap: 6px;">
+                            <button @click="legacyPrevPage()" :disabled="legacyPage === 1" style="padding: 6px 12px; background: #e5e7eb; border: 0; border-radius: 6px; cursor: pointer; font-size: 12px;" :style="legacyPage === 1 ? 'opacity: 0.5; cursor: not-allowed;' : ''">← Previous</button>
+                            <button @click="legacyNextPage()" :disabled="!legacyHasMore" style="padding: 6px 12px; background: #e5e7eb; border: 0; border-radius: 6px; cursor: pointer; font-size: 12px;" :style="!legacyHasMore ? 'opacity: 0.5; cursor: not-allowed;' : ''">Next →</button>
+                        </div>
+                    </div>
+
+                    <div style="overflow-x: auto;">
+                        <template x-if="legacyLoading">
+                            <div class="empty">Loading legacy data...</div>
+                        </template>
+                        <template x-if="!legacyLoading && legacyItems.length > 0">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Filename</th>
+                                        <th>Processed match</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <template x-for="item in legacyItems" :key="item.filename">
+                                        <tr>
+                                            <td class="mono" style="max-width: 320px; overflow: hidden; text-overflow: ellipsis; vertical-align: top;">
+                                                <span x-text="item.filename"></span>
+                                            </td>
+                                            <td style="vertical-align: top;">
+                                                <template x-if="item.data && item.data.length > 0">
+                                                    <ul style="margin: 0; padding-left: 18px;">
+                                                        <template x-for="row in item.data" :key="row.id + '-' + row.message_id">
+                                                            <li style="margin-bottom: 6px; font-size: 12px; line-height: 1.4;">
+                                                                <template x-if="row.post_id">
+                                                                    <a :href="row.post_link || buildLegacyPostUrl(row.post_id)" target="_blank" rel="noopener noreferrer" style="color: #2563eb; text-decoration: none; font-weight: 600;" :title="row.post_link || buildLegacyPostUrl(row.post_id)">
+                                                                        <span x-text="row.post_id"></span>
+                                                                    </a>
+                                                                </template>
+                                                                <template x-if="!row.post_id">
+                                                                    <span style="color: #9ca3af;">No post_id</span>
+                                                                </template>
+                                                                <span style="margin-left: 8px; color: #6b7280;">•</span>
+                                                                <span style="margin-left: 8px; color: #374151;" x-text="row.state || '-'"></span>
+                                                                <span style="margin-left: 8px; color: #6b7280;">•</span>
+                                                                <span style="margin-left: 8px; color: #374151;" x-text="row.timestamp ? new Date(row.timestamp).toLocaleString() : '-'"></span>
+                                                            </li>
+                                                        </template>
+                                                    </ul>
+                                                </template>
+                                                <template x-if="!item.data || item.data.length === 0">
+                                                    <span style="color: #9ca3af;">No matches in processed</span>
+                                                </template>
+                                            </td>
+                                            <td style="vertical-align: top; white-space: nowrap;">
+                                                <button
+                                                    @click="cleanupLegacyItem(item)"
+                                                    :disabled="busy"
+                                                    style="padding: 6px 10px; background: #dc2626; color: white; border: 0; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;"
+                                                >
+                                                    🧹 Cleanup
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    </template>
+                                </tbody>
+                            </table>
+                        </template>
+                        <template x-if="!legacyLoading && legacyItems.length === 0">
+                            <div class="empty">No files found in legacy root.</div>
+                        </template>
+                    </div>
+                </div>
+            </template>
+        </div>
+    </div>
+
+    <script>
+        function rawContentPage() {
+            return {
+                busy: false,
+                enabled: {{ 'true' if content_processor_enabled else 'false' }},
+                clearAll: false,
+                newFormatOnly: true,
+                dedupeBeforeProcess: true,
+                alert: { show: false, type: 'success', message: '', details: null },
+                progress: { show: false, percent: 0, title: '', text: '' },
+                scanLimit: {{ default_scan_limit }},
+                batchSize: {{ default_batch_size }},
+
+                // Config editor state
+                showConfigEditor: false,
+                configBusy: false,
+                config: { source_dir: '', dest_dir: '' },
+                configAlert: { show: false, type: 'success', message: '' },
+
+                // Active tab: 'found' or 'processed'
+                activeTab: 'found',
+
+                // Selection/Bulk processing
+                selectedItems: {},  // Object instead of Set: { itemId: true, ... }
+                selectAll: false,
+
+                // Found items (raw_content_queue - not completed)
+                foundItems: [],
+                foundTotal: 0,
+                foundPage: 1,
+                foundItemsPerPage: 20,
+                foundHasMore: false,
+
+                // Processed items (completed from raw_content_queue)
+                processedItems: [],
+                processedTotal: 0,
+                processedPage: 1,
+                processedItemsPerPage: 20,
+                processedHasMore: false,
+
+                // Legacy root files + processed data matches
+                legacyItems: [],
+                legacyTotal: 0,
+                legacyPage: 1,
+                legacyItemsPerPage: 20,
+                legacyHasMore: false,
+                legacyRoot: null,
+                legacyLoading: false,
+
+                // Stats
+                foundStats: { total: 0, scanned: 0, processing: 0, completed: 0, error: 0 },
+
+                async loadConfig() {
+                    try {
+                        this.configBusy = true;
+                        const response = await fetch('/api/raw-content/config');
+                        const data = await response.json();
+                        this.config = {
+                            source_dir: data.source_dir || '',
+                            dest_dir: data.dest_dir || ''
+                        };
+                        this.configAlert = { show: true, type: 'success', message: 'Configuration loaded' };
+                        setTimeout(() => { this.configAlert.show = false; }, 2000);
+                    } catch (e) {
+                        console.error('Error loading config:', e);
+                        this.configAlert = { show: true, type: 'error', message: 'Failed to load configuration' };
+                    } finally {
+                        this.configBusy = false;
+                    }
+                },
+
+                async saveConfig() {
+                    try {
+                        this.configBusy = true;
+                        const response = await fetch('/api/raw-content/config', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                source_dir: this.config.source_dir,
+                                dest_dir: this.config.dest_dir
+                            })
+                        });
+                        const data = await response.json();
+                        if (response.ok) {
+                            this.configAlert = { show: true, type: 'success', message: 'Configuration saved successfully' };
+                        } else {
+                            this.configAlert = { show: true, type: 'error', message: data.message || 'Failed to save configuration' };
+                        }
+                        setTimeout(() => { this.configAlert.show = false; }, 3000);
+                    } catch (e) {
+                        console.error('Error saving config:', e);
+                        this.configAlert = { show: true, type: 'error', message: 'Failed to save configuration' };
+                    } finally {
+                        this.configBusy = false;
+                    }
+                },
+
+                // Selection management
+                toggleItemSelection(itemId) {
+                    if (this.selectedItems[itemId]) {
+                        const next = { ...this.selectedItems };
+                        delete next[itemId];
+                        this.selectedItems = next;
+                    } else {
+                        this.selectedItems = { ...this.selectedItems, [itemId]: true };
+                    }
+
+                    this.selectAll = this.foundItems.length > 0
+                        && this.foundItems.every(item => !!this.selectedItems[item.id]);
+                },
+
+                toggleSelectAll() {
+                    this.selectAll = !this.selectAll;
+                    if (this.selectAll) {
+                        const next = { ...this.selectedItems };
+                        this.foundItems.forEach(item => {
+                            next[item.id] = true;
+                        });
+                        this.selectedItems = next;
+                    } else {
+                        const next = { ...this.selectedItems };
+                        this.foundItems.forEach(item => {
+                            delete next[item.id];
+                        });
+                        this.selectedItems = next;
+                    }
+                },
+
+                clearSelection() {
+                    this.selectedItems = {};
+                    this.selectAll = false;
+                },
+
+                isItemSelected(itemId) {
+                    return !!this.selectedItems[itemId];
+                },
+
+                getSelectedCount() {
+                    return Object.keys(this.selectedItems).length;
+                },
+
+                async processSelected(runAsync = true) {
+                    if (this.getSelectedCount() === 0) {
+                        alert('Please select items to process');
+                        return;
+                    }
+
+                    const selectedCount = this.getSelectedCount();
+                    const itemIds = Object.keys(this.selectedItems).map(Number);
+
+                    try {
+                        this.busy = true;
+                        this.progress.show = true;
+                        this.progress.percent = 0;
+                        this.progress.title = `Processing ${selectedCount} selected items...`;
+                        this.progress.text = 'Starting...';
+
+                        const response = await fetch('/api/raw-content/process-selected', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                item_ids: itemIds,
+                                run_async: runAsync,
+                                dedupe_before_process: this.dedupeBeforeProcess
+                            })
+                        });
+
+                        const data = await response.json();
+                        console.log('Process selected response:', data);
+
+                        if (response.ok) {
+                            if (runAsync) {
+                                // Async mode - show progress polling
+                                this.progress.text = 'Processing in background...';
+                                this.pollSelectedProcessingProgress(itemIds, selectedCount);
+                            } else {
+                                // Sync mode - show result
+                                this.progress.percent = 100;
+                                this.progress.text = 'Complete!';
+                                setTimeout(() => { this.progress.show = false; }, 1500);
+                            }
+
+                            this.alert = {
+                                show: true,
+                                type: 'success',
+                                message: data.message || `Processing ${selectedCount} items...`
+                            };
+                            this.clearSelection();
+
+                            // Reload stats and items after processing
+                            setTimeout(() => {
+                                this.updateFoundStats();
+                                this.loadFoundPage(this.foundPage);
+                            }, runAsync ? 3000 : 2000);
+                        } else {
+                            this.progress.show = false;
+                            this.alert = {
+                                show: true,
+                                type: 'error',
+                                message: data.message || 'Failed to process selected items'
+                            };
+                        }
+                    } catch (e) {
+                        console.error('Error processing selected:', e);
+                        this.progress.show = false;
+                        this.alert = { show: true, type: 'error', message: 'Error processing selected items' };
+                    } finally {
+                        this.busy = false;
+                        setTimeout(() => { this.alert.show = false; }, 3000);
+                    }
+                },
+
+                async pollSelectedProcessingProgress(itemIds, totalCount) {
+                    // Poll for progress updates by checking item statuses
+                    const pollInterval = setInterval(async () => {
+                        try {
+                            const response = await fetch('/api/raw-content/selected-status', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ item_ids: itemIds })
+                            });
+                            const data = await response.json();
+                            if (!response.ok) {
+                                throw new Error(data.message || 'Failed to fetch selected status');
+                            }
+
+                            const details = data.details || {};
+                            const completedCount = Number(details.completed || 0);
+                            const errorCount = Number(details.error || 0);
+                            const processingCount = Number(details.processing || 0);
+                            const scannedCount = Number(details.scanned || 0);
+                            const finishedCount = completedCount + errorCount;
+
+                            const percent = Math.round((finishedCount / totalCount) * 100);
+                            this.progress.percent = percent;
+                            this.progress.text = `Processed: ${completedCount}, Errors: ${errorCount}, In progress: ${processingCount}, Waiting: ${scannedCount}`;
+
+                            // Stop polling when all items are processed
+                            if (finishedCount >= totalCount) {
+                                clearInterval(pollInterval);
+                                this.progress.text = `Complete! ${completedCount} processed, ${errorCount} errors`;
+                                setTimeout(() => {
+                                    this.progress.show = false;
+                                    this.updateFoundStats();
+                                    this.loadFoundPage(this.foundPage);
+                                }, 2000);
+                            }
+                        } catch (e) {
+                            console.error('Error polling progress:', e);
+                            clearInterval(pollInterval);
+                            this.progress.show = false;
+                        }
+                    }, 2000); // Poll every 2 seconds
+
+                    // Safety timeout - stop polling after 5 minutes
+                    setTimeout(() => {
+                        clearInterval(pollInterval);
+                        if (this.progress.show) {
+                            this.progress.show = false;
+                            this.updateFoundStats();
+                            this.loadFoundPage(this.foundPage);
+                        }
+                    }, 300000);
+                },
+
+                async updateFoundStats() {
+                    try {
+                        const response = await fetch('/api/raw-content/stats');
+                        const data = await response.json();
+                        this.foundStats = data;
+                    } catch (e) {
+                        console.error('Error fetching stats:', e);
+                    }
+                },
+
+                async loadFoundPage(page) {
+                    try {
+                        const offset = (page - 1) * this.foundItemsPerPage;
+                        const response = await fetch(`/api/raw-content/queue?offset=${offset}&limit=${this.foundItemsPerPage}&exclude_completed=true`);
+                        const data = await response.json();
+                        this.foundItems = data.items || [];
+                        this.foundTotal = data.total || 0;
+                        this.foundPage = page;
+                        this.foundHasMore = (page * this.foundItemsPerPage) < this.foundTotal;
+                        this.selectAll = this.foundItems.length > 0
+                            && this.foundItems.every(item => !!this.selectedItems[item.id]);
+                    } catch (e) {
+                        console.error('Error loading found page:', e);
+                    }
+                },
+
+                async loadProcessedPage(page) {
+                    try {
+                        const offset = (page - 1) * this.processedItemsPerPage;
+                        const response = await fetch(`/api/raw-content/processed?offset=${offset}&limit=${this.processedItemsPerPage}`);
+                        const data = await response.json();
+                        this.processedItems = data.items || [];
+                        this.processedTotal = data.total || 0;
+                        this.processedPage = page;
+                        this.processedHasMore = (page * this.processedItemsPerPage) < this.processedTotal;
+                    } catch (e) {
+                        console.error('Error loading processed page:', e);
+                    }
+                },
+
+                async loadLegacyPage(page) {
+                    try {
+                        this.legacyLoading = true;
+                        const offset = (page - 1) * this.legacyItemsPerPage;
+                        const response = await fetch(`/api/raw-content/legacy-errors?offset=${offset}&limit=${this.legacyItemsPerPage}`);
+                        const data = await response.json();
+                        this.legacyItems = data.items || [];
+                        this.legacyTotal = data.total || 0;
+                        this.legacyRoot = data.root || null;
+                        this.legacyPage = page;
+                        this.legacyHasMore = (page * this.legacyItemsPerPage) < this.legacyTotal;
+                    } catch (e) {
+                        console.error('Error loading legacy page:', e);
+                    } finally {
+                        this.legacyLoading = false;
+                    }
+                },
+
+                buildLegacyPostUrl(postId) {
+                    if (!postId) return '#';
+                    return `https://www.instagram.com/p/${postId}/`;
+                },
+
+                async cleanupLegacyItem(item) {
+                    if (!item || !item.filename) {
+                        return;
+                    }
+
+                    const ok = confirm(`Cleanup artifact '${item.filename}'?\n\nThis will remove file from Nextcloud and matching rows from processed table.`);
+                    if (!ok) {
+                        return;
+                    }
+
+                    try {
+                        this.busy = true;
+                        const processedIds = (item.data || []).map(row => row.id).filter(Boolean);
+                        const response = await fetch('/api/raw-content/legacy-errors/cleanup', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                filename: item.filename,
+                                root: this.legacyRoot,
+                                processed_ids: processedIds
+                            })
+                        });
+
+                        const data = await response.json();
+                        if (!response.ok) {
+                            throw new Error(data.message || 'Cleanup failed');
+                        }
+
+                        this.alert = {
+                            show: true,
+                            type: 'success',
+                            message: `Cleanup done: file_deleted=${data.file_deleted ? 'yes' : 'no'}, db_deleted=${data.db_deleted_count || 0}`,
+                            details: null
+                        };
+
+                        await this.loadLegacyPage(this.legacyPage);
+                    } catch (e) {
+                        console.error('Error cleaning legacy item:', e);
+                        this.alert = {
+                            show: true,
+                            type: 'error',
+                            message: e.message || 'Cleanup failed',
+                            details: null
+                        };
+                    } finally {
+                        this.busy = false;
+                    }
+                },
+
+                foundNextPage() {
+                    if (this.foundHasMore) {
+                        this.loadFoundPage(this.foundPage + 1);
+                    }
+                },
+
+                foundPrevPage() {
+                    if (this.foundPage > 1) {
+                        this.loadFoundPage(this.foundPage - 1);
+                    }
+                },
+
+                processedNextPage() {
+                    if (this.processedHasMore) {
+                        this.loadProcessedPage(this.processedPage + 1);
+                    }
+                },
+
+                processedPrevPage() {
+                    if (this.processedPage > 1) {
+                        this.loadProcessedPage(this.processedPage - 1);
+                    }
+                },
+
+                legacyNextPage() {
+                    if (this.legacyHasMore) {
+                        this.loadLegacyPage(this.legacyPage + 1);
+                    }
+                },
+
+                legacyPrevPage() {
+                    if (this.legacyPage > 1) {
+                        this.loadLegacyPage(this.legacyPage - 1);
+                    }
+                },
+
+                async scan() {
+                    this.busy = true;
+                    this.alert = { show: false, type: 'success', message: '', details: null };
+                    this.progress = { show: true, percent: 0, title: 'Scanning...', text: 'Starting scan...' };
+                    try {
+                        const url = `/api/raw-content/scan?clear_all=${this.clearAll}&limit=${this.scanLimit}&new_format_only=${this.newFormatOnly}`;
+                        const response = await fetch(url, { method: 'POST' });
+                        let data = {};
+                        try {
+                            data = await response.json();
+                        } catch (_) {
+                            data = {};
+                        }
+
+                        // Ingress/nginx timeout: backend may continue working in background.
+                        if (response.status === 504) {
+                            this.progress.show = false;
+                            this.alert = {
+                                show: true,
+                                type: 'partial',
+                                message: 'Scan is taking longer than gateway timeout. It may still be running; please refresh stats in a few seconds.',
+                                details: null,
+                                showRefresh: true
+                            };
+                            await this.updateFoundStats();
+                            await this.loadFoundPage(1);
+                            return;
+                        }
+
+                        if (!response.ok) {
+                            this.progress.show = false;
+                            this.alert = {
+                                show: true,
+                                type: 'error',
+                                message: data.message || 'Scan failed',
+                                details: data.details || null
+                            };
+                            return;
+                        }
+
+                        this.progress.percent = 100;
+                        this.progress.text = data.message || 'Scan complete';
+                        this.alert = {
+                            show: true,
+                            type: data.status || (response.ok ? 'success' : 'error'),
+                            message: data.message || 'Scan finished',
+                            details: data.details || null
+                        };
+                        await this.updateFoundStats();
+                        await this.loadFoundPage(1);
+                        setTimeout(() => { this.progress.show = false; }, 1200);
+                    } catch (e) {
+                        this.progress.show = false;
+                        this.alert = {
+                            show: true,
+                            type: 'partial',
+                            message: 'Could not get scan response in time. Scan may still be running; please refresh stats.',
+                            details: null,
+                            showRefresh: true
+                        };
+                    } finally {
+                        this.busy = false;
+                    }
+                },
+
+                refreshPage() {
+                    window.location.reload();
+                },
+
+                async processBatch() {
+                    this.busy = true;
+                    this.alert = { show: false, type: 'success', message: '', details: null };
+                    this.progress = { show: true, percent: 0, title: 'Processing...', text: 'Starting batch processing...' };
+
+                    try {
+                        // Get initial stats to calculate progress
+                        const statsResponse = await fetch('/api/raw-content/stats');
+                        if (!statsResponse.ok) {
+                            throw new Error(`Failed to fetch stats: ${statsResponse.statusText}`);
+                        }
+                        let stats;
+                        try {
+                            stats = await statsResponse.json();
+                        } catch (e) {
+                            console.error('Failed to parse stats JSON:', e);
+                            throw new Error('Invalid response from stats endpoint');
+                        }
+                        const initialScanned = stats.scanned || 0;
+
+                        if (initialScanned === 0) {
+                            this.progress.show = false;
+                            this.alert = { show: true, type: 'error', message: 'No scanned items to process', details: null };
+                            this.busy = false;
+                            return;
+                        }
+
+                        const response = await fetch(`/api/raw-content/process?batch_size=${this.batchSize}&dedupe_before_process=${this.dedupeBeforeProcess}`, { method: 'POST' });
+                        if (!response.ok && response.status !== 500) {
+                            throw new Error(`Process request failed with status ${response.status}: ${response.statusText}`);
+                        }
+                        let data;
+                        try {
+                            data = await response.json();
+                        } catch (e) {
+                            console.error('Failed to parse process response JSON:', e, 'Response status:', response.status);
+                            throw new Error('Invalid response from process endpoint');
+                        }
+
+                        // Status can be 'processing' (background task) or 'success' (completed)
+                        if (data.status === 'processing') {
+                            this.progress.percent = 5;
+                            this.progress.text = 'Processing started in background...';
+
+                            // Poll for completion every 3 seconds and update tables every 5 seconds
+                            let isProcessing = true;
+                            let pollCount = 0;
+                            let updateCount = 0;
+                            let noChangeCount = 0;
+                            let lastCompleted = 0;
+                            const maxPolls = 600; // 30 minutes max
+                            const noChangeThreshold = 3; // Stop if no changes for 3 polls (9 seconds)
+
+                            while (isProcessing && pollCount < maxPolls) {
+                                await new Promise(resolve => setTimeout(resolve, 3000)); // Wait 3 seconds
+                                pollCount++;
+                                updateCount++;
+
+                                try {
+                                    const statsCheck = await fetch('/api/raw-content/stats');
+                                    if (!statsCheck.ok) {
+                                        console.debug('Stats check returned non-ok status');
+                                        continue;
+                                    }
+                                    const updatedStats = await statsCheck.json();
+                                    const currentScanned = updatedStats.scanned || 0;
+                                    const currentProcessing = updatedStats.processing || 0;
+                                    const currentCompleted = updatedStats.completed || 0;
+                                    const currentError = updatedStats.error || 0;
+                                    const processed = initialScanned - currentScanned;
+                                    const percent = Math.max(5, Math.min(99, Math.round((currentCompleted / initialScanned) * 100)));
+
+                                    console.log(`[Poll ${pollCount}] completed=${currentCompleted}, scanned=${currentScanned}, processing=${currentProcessing}, error=${currentError}, percent=${percent}%`);
+
+                                    this.progress.percent = percent;
+                                    this.progress.text = `Processing: ${currentCompleted} completed, ${currentError} errors, ${currentScanned} scanned, ${currentProcessing} processing...`;
+
+                                    // Refresh table views every 5 seconds (update 2 = 6 seconds passed)
+                                    if (updateCount >= 2 && currentCompleted > 0) {
+                                        try {
+                                            await this.updateFoundStats();
+                                            await this.loadFoundPage(1);
+                                            await this.loadProcessedPage(1);
+                                            updateCount = 0;
+                                        } catch (e) {
+                                            console.debug('Error updating tables during processing:', e);
+                                        }
+                                    }
+
+                                    // Check if we're done: scanned + processing both empty
+                                    if (currentScanned === 0 && currentProcessing === 0) {
+                                        console.log('[Progress] All items processed (scanned=0, processing=0)');
+                                        isProcessing = false;
+                                    }
+
+                                    // Alternative: check if completed count isn't changing
+                                    if (currentCompleted === lastCompleted) {
+                                        noChangeCount++;
+                                        console.log(`[Progress] No change in completed count (${noChangeCount}/${noChangeThreshold})`);
+                                        if (noChangeCount >= noChangeThreshold) {
+                                            console.log('[Progress] No changes for', noChangeThreshold, 'polls, stopping polling');
+                                            isProcessing = false;
+                                        }
+                                    } else {
+                                        noChangeCount = 0;
+                                        lastCompleted = currentCompleted;
+                                    }
+                                } catch (e) {
+                                    console.debug('Error polling stats:', e);
+                                }
+                            }
+
+                            this.progress.percent = 100;
+                            this.progress.text = 'Processing complete!';
+                            this.alert = {
+                                show: true,
+                                type: 'success',
+                                message: 'Batch processing completed',
+                                details: data.details || null
+                            };
+                            await this.updateFoundStats();
+                            await this.loadFoundPage(1);
+                            await this.loadProcessedPage(1);
+                            setTimeout(() => { this.progress.show = false; }, 1500);
+                        } else {
+                            // Old synchronous response or error
+                            const processed = data.details?.processed_count || 0;
+                            const errors = data.details?.error_count || 0;
+                            const total = processed + errors;
+                            const percent = Math.min(100, Math.round((total / initialScanned) * 100));
+
+                            this.progress.percent = percent;
+                            this.progress.text = `Processed: ${processed}, Errors: ${errors}, Remaining: ${data.details?.remaining_scanned || 0}`;
+
+                            this.alert = {
+                                show: true,
+                                type: data.status || (response.ok ? 'success' : 'error'),
+                                message: data.message || 'Batch finished',
+                                details: data.details || null
+                            };
+                            await this.updateFoundStats();
+                            await this.loadFoundPage(1);
+                            await this.loadProcessedPage(1);
+                            setTimeout(() => { this.progress.show = false; }, 1500);
+                        }
+                    } catch (e) {
+                        this.progress.show = false;
+                        this.alert = { show: true, type: 'error', message: 'Process request failed: ' + e.message, details: null };
+                    } finally {
+                        this.busy = false;
+                    }
+                },
+
+                async init() {
+                    await this.loadConfig();
+                    await this.updateFoundStats();
+                    await this.loadFoundPage(1);
+                    await this.loadProcessedPage(1);
+                },
+
+                async processItem(itemId) {
+                    if (this.busy) return;
+
+                    this.busy = true;
+                    try {
+                        const response = await fetch(`/api/raw-content/process-item/${itemId}?dedupe_before_process=${this.dedupeBeforeProcess}`, { method: 'POST' });
+                        const data = await response.json();
+
+                        if (response.ok) {
+                            // Show success message
+                            this.alert = {
+                                show: true,
+                                type: 'success',
+                                message: data.message || `Item ${itemId} processed successfully`,
+                                details: data.details || null
+                            };
+                            // Reload found items to show updated status
+                            await this.updateFoundStats();
+                            await this.loadFoundPage(this.foundPage);
+                        } else {
+                            // Show error message
+                            this.alert = {
+                                show: true,
+                                type: 'error',
+                                message: data.message || `Failed to process item ${itemId}`,
+                                details: data.details || null
+                            };
+                        }
+                    } catch (e) {
+                        console.error('Error processing item:', e);
+                        this.alert = {
+                            show: true,
+                            type: 'error',
+                            message: 'Network error while processing item: ' + e.message,
+                            details: null
+                        };
+                    } finally {
+                        this.busy = false;
+                    }
+                }
+            }
+        }
+    </script>
+</body>
+</html>

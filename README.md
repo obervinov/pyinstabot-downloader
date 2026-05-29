@@ -15,6 +15,7 @@
 - [About this project](#-about-this-project)
 - [Project architecture](#-project-architecture)
 - [Web UI](#web-ui)
+- [Raw Content Processing](#raw-content-processing)
 - [Requirements](#-requirements)
 - [Environment variables](#-environment-variables)
 - [Prepare and configure environment](#-prepare-and-configure-environment)
@@ -33,6 +34,23 @@ This project is a Telegram bot that allows you to upload posts from your Instagr
 **Main functions**
 - a backup copy of a __specific post__ by link
 - a backup copy of __list of posts__ by links
+
+### 🚀 Project Vision & Future Direction
+
+This project is evolving into a **universal content scraper and backup system**. While currently focused on Instagram, the architecture is designed to support multiple content sources including:
+- 🎵 TikTok
+- 📺 YouTube
+- 🐦 Twitter/X
+- And other social media platforms
+
+**Note:** The project is likely to be renamed in a future major version to better reflect its multi-platform nature. Current codename discussions suggest names like `content-archiver`, `media-backup-hub`, or similar.
+
+**Current Progress:**
+- ✅ Instagram support (primary)
+- ✅ Universal content processor framework
+- ✅ Raw content processing (browser extensions, external sources)
+- 🔄 Multi-source adapter system (ready for expansion)
+- 📋 Extensible architecture (see [RAW_CONTENT_PROCESSING.md](doc/RAW_CONTENT_PROCESSING.md) for details)
 
 **Preview of the bot in action**
 <p align="center">
@@ -54,6 +72,30 @@ FastAPI-based dashboard for Telegram login, per-user stats, queue views, and lin
 
 - Token login available: run `/webui_login` in Telegram to generate one-time tokens for the WebUI.
 - [Web UI guide](doc/README_WEBUI.md)
+
+## Raw Content Processing
+Process and organize raw content from browser extensions and external sources into structured directories.
+
+- [Raw Content Processing documentation](doc/RAW_CONTENT_PROCESSING.md) - Technical architecture and API reference
+- [Integration guide](doc/RAW_CONTENT_INTEGRATION.md) - How to set up and use the feature
+- Vault configuration (configuration/webui):
+  - `raw_content_source_dir` - source directory in WebDAV (e.g. `/raw-content`)
+  - `raw_content_dest_dir` - destination directory in WebDAV (e.g. `/processed-content`)
+- Supports multiple content sources through pluggable adapters
+- Extensible framework for adding new platforms
+
+### Raw Content Processing API flow (POST /api/process-raw-content)
+1. User triggers the endpoint from the dashboard or via HTTP.
+2. WebUI validates that Raw Content Processing is configured (uploader + source/dest dirs).
+3. WebUI initializes RawContentProcessor (WebDAV client + dirs + optional DB).
+4. Processor lists files in the source directory on WebDAV.
+5. For each metadata file (`.json` or `.txt`):
+   - Parses metadata (JSON or TXT key=value format), validates required fields (`post_id`, `source`, `files`).
+   - Selects an adapter by `source` (e.g. Instagram adapter).
+   - Builds a destination path like /processed-content/{source}/{YYYY-MM}/{username}/{post_id}.
+   - Moves related media files and metadata to the destination.
+   - Optionally stores metadata in the database when available.
+6. WebUI returns a JSON response with counts (processed / skipped / errors) and details.
 </br>
 
 ## <img src="https://github.com/obervinov/_templates/blob/v1.2.2/icons/requirements.png" width="25" title="requirements"> Requirements
@@ -137,7 +179,8 @@ FastAPI-based dashboard for Telegram login, per-user stats, queue views, and lin
     "timezone-offset": "10800",
     "request-timeout": "10",
     "device-settings": {"app_version": "269.0.0.18.75", "version_code": "314665256", "manufacturer": "OnePlus", "model": "6T Dev", "device": "devitron", "cpu": "qcom", "dpi": "480dpi", "resolution": "1080x1920", "android_release": "8.0.0", "android_version": "26"},
-    "challenge-timeout": "7200"
+    "challenge-timeout": "7200",
+    "anti-detection": {"min-delay": 0.5, "max-delay": 3.0, "noise-probability": 0.15, "like-probability": 0.05}
   }
 
   ```
@@ -167,6 +210,11 @@ FastAPI-based dashboard for Telegram login, per-user stats, queue views, and lin
     - `android_release`: the android release version of the device
     - `android_version`: the android api version of the device
   - `challenge-timeout`: the timeout if the challenge is happened (in seconds)
+  - `anti-detection`: anti-detection behavior settings (optional)
+    - `min-delay`: minimum random delay between requests in seconds (default: 0.5)
+    - `max-delay`: maximum random delay between requests in seconds (default: 3.0)
+    - `noise-probability`: probability (0.0-1.0) to add noise requests like profile views or feed browsing (default: 0.15 = 15%)
+    - `like-probability`: probability (0.0-1.0) to like random posts from feed (default: 0.05 = 5%)
   </br>
 
 - `configuration/uploader-api`: uploader module configuration (for upload content to the target storage)

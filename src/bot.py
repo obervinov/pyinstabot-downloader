@@ -69,11 +69,16 @@ else:
 
 # WebUI instance
 # If WebUI disabled, nothing will be created
-webui_enabled = (vault.kv2engine.read_secret(path='configuration/webui') or {}).get('enabled', False)
+webui_config = vault.kv2engine.read_secret(path='configuration/webui') or {}
+webui_enabled = webui_config.get('enabled', False)
 if webui_enabled == 'True':
     log.info('[Bot]: WebUI is enabled: %s', webui_enabled)
     webui = WebUI(
-        database=database, vault=vault, users={'auth': users, 'rate_limited': users_rl}, port=WEBUI_PORT
+        database=database,
+        vault=vault,
+        users={'auth': users, 'rate_limited': users_rl},
+        port=WEBUI_PORT,
+        uploader=uploader if uploader_api_enabled == 'True' else None
     )
 
 
