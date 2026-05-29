@@ -26,7 +26,9 @@
 
 
 ## <img src="https://github.com/obervinov/_templates/blob/v1.2.2/icons/book.png" width="25" title="about"> About this project
-This project is a Telegram bot that allows you to upload posts from your Instagram profile to WebDav compatible storage.
+This project is a Telegram bot and Web UI for archiving Instagram posts you already have access to and uploading them to WebDAV-compatible storage.
+
+It is primarily a Python integration project around Telegram, Vault, PostgreSQL, WebDAV, background processing, and content organization pipelines.
 <p align="center">
   <img src="doc/preview-main.png" width="600" title="preview-main">
 </p>
@@ -35,22 +37,16 @@ This project is a Telegram bot that allows you to upload posts from your Instagr
 - a backup copy of a __specific post__ by link
 - a backup copy of __list of posts__ by links
 
-### 🚀 Project Vision & Future Direction
+### Project focus
 
-This project is evolving into a **universal content scraper and backup system**. While currently focused on Instagram, the architecture is designed to support multiple content sources including:
-- 🎵 TikTok
-- 📺 YouTube
-- 🐦 Twitter/X
-- And other social media platforms
+Current repository focus:
+- Instagram archiving workflow
+- Telegram-driven queue and job management
+- WebDAV-based storage and media organization
+- Raw content ingestion from external exporters and browser extensions
+- Reusable processing components for future archival integrations
 
-**Note:** The project is likely to be renamed in a future major version to better reflect its multi-platform nature. Current codename discussions suggest names like `content-archiver`, `media-backup-hub`, or similar.
-
-**Current Progress:**
-- ✅ Instagram support (primary)
-- ✅ Universal content processor framework
-- ✅ Raw content processing (browser extensions, external sources)
-- 🔄 Multi-source adapter system (ready for expansion)
-- 📋 Extensible architecture (see [RAW_CONTENT_PROCESSING.md](doc/RAW_CONTENT_PROCESSING.md) for details)
+The repository may grow into a broader content-archiving toolkit over time, but the current public scope is centered on Instagram archival and the surrounding integration pipeline.
 
 **Preview of the bot in action**
 <p align="center">
@@ -84,18 +80,7 @@ Process and organize raw content from browser extensions and external sources in
 - Supports multiple content sources through pluggable adapters
 - Extensible framework for adding new platforms
 
-### Raw Content Processing API flow (POST /api/process-raw-content)
-1. User triggers the endpoint from the dashboard or via HTTP.
-2. WebUI validates that Raw Content Processing is configured (uploader + source/dest dirs).
-3. WebUI initializes RawContentProcessor (WebDAV client + dirs + optional DB).
-4. Processor lists files in the source directory on WebDAV.
-5. For each metadata file (`.json` or `.txt`):
-   - Parses metadata (JSON or TXT key=value format), validates required fields (`post_id`, `source`, `files`).
-   - Selects an adapter by `source` (e.g. Instagram adapter).
-   - Builds a destination path like /processed-content/{source}/{YYYY-MM}/{username}/{post_id}.
-   - Moves related media files and metadata to the destination.
-   - Optionally stores metadata in the database when available.
-6. WebUI returns a JSON response with counts (processed / skipped / errors) and details.
+See [RAW_CONTENT_PROCESSING.md](doc/RAW_CONTENT_PROCESSING.md) for the current scan/process flow and API behavior.
 </br>
 
 ## <img src="https://github.com/obervinov/_templates/blob/v1.2.2/icons/requirements.png" width="25" title="requirements"> Requirements
@@ -179,8 +164,7 @@ Process and organize raw content from browser extensions and external sources in
     "timezone-offset": "10800",
     "request-timeout": "10",
     "device-settings": {"app_version": "269.0.0.18.75", "version_code": "314665256", "manufacturer": "OnePlus", "model": "6T Dev", "device": "devitron", "cpu": "qcom", "dpi": "480dpi", "resolution": "1080x1920", "android_release": "8.0.0", "android_version": "26"},
-    "challenge-timeout": "7200",
-    "anti-detection": {"min-delay": 0.5, "max-delay": 3.0, "noise-probability": 0.15, "like-probability": 0.05}
+    "challenge-timeout": "7200"
   }
 
   ```
@@ -210,11 +194,7 @@ Process and organize raw content from browser extensions and external sources in
     - `android_release`: the android release version of the device
     - `android_version`: the android api version of the device
   - `challenge-timeout`: the timeout if the challenge is happened (in seconds)
-  - `anti-detection`: anti-detection behavior settings (optional)
-    - `min-delay`: minimum random delay between requests in seconds (default: 0.5)
-    - `max-delay`: maximum random delay between requests in seconds (default: 3.0)
-    - `noise-probability`: probability (0.0-1.0) to add noise requests like profile views or feed browsing (default: 0.15 = 15%)
-    - `like-probability`: probability (0.0-1.0) to like random posts from feed (default: 0.05 = 5%)
+  - advanced request pacing options are also supported for backward compatibility, but they are intentionally not part of the quick-start path
   </br>
 
 - `configuration/uploader-api`: uploader module configuration (for upload content to the target storage)
