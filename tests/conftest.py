@@ -11,6 +11,7 @@ import psycopg2
 from psycopg2 import sql
 # pylint: disable=E0401
 from vault import VaultClient
+from users import Users
 from src.modules.database import DatabaseClient
 from src.modules.metrics import Metrics
 
@@ -316,9 +317,18 @@ def fixture_vault_configuration_data(vault_instance, namespace):
         }
     }
     user_id = os.getenv("TG_USERID")
+    if user_id:
+        for key, value in user_attributes.items():
+            _ = vault_instance.kv2engine.write_secret(
+                path=f'configuration/users/{user_id}',
+                key=key,
+                value=value
+            )
+
+    default_test_user = "test_user_1"
     for key, value in user_attributes.items():
         _ = vault_instance.kv2engine.write_secret(
-            path=f'configuration/users/{user_id}',
+            path=f'configuration/users/{default_test_user}',
             key=key,
             value=value
         )
@@ -354,6 +364,20 @@ def fixture_database_class(vault_instance, namespace):
         object: The database class.
     """
     return DatabaseClient(vault=vault_instance, db_role=namespace)
+
+
+@pytest.fixture(name="users_client", scope='session')
+def fixture_users_client(vault_instance, namespace, vault_configuration_data):
+    """Return Users client for token operations (no rate limits)."""
+    _ = vault_configuration_data
+    return Users(vault={'instance': vault_instance, 'role': namespace}, rate_limits=False)
+
+
+@pytest.fixture(name="users_client_rl", scope='session')
+def fixture_users_client_rl(vault_instance, namespace, vault_configuration_data):
+    """Return Users client with rate limits for form submissions."""
+    _ = vault_configuration_data
+    return Users(vault={'instance': vault_instance, 'role': namespace}, rate_limits=True)
 
 
 @pytest.fixture(name="metrics_class", scope='session')

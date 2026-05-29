@@ -84,6 +84,7 @@ class Uploader:
             'webdav_password': self.configuration['password']
         }
         self.storage = WebDavClient(options)
+        self.webdav_client = self.storage
         log.info('[Uploader]: Connection to the WebDav remote directory is established')
 
     def run_transfers(

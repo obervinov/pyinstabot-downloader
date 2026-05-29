@@ -17,7 +17,7 @@ from users import Users
 from vault import VaultClient
 from configs.constants import (
     TELEGRAM_BOT_NAME, TELEGRAM_BOT_VERSION, ROLES_MAP, QUEUE_FREQUENCY, STATUSES_MESSAGE_FREQUENCY, METRICS_PORT, METRICS_INTERVAL,
-    VAULT_DB_ROLE, REGEX_SPECIFIC_LINK, REGEX_PROFILE_LINK, UPLOADER_ERROR_STATUS, DOWNLOADER_ERROR_STATUS
+    VAULT_DB_ROLE, REGEX_SPECIFIC_LINK, REGEX_PROFILE_LINK, UPLOADER_ERROR_STATUS, DOWNLOADER_ERROR_STATUS, WEBUI_PORT
 )
 from modules.database import DatabaseClient
 from modules.exceptions import FailedMessagesStatusUpdater
@@ -25,6 +25,7 @@ from modules.tools import get_hash
 from modules.downloader import Downloader
 from modules.uploader import Uploader
 from modules.metrics import Metrics
+from modules.webui import WebUI
 
 
 # Vault client
@@ -37,9 +38,11 @@ bot = tg.telegram_bot
 database = DatabaseClient(vault=vault, db_role=VAULT_DB_ROLE)
 # Metrics exporter
 metrics = Metrics(port=METRICS_PORT, interval=METRICS_INTERVAL, metrics_prefix=TELEGRAM_BOT_NAME, vault=vault, database=database)
+
 # Users manager instance
 users_rl = Users(vault={'instance': vault, 'role': f"{VAULT_DB_ROLE}-users-rl"}, rate_limits=True)
 users = Users(vault={'instance': vault, 'role': f"{VAULT_DB_ROLE}-users"}, rate_limits=False)
+
 # Client for download content from instagram
 # If API disabled, the mock object will be used
 downloader_api_enabled = vault.kv2engine.read_secret(path='configuration/downloader-api').get('enabled', False)
@@ -63,6 +66,20 @@ else:
     log.warning('[Bot]: Uploader API is disabled, using mock object, because enabled flag is %s', uploader_api_enabled)
     uploader = MagicMock()
     uploader.run_transfers.return_value = 'completed'
+
+# WebUI instance
+# If WebUI disabled, nothing will be created
+webui_config = vault.kv2engine.read_secret(path='configuration/webui') or {}
+webui_enabled = webui_config.get('enabled', False)
+if webui_enabled == 'True':
+    log.info('[Bot]: WebUI is enabled: %s', webui_enabled)
+    webui = WebUI(
+        database=database,
+        vault=vault,
+        users={'auth': users, 'rate_limited': users_rl},
+        port=WEBUI_PORT,
+        uploader=uploader if uploader_api_enabled == 'True' else None
+    )
 
 
 # Bot commands #####################################################################################################################
@@ -110,6 +127,15 @@ def bot_callback_query_handler(call: tg.callback_query, access_result: dict) -> 
     elif call.data == "Reschedule Queue":
         alias = 'help_for_reschedule_queue'
         method = reschedule_queue
+    elif call.data == "WebUI Access":
+        # Issue token without authorize method
+        token = users.issue_token(user_id=str(call.message.chat.id), ttl_minutes=webui.token_ttl)
+        tg.send_styled_message(
+            chat_id=call.message.chat.id,
+            messages_template={'alias': 'webui_token', 'kwargs': {'token': token, 'ttl_minutes': webui.token_ttl}}
+        )
+        log.info('[Bot]: Issued WebUI token for user %s via button', call.message.chat.id)
+        return
     else:
         log.error('[Bot]: Handler for button %s not found', call.data)
         alias = 'unknown_command'
@@ -161,10 +187,14 @@ def process_posts(message: tg.telegram_types.Message, help_message: tg.telegram_
             # Verify that the post id is correct
             if len(post_id) == 11 and re.match(r'^[a-zA-Z0-9_-]+$', post_id):
                 if database.check_message_uniqueness(post_id=post_id, user_id=message.chat.id):
-                    post_code_handler(message, data={
-                            'user_id': message.chat.id, 'post_id': post_id, 'post_owner': 'undefined', 'link_type': 'post',
-                            'message_id': message.id, 'chat_id': message.chat.id, 'post_url': link.split('?')[0]
-                    })
+                    post_code_handler(message, data=database.create_queue_message_data(
+                        user_id=message.chat.id,
+                        post_id=post_id,
+                        post_url=link.split('?')[0],
+                        link_type='post',
+                        message_id=message.id,
+                        chat_id=message.chat.id
+                    ))
             else:
                 cleanup_messages = False
                 log.error('[Bot]: post id %s from user %s is wrong', post_id, message.chat.id)
@@ -203,11 +233,15 @@ def process_account(message: tg.telegram_types.Message, help_message: tg.telegra
             log.info('[Bot]: received %s posts from account %s', len(posts_list), account_name)
             for post in posts_list:
                 if database.check_message_uniqueness(post_id=post.code, user_id=message.chat.id):
-                    post_code_handler(message, data={
-                            'user_id': message.chat.id, 'post_id': post.code, 'post_owner': account_name, 'link_type': 'account',
-                            'message_id': message.id, 'chat_id': message.chat.id,
-                            'post_url': f"https://www.instagram.com/{downloader.media_type_links[post.media_type]}/{post.code}"
-                    })
+                    post_code_handler(message, data=database.create_queue_message_data(
+                        user_id=message.chat.id,
+                        post_id=post.code,
+                        post_url=f"https://www.instagram.com/{downloader.media_type_links[post.media_type]}/{post.code}",
+                        link_type='account',
+                        message_id=message.id,
+                        chat_id=message.chat.id,
+                        post_owner=account_name
+                    ))
             if not cursor:
                 log.info('[Bot]: full posts list from account %s retrieved', account_name)
                 tg.delete_message(message.chat.id, message.id)
@@ -550,10 +584,16 @@ def main():
     # Thread for update status message
     thread_status_message = threading.Thread(target=status_message_updater_thread, args=(), name="MessageUpdaterThread")
     thread_status_message.start()
+    # Thread for WebUI if enabled
+    if webui_enabled == 'True':
+        thread_webui = threading.Thread(target=webui.run, daemon=True, name="WebUIThread")
+        thread_webui.start()
+
     # Thread for export metrics
     threads = threading.enumerate()
     thread_metrics = threading.Thread(target=metrics.run, args=(threads,), name="MetricsThread")
     thread_metrics.start()
+
     # Run bot
     while True:
         try:

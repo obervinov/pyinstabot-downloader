@@ -1,7 +1,10 @@
+.*.local.sh
 .vscode
 .DS_Store
 *.tmp
 vault/data/
+AGENT.md
+test_item_details.py
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

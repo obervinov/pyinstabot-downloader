@@ -3,6 +3,42 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/) and this project adheres to [Semantic Versioning](http://semver.org/).
 
 
+## v3.4.0 - 2026-02-11
+### What's Changed
+**Full Changelog**: https://github.com/obervinov/pyinstabot-downloader/compare/v3.3.6...v3.4.0 by @obervinov in https://github.com/obervinov/pyinstabot-downloader/pull/156
+#### 🚀 Features
+* **WebUI Implementation**: Added FastAPI-based web interface with complete feature parity to Telegram bot (see details in doc/README_WEBUI.md):
+  - Token-based authentication using users-package v4.2.0
+  - Telegram Login Widget integration for OAuth
+  - User dashboard with statistics (queue count, total downloaded, last 24h downloads)
+  - Multi-link submission with per-link rate limiting
+  - Full queue and processed message views with pagination
+  - Global Instagram accounts metadata page
+  - Responsive design with logo and favicon support
+* **Database Enhancements**:
+  - Added `get_accounts()` public method for retrieving Instagram account metadata with pagination
+  - Added `users_tokens` table schema for token-based authentication
+#### 🐛 Bug Fixes
+* **WebUI Rate Limiting Fixed**: Resolved critical issue where rate limits were not being applied to link submissions
+  - Added per-link authorization checks with appropriate role validation (`posts` vs `account`)
+  - Now calls `user_access_check()` with `role_id` parameter to properly calculate rate limits
+  - Each submitted link is now properly rate-limited and scheduled according to user's request limits
+  - Added detailed logging for rate limit checks per link
+* **Prevents Instagram Account Bans**: By properly distributing requests over time instead of burst submissions
+#### 💥 Breaking Changes
+* New environment variable: `WEBUI_PORT` for web server configuration
+* Added Vault configuration path: `configuration/webui` (session-secret, token-ttl)
+#### 📦 Dependencies
+* Bumped users-package to v4.2.0 (token authentication support)
+* Added FastAPI, Uvicorn, and Starlette dependencies for WebUI
+* Prepared for users-package v4.3.0 upgrade (backward compatible implementation)
+#### 📚 Documentation
+* Added comprehensive rate limits analysis documentation:
+  - `BOT_RATE_LIMITS_ANALYSIS.md` - Analysis of bot.py decorator pattern
+  - `WEBUI_RATE_LIMITS_ANALYSIS.md` - Analysis of webui.py per-link rate limiting
+  - `RATE_LIMITS_INTEGRATION_SUMMARY.md` - Comprehensive integration guide
+
+
 ## v3.3.6 - 2025-07-26
 ### What's Changed
 **Full Changelog**: https://github.com/obervinov/pyinstabot-downloader/compare/v3.3.5...v3.3.6 by @obervinov in https://github.com/obervinov/pyinstabot-downloader/pull/146

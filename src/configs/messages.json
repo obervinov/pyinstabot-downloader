@@ -32,6 +32,14 @@
             "text": "{0} <b>Incorrect format for rescheduling messages in the queue. Please check this conditions:</b>\n1. Post-id is a string and its length is equal to 11 characters.\n2. Date-time format is correct and the date is in the future.\n3. The message format is correct: <code>q1wRty12345: scheduled for 2021-12-31 23:59:59</code>\n4. Each new message is on a new line.\n5. Timestamp is not in the past: <code>current time {1}</code>",
             "args": [":warning:", "current_time"]
         },
+        "webui_token": {
+            "text": "{0} Here is your one-time WebUI token (valid for {2} minutes):\n<code>{1}</code>\nPaste it into the WebUI login form.",
+            "args": [":key:", "token", "ttl_minutes"]
+        },
+        "help_for_webui_access": {
+            "text": "{0} This command allows you to generate a one-time token for accessing the WebUI. Simply press the button below to receive your token, which you can then use to log in to the WebUI interface.",
+            "args": [":information:"]
+        },
         "unknown_command": {
             "text": "{0} Invalid button command. Please use inline keyboard.",
             "args": [":warning:"]

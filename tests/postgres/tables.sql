@@ -84,3 +84,44 @@ CREATE TABLE messages (
     message_content_hash VARCHAR (64) NOT NULL,
     state VARCHAR (50) NOT NULL DEFAULT 'added'
 );
+
+-- Schema for the raw_content_queue table
+CREATE TABLE raw_content_queue (
+    id SERIAL PRIMARY KEY,
+    user_id VARCHAR(255) NOT NULL,
+    item_name VARCHAR(1024) NOT NULL,
+    item_path VARCHAR(2048) NOT NULL,
+    mode VARCHAR(50) NOT NULL DEFAULT 'single',
+    post_id VARCHAR(255),
+    post_url VARCHAR(2048),
+    post_owner VARCHAR(255),
+    source VARCHAR(100),
+    status VARCHAR(50) NOT NULL DEFAULT 'scanned',
+    scan_id VARCHAR(255),
+    destination VARCHAR(2048),
+    files_moved INTEGER,
+    error_message TEXT,
+    content_files TEXT DEFAULT '[]',
+    scanned_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    started_at TIMESTAMP,
+    finished_at TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, item_path)
+);
+
+CREATE INDEX idx_raw_content_queue_user_status ON raw_content_queue (user_id, status);
+CREATE INDEX idx_raw_content_queue_scan_id ON raw_content_queue (scan_id);
+
+-- Schema for the app_config table (universal configuration storage)
+CREATE TABLE app_config (
+    id SERIAL PRIMARY KEY,
+    user_id VARCHAR(255),
+    component VARCHAR(100) NOT NULL,
+    config JSONB NOT NULL DEFAULT '{}',
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, component)
+);
+
+CREATE INDEX idx_app_config_user_id ON app_config(user_id);
+CREATE INDEX idx_app_config_component ON app_config(component);
