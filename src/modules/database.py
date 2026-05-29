@@ -4,6 +4,7 @@ import sys
 import importlib
 import json
 import time
+from datetime import datetime
 import psycopg2
 from psycopg2 import pool
 from logger import log
@@ -303,6 +304,8 @@ class DatabaseClient:
             sql_query += f" ORDER BY {kwargs.get('order_by')}"
         if kwargs.get('limit', None):
             sql_query += f" LIMIT {kwargs.get('limit')}"
+        if kwargs.get('offset', None) is not None:
+            sql_query += f" OFFSET {kwargs.get('offset')}"
 
         conn = self.get_connection()
         with conn.cursor() as cursor:
@@ -387,6 +390,69 @@ class DatabaseClient:
                     log.info('[Database]: Stale status messages have been reset')
                 else:
                     log.info('[Database]: No stale status messages found')
+
+    @staticmethod
+    def create_queue_message_data(
+        user_id: str,
+        post_id: str,
+        post_url: str,
+        link_type: str,
+        message_id: str,
+        chat_id: str,
+        scheduled_time: datetime | str = None,
+        post_owner: str = 'undefined',
+        download_status: str = 'not started',
+        upload_status: str = 'not started'
+    ) -> dict:
+        """
+        Create a standardized data dictionary for adding a message to the queue.
+        This ensures consistency between bot.py and webui.py when adding posts to the queue.
+
+        Args:
+            user_id (str): The user ID of the message sender.
+            post_id (str): The ID of the post (shortcode for posts, username for profiles).
+            post_url (str): The URL of the post.
+            link_type (str): The type of link ('post', 'profile', 'account').
+            message_id (str): The message ID (Telegram message ID or webui_{post_id}).
+            chat_id (str): The chat ID.
+            scheduled_time (datetime | str, optional): Scheduled time for processing. Defaults to now.
+            post_owner (str, optional): The username of the post owner. Defaults to 'undefined'.
+            download_status (str, optional): Download status. Defaults to 'not started'.
+            upload_status (str, optional): Upload status. Defaults to 'not started'.
+
+        Returns:
+            dict: A standardized data dictionary for queue message insertion.
+
+        Examples:
+            >>> data = DatabaseClient.create_queue_message_data(
+            ...     user_id='123456',
+            ...     post_id='ABC123xyz',
+            ...     post_url='https://www.instagram.com/p/ABC123xyz/',
+            ...     link_type='post',
+            ...     message_id='12345',
+            ...     chat_id='123456'
+            ... )
+            >>> database.add_message_to_queue(data)
+        """
+        if scheduled_time is None:
+            scheduled_time = datetime.now()
+
+        # Convert datetime to string if needed
+        if isinstance(scheduled_time, datetime):
+            scheduled_time = scheduled_time.strftime('%Y-%m-%d %H:%M:%S')
+
+        return {
+            'user_id': user_id,
+            'post_id': post_id,
+            'post_url': post_url.split('?')[0],
+            'post_owner': post_owner,
+            'link_type': link_type,
+            'message_id': message_id,
+            'chat_id': chat_id,
+            'scheduled_time': scheduled_time,
+            'download_status': download_status,
+            'upload_status': upload_status
+        }
 
     def add_message_to_queue(self, data: dict = None) -> str:
         """
@@ -557,16 +623,34 @@ class DatabaseClient:
 
         Examples:
             >>> get_user_queue(user_id='12345')
-            {'counter': 1, 'messages': [{'post_id': '123456789', 'scheduled_time': '2022-01-01 12:00:00'}]}
+            {'counter': 1, 'messages': [
+                {
+                    'post_id': '123456789',
+                    'scheduled_time': '2022-01-01 12:00:00',
+                    'state': 'waiting',
+                    'download_status': 'not started',
+                    'upload_status': 'not started'
+                }
+            ]}
         """
         result = []
         messages_list = self._select(
-            table_name='queue', columns=("post_id", "scheduled_time"), condition=f"user_id = '{user_id}'", order_by='scheduled_time ASC', limit=limit
+            table_name='queue',
+            columns=("post_id", "scheduled_time", "state", "download_status", "upload_status"),
+            condition=f"user_id = '{user_id}'",
+            order_by='scheduled_time ASC',
+            limit=limit
         )
         messages_count = self._count(table_name='queue', condition=f"user_id = '{user_id}'")
         if messages_list:
             for message in messages_list:
-                result.append({'post_id': message[0], 'scheduled_time': message[1]})
+                result.append({
+                    'post_id': message[0],
+                    'scheduled_time': message[1],
+                    'state': message[2],
+                    'download_status': message[3],
+                    'upload_status': message[4]
+                })
         return {'counter': messages_count, 'messages': result}
 
     def get_user_processed(self, user_id: str = None, limit: int = 3) -> dict:
@@ -596,6 +680,612 @@ class DatabaseClient:
             for message in messages_list:
                 result.append({'post_id': message[0], 'timestamp': message[1], 'state': message[2]})
         return {'counter': messages_count, 'messages': result}
+
+    def get_accounts(self, limit: int = 20, offset: int = 0, sort_by: str = 'last_updated', sort_order: str = 'desc') -> dict:
+        """
+        Get accounts data from the accounts table with pagination.
+        Returns account metadata including username, pk, full_name, counters, cursor, and last_updated.
+
+        Args:
+            limit (int): The maximum number of accounts to retrieve (default: 20).
+            offset (int): The number of accounts to skip (default: 0).
+
+        Returns:
+            dict: A dictionary containing the total count and list of accounts with their metadata.
+
+        Examples:
+            >>> get_accounts(limit=10, offset=0)
+            {'counter': 42, 'accounts': [{'username': 'example', 'pk': 123456, ...}]}
+        """
+        result = []
+
+        sort_field_map = {
+            'posts': 'media_count',
+            'posts_downloaded': 'posts_downloaded',
+            'followers': 'follower_count',
+            'following': 'following_count',
+            'last_updated': 'last_updated'
+        }
+
+        # Validate sort column and order to prevent SQL injection
+        sort_field = sort_field_map.get(sort_by, 'last_updated')
+        sort_direction = 'DESC' if str(sort_order).lower() == 'desc' else 'ASC'
+
+        # For posts_downloaded, we need to fetch all and sort in Python since it's calculated
+        if sort_field == 'posts_downloaded':
+            # Fetch all accounts without limit/offset for in-memory sorting
+            accounts_list = self._select(
+                table_name='accounts',
+                columns=('username', 'pk', 'full_name', 'media_count', 'follower_count', 'following_count', 'last_updated')
+            )
+        else:
+            order_by = f"{sort_field} {sort_direction}"
+            accounts_list = self._select(
+                table_name='accounts',
+                columns=('username', 'pk', 'full_name', 'media_count', 'follower_count', 'following_count', 'last_updated'),
+                order_by=order_by,
+                limit=limit,
+                offset=offset
+            )
+
+        accounts_count = self._count(table_name='accounts', condition='TRUE')
+
+        if accounts_list:
+            for account in accounts_list:
+                # Count downloaded posts for this account owner
+                downloaded_count_result = self._select(
+                    table_name='processed',
+                    columns=('COUNT(*)',),
+                    condition=f"post_owner = '{account[0]}'"
+                )
+                posts_downloaded = downloaded_count_result[0][0] if downloaded_count_result else 0
+
+                result.append({
+                    'username': account[0],
+                    'pk': account[1],
+                    'full_name': account[2],
+                    'media_count': account[3],
+                    'follower_count': account[4],
+                    'following_count': account[5],
+                    'last_updated': account[6],
+                    'posts_downloaded': posts_downloaded
+                })
+
+        # Sort by posts_downloaded in Python if needed
+        if sort_field == 'posts_downloaded':
+            result.sort(key=lambda x: x['posts_downloaded'], reverse=(sort_direction == 'DESC'))
+            # Apply pagination after sorting
+            result = result[offset:offset + limit]
+
+        return {'counter': accounts_count, 'accounts': result}
+
+    def get_user_processed_stats(self, user_id: str = None) -> dict:
+        """
+        Get statistics about processed posts for a user, grouped by post owner.
+        Calculates the count of posts processed from each owner.
+
+        Args:
+            user_id (str): The ID of the user.
+
+        Returns:
+            dict: A dictionary containing labels (owner names) and counts.
+                  Returns empty dict if no processed items with owners exist.
+
+        Examples:
+            >>> get_user_processed_stats(user_id='12345')
+            {'labels': ['owner1', 'owner2'], 'counts': [5, 3]}
+        """
+        all_processed = self._select(
+            table_name='processed',
+            columns=('post_owner',),
+            condition=f"user_id = '{user_id}' AND post_owner IS NOT NULL AND post_owner != ''"
+        )
+
+        if not all_processed:
+            return {'labels': [], 'counts': []}
+
+        # Count occurrences of each owner
+        owner_counts = {}
+        for row in all_processed:
+            owner = row[0]
+            owner_counts[owner] = owner_counts.get(owner, 0) + 1
+
+        # Sort by count descending and limit to top 25
+        sorted_owners = sorted(owner_counts.items(), key=lambda x: x[1], reverse=True)[:25]
+
+        return {
+            'labels': [owner for owner, _ in sorted_owners],
+            'counts': [count for _, count in sorted_owners]
+        }
+
+    def upsert_raw_content_scan_items(self, user_id: str, items: list[dict], scan_id: str) -> dict:
+        """
+        Insert or update scanned raw content candidates for a user.
+
+        Args:
+            user_id: User identifier.
+            items: List of dict items with keys: item_name, item_path, mode.
+            scan_id: Unique scan identifier.
+
+        Returns:
+            Dict with upsert counters.
+        """
+        inserted = 0
+        updated = 0
+
+        if not items:
+            return {'inserted': 0, 'updated': 0}
+
+        conn = self.get_connection()
+        with conn.cursor() as cursor:
+            for item in items:
+                cursor.execute(
+                    """
+                    INSERT INTO raw_content_queue
+                        (user_id, item_name, item_path, mode, post_id, post_url, post_owner, source, status, scan_id, content_files, scanned_at, updated_at)
+                    VALUES
+                        (%s, %s, %s, %s, %s, %s, %s, %s, 'scanned', %s, %s, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                    ON CONFLICT (user_id, item_path)
+                    DO UPDATE SET
+                        item_name = EXCLUDED.item_name,
+                        mode = EXCLUDED.mode,
+                        post_id = COALESCE(EXCLUDED.post_id, raw_content_queue.post_id),
+                        post_url = COALESCE(EXCLUDED.post_url, raw_content_queue.post_url),
+                        post_owner = COALESCE(EXCLUDED.post_owner, raw_content_queue.post_owner),
+                        source = COALESCE(EXCLUDED.source, raw_content_queue.source),
+                        status = CASE
+                            WHEN raw_content_queue.status IN ('processing', 'completed') THEN raw_content_queue.status
+                            ELSE 'scanned'
+                        END,
+                        scan_id = EXCLUDED.scan_id,
+                        content_files = EXCLUDED.content_files,
+                        scanned_at = CURRENT_TIMESTAMP,
+                        updated_at = CURRENT_TIMESTAMP,
+                        error_message = NULL
+                    RETURNING (xmax = 0) AS inserted_row
+                    """,
+                    (
+                        user_id,
+                        item.get('item_name'),
+                        item.get('item_path'),
+                        item.get('mode', 'single'),
+                        item.get('post_id'),
+                        item.get('post_url'),
+                        item.get('post_owner'),
+                        item.get('source', 'instagram'),
+                        scan_id,
+                        item.get('content_files_json', '[]')
+                    )
+                )
+                row = cursor.fetchone()
+                if row and row[0]:
+                    inserted += 1
+                else:
+                    updated += 1
+
+        conn.commit()
+        self.close_connection(conn)
+        return {'inserted': inserted, 'updated': updated}
+
+    def get_user_raw_content_items(
+        self,
+        user_id: str,
+        status: str | None = None,
+        limit: int = 100,
+        offset: int = 0
+    ) -> list[dict]:
+        """
+        Fetch raw content queue items for user.
+        """
+        condition = f"user_id = '{user_id}'"
+        if status:
+            condition += f" AND status = '{status}'"
+
+        rows = self._select(
+            table_name='raw_content_queue',
+            columns=(
+                'id', 'item_name', 'item_path', 'mode', 'post_id',
+                'post_url', 'post_owner', 'source', 'status', 'scan_id',
+                'destination', 'files_moved', 'error_message',
+                'scanned_at', 'started_at', 'finished_at', 'updated_at', 'content_files'
+            ),
+            condition=condition,
+            order_by='id ASC',
+            limit=limit,
+            offset=offset
+        )
+
+        result = []
+        if rows:
+            for row in rows:
+                result.append({
+                    'id': row[0],
+                    'item_name': row[1],
+                    'item_path': row[2],
+                    'mode': row[3],
+                    'post_id': row[4],
+                    'post_url': row[5],
+                    'post_owner': row[6],
+                    'source': row[7],
+                    'status': row[8],
+                    'scan_id': row[9],
+                    'destination': row[10],
+                    'files_moved': row[11],
+                    'error_message': row[12],
+                    'scanned_at': row[13],
+                    'started_at': row[14],
+                    'finished_at': row[15],
+                    'updated_at': row[16],
+                    'content_files': row[17]
+                })
+        return result
+
+    def get_raw_content_items_by_ids(self, user_id: str, item_ids: list[int]) -> list[dict]:
+        """
+        Fetch raw content queue items by specific IDs for a user.
+        Used for bulk processing of selected items.
+
+        Args:
+            user_id: User ID to filter by
+            item_ids: List of item IDs to fetch
+
+        Returns:
+            List of item dicts
+        """
+        if not item_ids:
+            return []
+
+        conn = self.get_connection()
+        with conn.cursor() as cursor:
+            # Use parameterized query with IN clause
+            placeholders = ','.join(['%s'] * len(item_ids))
+            cursor.execute(
+                f"""
+                SELECT
+                    id, item_name, item_path, mode, post_id,
+                    post_url, post_owner, source, status, scan_id,
+                    destination, files_moved, error_message,
+                    scanned_at, started_at, finished_at, updated_at, content_files
+                FROM raw_content_queue
+                WHERE user_id = %s AND id IN ({placeholders})
+                ORDER BY id ASC
+                """,
+                [user_id] + item_ids
+            )
+            rows = cursor.fetchall()
+        self.close_connection(conn)
+
+        result = []
+        if rows:
+            for row in rows:
+                result.append({
+                    'id': row[0],
+                    'item_name': row[1],
+                    'item_path': row[2],
+                    'mode': row[3],
+                    'post_id': row[4],
+                    'post_url': row[5],
+                    'post_owner': row[6],
+                    'source': row[7],
+                    'status': row[8],
+                    'scan_id': row[9],
+                    'destination': row[10],
+                    'files_moved': row[11],
+                    'error_message': row[12],
+                    'scanned_at': row[13],
+                    'started_at': row[14],
+                    'finished_at': row[15],
+                    'updated_at': row[16],
+                    'content_files': row[17]
+                })
+        return result
+
+    def update_raw_content_item_status(
+        self,
+        item_id: int,
+        status: str,
+        destination: str | None = None,
+        files_moved: int | None = None,
+        error_message: str | None = None
+    ) -> None:
+        """
+        Update raw content queue item processing state.
+        """
+        conn = self.get_connection()
+        with conn.cursor() as cursor:
+            cursor.execute(
+                """
+                UPDATE raw_content_queue
+                SET
+                    status = %s,
+                    destination = COALESCE(%s, destination),
+                    files_moved = COALESCE(%s, files_moved),
+                    error_message = %s,
+                    started_at = CASE
+                        WHEN %s = 'processing' AND started_at IS NULL THEN CURRENT_TIMESTAMP
+                        ELSE started_at
+                    END,
+                    finished_at = CASE
+                        WHEN %s IN ('completed', 'error') THEN CURRENT_TIMESTAMP
+                        ELSE finished_at
+                    END,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE id = %s
+                """,
+                (status, destination, files_moved, error_message, status, status, item_id)
+            )
+        conn.commit()
+        self.close_connection(conn)
+
+    def get_user_raw_content_stats(self, user_id: str) -> dict:
+        """
+        Return status counters for raw content queue items.
+        """
+        conn = self.get_connection()
+        with conn.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT status, COUNT(*)
+                FROM raw_content_queue
+                WHERE user_id = %s
+                GROUP BY status
+                """,
+                (user_id,)
+            )
+            rows = cursor.fetchall()
+        self.close_connection(conn)
+
+        stats = {
+            'total': 0,
+            'scanned': 0,
+            'processing': 0,
+            'completed': 0,
+            'error': 0
+        }
+
+        if rows:
+            for status, count in rows:
+                stats['total'] += count
+                if status in stats:
+                    stats[status] = count
+
+        return stats
+
+    def count_raw_content_items(self, user_id: str, status: str | None = None) -> int:
+        """
+        Count raw content queue items for a user with optional status filter.
+        Uses parameterized queries to prevent SQL injection.
+
+        Args:
+            user_id: User ID to count items for
+            status: Optional status filter ('scanned', 'processing', 'completed', 'error')
+
+        Returns:
+            Count of matching items
+        """
+        conn = self.get_connection()
+        with conn.cursor() as cursor:
+            if status:
+                cursor.execute(
+                    "SELECT COUNT(*) FROM raw_content_queue WHERE user_id = %s AND status = %s",
+                    (user_id, status)
+                )
+            else:
+                cursor.execute(
+                    "SELECT COUNT(*) FROM raw_content_queue WHERE user_id = %s",
+                    (user_id,)
+                )
+            count = cursor.fetchone()[0]
+        self.close_connection(conn)
+        return count
+
+    def clear_raw_content_scanned_items(self, user_id: str, clear_all: bool = False) -> int:
+        """
+        Delete scanned items before a new scan.
+
+        Args:
+            user_id: User ID to clear items for
+            clear_all: If True, delete ALL items including completed/error.
+                      If False, only delete scanned/processing items.
+        """
+        conn = self.get_connection()
+        with conn.cursor() as cursor:
+            if clear_all:
+                cursor.execute(
+                    """
+                    DELETE FROM raw_content_queue
+                    WHERE user_id = %s
+                    """,
+                    (user_id,)
+                )
+            else:
+                cursor.execute(
+                    """
+                    DELETE FROM raw_content_queue
+                    WHERE user_id = %s AND status IN ('scanned', 'processing')
+                    """,
+                    (user_id,)
+                )
+            deleted = cursor.rowcount
+        conn.commit()
+        self.close_connection(conn)
+        return deleted
+
+    def get_completed_raw_content_paths(self, user_id: str) -> set:
+        """
+        Get all completed raw content item paths for a user.
+        Used to exclude them from new scans.
+
+        Args:
+            user_id: User ID to get completed items for
+
+        Returns:
+            Set of completed item_path values
+        """
+        conn = self.get_connection()
+        with conn.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT item_path
+                FROM raw_content_queue
+                WHERE user_id = %s AND status = 'completed'
+                """,
+                (user_id,)
+            )
+            rows = cursor.fetchall()
+        self.close_connection(conn)
+
+        completed_paths = set()
+        if rows:
+            for row in rows:
+                completed_paths.add(row[0])
+        return completed_paths
+
+    def get_user_config(self, user_id: str, component: str) -> dict:
+        """
+        Get configuration for a user and specific component from app_config table.
+
+        Args:
+            user_id: User ID
+            component: Component name (e.g., 'raw_processing', 'downloader', 'uploader')
+
+        Returns:
+            Dict with component configuration, empty dict if not configured
+        """
+        conn = self.get_connection()
+        with conn.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT config, updated_at
+                FROM app_config
+                WHERE user_id = %s AND component = %s
+                """,
+                (user_id, component)
+            )
+            row = cursor.fetchone()
+        self.close_connection(conn)
+
+        if row:
+            config = row[0] if isinstance(row[0], dict) else {}
+            return {
+                'config': config,
+                'updated_at': row[1].isoformat() if row[1] else None
+            }
+        return {}
+
+    def set_user_config(self, user_id: str, component: str, config: dict) -> str:
+        """
+        Set or update configuration for a user and specific component in app_config table.
+        Config is stored as JSONB and can contain any structure.
+
+        Args:
+            user_id: User ID
+            component: Component name (e.g., 'raw_processing', 'downloader', 'uploader')
+            config: Dict with configuration parameters
+
+        Returns:
+            Status message
+        """
+        import json
+        conn = self.get_connection()
+        with conn.cursor() as cursor:
+            config_json = json.dumps(config) if config else '{}'
+            cursor.execute(
+                """
+                INSERT INTO app_config (user_id, component, config, updated_at)
+                VALUES (%s, %s, %s::jsonb, CURRENT_TIMESTAMP)
+                ON CONFLICT (user_id, component) DO UPDATE SET
+                    config = %s::jsonb,
+                    updated_at = CURRENT_TIMESTAMP
+                """,
+                (user_id, component, config_json, config_json)
+            )
+        conn.commit()
+        self.close_connection(conn)
+        return f"Config for {component} updated for user {user_id}"
+
+    def add_raw_item_to_processed(
+        self,
+        user_id: str,
+        item_id: int,
+        item_path: str,
+        source: str,
+        post_id: str,
+        destination: str | None = None
+    ) -> str:
+        """
+        Add a successfully processed raw-content item to the unified processed table.
+
+        Notes:
+            - Uses link_type = 'raw_<source>' to separate raw ingestion from API queue flow.
+            - Skips insert if the same user_id + post_id + link_type already exists.
+        """
+        link_type = f"raw_{source}"
+        post_owner = 'unknown'
+        post_url = item_path
+
+        # Prefer enriched data from raw_content_queue if present
+        try:
+            raw_item = self._select(
+                table_name='raw_content_queue',
+                columns=('post_url', 'post_owner'),
+                condition=f"id = {item_id}",
+                limit=1
+            )
+            if raw_item:
+                if raw_item[0][0]:
+                    post_url = raw_item[0][0]
+                if raw_item[0][1]:
+                    post_owner = raw_item[0][1]
+        except (TypeError, ValueError, IndexError):
+            pass
+
+        if destination and post_owner == 'unknown':
+            try:
+                post_owner = destination.rstrip('/').split('/')[-1] or 'unknown'
+            except (AttributeError, TypeError, ValueError):
+                post_owner = 'unknown'
+
+        existing = self._select(
+            table_name='processed',
+            columns=('id',),
+            condition=(
+                f"user_id = '{user_id}' AND post_id = '{post_id}' "
+                f"AND link_type = '{link_type}'"
+            ),
+            limit=1
+        )
+        if existing:
+            return f"raw_{item_id}: already in processed"
+
+        self._insert(
+            table_name='processed',
+            columns=(
+                'user_id',
+                'post_id',
+                'post_url',
+                'post_owner',
+                'link_type',
+                'message_id',
+                'chat_id',
+                'download_status',
+                'upload_status',
+                'state'
+            ),
+            values=(
+                user_id,
+                post_id,
+                post_url,
+                post_owner,
+                link_type,
+                f'raw_{item_id}',
+                user_id,
+                'completed',
+                'completed',
+                'processed'
+            )
+        )
+        return f"raw_{item_id}: added to processed"
 
     def check_message_uniqueness(self, post_id: str = None, user_id: str = None) -> bool:
         """

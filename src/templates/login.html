@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pyinstabot Downloader - Login</title>
+    <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+    <link rel="icon" type="image/png" sizes="16x16" href="/static/favicon-16x16.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32x32.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/static/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/static/android-chrome-192x192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="/static/android-chrome-512x512.png">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .login-container {
+            background: white;
+            border-radius: 16px;
+            padding: 48px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 400px;
+            width: 100%;
+            text-align: center;
+        }
+
+        .logo {
+            width: 120px;
+            height: 120px;
+            margin-bottom: 16px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 8px;
+            font-size: 28px;
+        }
+
+        p {
+            color: #666;
+            margin-bottom: 32px;
+            font-size: 16px;
+        }
+
+        .telegram-login {
+            display: inline-block;
+            margin-top: 16px;
+        }
+
+        .divider {
+            margin: 24px 0 8px 0;
+            color: #aaa;
+            font-size: 14px;
+        }
+
+        .token-form {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 12px;
+        }
+
+        .token-form input {
+            padding: 12px 14px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 15px;
+            transition: border-color 0.2s;
+        }
+
+        .token-form input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .token-form button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .token-form button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 18px rgba(102, 126, 234, 0.35);
+        }
+
+        .token-hint {
+            color: #777;
+            font-size: 14px;
+        }
+
+        .footer {
+            margin-top: 32px;
+            color: #999;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <img src="/static/logo.png" alt="Pyinstabot Downloader" class="logo">
+        <h1>Pyinstabot Downloader</h1>
+        <p>Backup your Instagram content to WebDAV storage</p>
+
+        <div class="telegram-login">
+            <!-- Telegram Login Widget -->
+            <script async src="https://telegram.org/js/telegram-widget.js?22"
+                    data-telegram-login="{{ bot_username }}"
+                    data-size="large"
+                    data-auth-url="/auth/telegram"
+                    data-request-access="write">
+            </script>
+        </div>
+
+        {% if token_enabled %}
+        <div class="divider">or</div>
+        <form class="token-form" method="post" action="/auth/token">
+            <input type="text" name="token" placeholder="Paste one-time token" autocomplete="off" required />
+            <button type="submit">Login with Token</button>
+        </form>
+        <p class="token-hint">Press <b>WebUI Access</b> button in the bot to get a one-time token.</p>
+        {% endif %}
+
+        <div class="footer">
+            <p>Login with your Telegram account to continue</p>
+        </div>
+    </div>
+
+    <!-- Optional: JavaScript callback alternative (not used with data-auth-url) -->
+    <!--
+    <script type="text/javascript">
+      function onTelegramAuth(user) {
+        // Would need to send user data to /auth/telegram via fetch/ajax
+        fetch('/auth/telegram', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(user)
+        }).then(r => r.json()).then(data => {
+          if (data.ok) window.location.href = '/dashboard';
+        });
+      }
+    </script>
+    -->
+
+</body>
+</html>
