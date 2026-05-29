@@ -29,6 +29,8 @@
 This project is a Telegram bot and Web UI for archiving Instagram posts you already have access to and uploading them to WebDAV-compatible storage.
 
 It is primarily a Python integration project around Telegram, Vault, PostgreSQL, WebDAV, background processing, and content organization pipelines.
+
+It started as a hobby project for practicing Python and learning how application code interacts with real infrastructure during rollout, configuration, storage integration, and ongoing maintenance. That experimentation gradually turned into a useful archival workflow and a practical way to better understand the kinds of operational problems developers and platform teams run into in production environments.
 <p align="center">
   <img src="doc/preview-main.png" width="600" title="preview-main">
 </p>
