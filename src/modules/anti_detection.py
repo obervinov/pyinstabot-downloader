@@ -1,10 +1,10 @@
 """
-Anti-detection module for Instagram bot behavior randomization.
+Request pacing helpers for downloader operations.
 
-This module provides utilities to make bot behavior appear more human-like:
-- Random delays between requests
-- Noise requests (feed browsing, profile views, likes)
-- Request pattern randomization
+This module provides utilities for:
+- randomized delays between API operations
+- optional lightweight session warm-up requests
+- spacing around download steps
 """
 import random
 import time
@@ -14,7 +14,7 @@ from logger import log
 
 class AntiDetection:
     """
-    Utilities for anti-detection behavior.
+    Utilities for randomized request pacing and optional session warm-up.
     """
 
     def __init__(
@@ -25,13 +25,13 @@ class AntiDetection:
         like_probability: float = 0.05,
     ):
         """
-        Initialize anti-detection settings.
+        Initialize request pacing settings.
 
         Args:
             min_delay: Minimum delay between requests in seconds
             max_delay: Maximum delay between requests in seconds
-            noise_probability: Probability to add noise request (0.0-1.0)
-            like_probability: Probability to like a random post (0.0-1.0)
+            noise_probability: Probability to add optional warm-up requests (0.0-1.0)
+            like_probability: Probability to add optional engagement actions (0.0-1.0)
         """
         self.min_delay = min_delay
         self.max_delay = max_delay
@@ -40,7 +40,7 @@ class AntiDetection:
 
     def random_delay(self, operation: str = "request") -> None:
         """
-        Add random delay to simulate human behavior.
+        Add randomized delay before an operation.
 
         Args:
             operation: Description of operation for logging
@@ -51,90 +51,83 @@ class AntiDetection:
 
     def should_add_noise(self) -> bool:
         """
-        Determine if noise request should be added.
+        Determine if an optional warm-up request should be added.
 
         Returns:
-            True if noise should be added based on probability
+            True if a warm-up request should be added based on probability
         """
         return random.random() < self.noise_probability
 
     def should_like_post(self) -> bool:
         """
-        Determine if random post should be liked.
+        Determine if an optional engagement action should be added.
 
         Returns:
-            True if should like based on probability
+            True if the action should be added based on probability
         """
         return random.random() < self.like_probability
 
     def add_feed_noise(self, client, username: str) -> None:
         """
-        Add noise by viewing random feed posts.
+        Perform lightweight background feed reads.
 
         Args:
             client: Instagram client instance
             username: Username for context logging
         """
         try:
-            log.debug(f"[AntiDetection] Adding feed noise for {username}")
-            # Get timeline feed (simulates user browsing)
+            log.debug(f"[AntiDetection] Running feed warm-up for {username}")
             feed = client.get_timeline_feed()
             if feed and len(feed) > 0:
-                # View 1-3 random posts from feed
                 view_count = random.randint(1, min(3, len(feed)))
                 random_posts = random.sample(feed, view_count)
 
                 for post in random_posts:
-                    # Just accessing media_info simulates viewing
                     _ = client.media_info(post.pk)
                     self.random_delay("feed post view")
 
-                log.debug(f"[AntiDetection] Viewed {view_count} feed posts as noise")
+                log.debug(f"[AntiDetection] Read {view_count} feed posts during warm-up")
         except Exception as e:
-            log.warning(f"[AntiDetection] Failed to add feed noise: {e}")
+            log.warning(f"[AntiDetection] Feed warm-up failed: {e}")
 
     def add_like_noise(self, client, username: str) -> None:
         """
-        Add noise by liking a random post from feed.
+        Perform an optional engagement action on a feed item.
 
         Args:
             client: Instagram client instance
             username: Username for context logging
         """
         try:
-            log.debug(f"[AntiDetection] Adding like noise for {username}")
-            # Get timeline feed
+            log.debug(f"[AntiDetection] Running optional engagement action for {username}")
             feed = client.get_timeline_feed()
             if feed and len(feed) > 0:
-                # Like one random post
                 random_post = random.choice(feed)
                 client.media_like(random_post.pk)
-                log.debug(f"[AntiDetection] Liked random post {random_post.pk} as noise")
-                self.random_delay("like noise")
+                log.debug(f"[AntiDetection] Completed engagement action for post {random_post.pk}")
+                self.random_delay("engagement action")
         except Exception as e:
-            log.warning(f"[AntiDetection] Failed to add like noise: {e}")
+            log.warning(f"[AntiDetection] Optional engagement action failed: {e}")
 
     def add_profile_noise(self, client, target_username: str) -> None:
         """
-        Add noise by viewing target user profile before downloading.
+        Read target profile context before downloading.
 
         Args:
             client: Instagram client instance
-            target_username: Target username to view
+            target_username: Target username to inspect
         """
         try:
-            log.debug(f"[AntiDetection] Viewing profile {target_username} as noise")
-            # View user profile info (simulates checking profile before downloading)
+            log.debug(f"[AntiDetection] Reading profile context for {target_username}")
             user_info = client.user_info_by_username(target_username)
             self.random_delay("profile view")
 
-            # Sometimes view user's feed too (realistic behavior)
-            if random.random() < 0.3:  # 30% chance
+            if random.random() < 0.3:
                 user_medias = client.user_medias(user_info.pk, amount=5)
-                log.debug(f"[AntiDetection] Viewed {len(user_medias)} recent posts from {target_username}")
+                log.debug(f"[AntiDetection] Read {len(user_medias)} recent posts from {target_username}")
                 self.random_delay("profile media browsing")
         except Exception as e:
-            log.warning(f"[AntiDetection] Failed to add profile noise: {e}")
+            log.warning(f"[AntiDetection] Profile context read failed: {e}")
 
     def wrap_download_with_behavior(
         self,
@@ -144,7 +137,7 @@ class AntiDetection:
         target_username: Optional[str] = None,
     ):
         """
-        Wrap download operation with human-like behavior.
+        Wrap download operation with randomized pacing.
 
         Args:
             client: Instagram client instance
@@ -155,7 +148,7 @@ class AntiDetection:
         Returns:
             Result of download_func
         """
-        # Pre-download behavior
+        # Optional pre-download warm-up
         if target_username and self.should_add_noise():
             self.add_profile_noise(client, target_username)
 
@@ -165,7 +158,7 @@ class AntiDetection:
         # Execute main download
         result = download_func()
 
-        # Post-download behavior
+        # Optional post-download warm-up
         if self.should_add_noise():
             self.add_feed_noise(client, username)
 
