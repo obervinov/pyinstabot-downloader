@@ -1,282 +1,124 @@
-# Integrating Raw Content Processing
+# Raw Content Integration Guide
 
-## Quick start
+Use this guide to wire the feature into a running instance. For behavior details and API semantics, see [RAW_CONTENT_PROCESSING.md](RAW_CONTENT_PROCESSING.md).
 
-### 1. Verify Vault configuration
+## 1. Enable it in `bot.py`
 
-Make sure the WebDAV uploader configuration is available:
-
-```bash
-# Check the Vault entry
-vault kv get configuration/uploader-api
-```
-
-### 2. Initialize it in `bot.py`
-
-When creating `WebUI`, pass the content-processing settings:
+`WebUI` must receive an uploader plus raw-content directories:
 
 ```python
 from src.modules.webui import WebUI
 from src.modules.uploader import Uploader
 
-# ... your existing code ...
-
-# Initialize the uploader
 uploader = Uploader(database=database, vault=vault)
 
-# Pass uploader and content directories into WebUI
 webui = WebUI(
     database=database,
     vault=vault,
     users={'auth': users_auth, 'rate_limited': users_rl},
-    uploader=uploader,  # NEW: enables content processing
-    raw_content_source_dir='/raw-content',  # NEW: raw content source
-    raw_content_dest_dir='/processed-content',  # NEW: processed content destination
-    # ... other parameters ...
-)
-```
-
-### 3. Prepare WebDAV directories
-
-Make sure these directories exist in your WebDAV storage:
-
-```text
-/
-|-- raw-content/          (raw content source)
-|   |-- post_123.json     (JSON metadata)
-|   |-- post_456.txt      (TXT metadata)
-|   |-- image1.jpg
-|   |-- image2.jpg
-|   `-- ...
-`-- processed-content/    (processed content output)
-    `-- (filled automatically after processing)
-```
-
-## Browser extension metadata format
-
-Your Firefox extension can create metadata files in `/raw-content/` as either **JSON** or **TXT**.
-
-### JSON format
-
-```json
-{
-  "post_id": "17999999999999999",
-  "username": "testuser",
-  "caption": "Awesome post caption here",
-  "created_at": "2026-02-21T10:30:45",
-  "source": "instagram",
-  "files": [
-    "instagram_17999999999999999_1.jpg",
-    "instagram_17999999999999999_2.jpg",
-    "instagram_17999999999999999_3.mp4"
-  ]
-}
-```
-
-### TXT format
-
-```txt
-post_id=17999999999999999
-username=testuser
-caption=Awesome post caption here
-created_at=2026-02-21T10:30:45
-source=instagram
-files=[instagram_17999999999999999_1.jpg,instagram_17999999999999999_2.jpg,instagram_17999999999999999_3.mp4]
-```
-
-**TXT syntax rules:**
-- One parameter per line in `key=value` format
-- Arrays use square brackets: `files=[file1.jpg,file2.jpg]`
-- Lines starting with `#` are treated as comments
-- Empty lines are ignored
-
-**Required fields:**
-- `post_id` - unique post identifier
-- `source` - source platform (`instagram`, `tiktok`, etc.)
-- `files` - list of files that belong to the post
-
-**Optional fields:**
-- `username` - account username
-- `caption` - post caption or description
-- `created_at` - creation time in ISO 8601 format
-
-## Using the Web UI
-
-1. Open **Dashboard** at `/dashboard`.
-2. Find the **"🔄 Process Raw Content"** section below the stats blocks.
-3. Click **Start Processing**.
-4. Review the results summary with processed, skipped, and failed items.
-
-## Using the API
-
-### Start content processing
-
-```bash
-curl -X POST http://localhost:8080/api/process-raw-content \
-  -H "Cookie: session=<your-session-token>"
-```
-
-### Successful response
-
-```json
-{
-  "status": "success",
-  "message": "Processing complete: 5 processed, 2 skipped, 0 errors",
-  "details": {
-    "processed_count": 5,
-    "skipped_count": 2,
-    "error_count": 0,
-    "processed_items": [
-      {
-        "post_id": "17999999999999999",
-        "source": "instagram",
-        "destination": "/processed-content/instagram/2026-02/testuser/17999999999999999",
-        "files_moved": 3
-      }
-    ],
-    "errors": []
-  }
-}
-```
-
-## Extending the feature
-
-### Add support for another platform
-
-1. Create an adapter in `src/modules/content_processor.py`:
-
-```python
-class TiktokRawAdapter:
-    def __init__(self, metadata, webdav_client):
-        self.metadata = metadata
-        self.webdav_client = webdav_client
-
-    def organize(self):
-        return {
-            'post_id': self.metadata.get('video_id'),
-            'source': 'tiktok',
-            'username': self.metadata.get('author'),
-            'description': self.metadata.get('description'),
-            'created_at': self.metadata.get('created_at'),
-            'media_count': len(self.metadata.get('files', [])),
-            'raw_metadata': self.metadata
-        }
-```
-
-2. Register the adapter when initializing `RawContentProcessor`:
-
-```python
-processor = RawContentProcessor(
-    webdav_client=webdav_client,
-    source_dir='/raw-content',
-    dest_dir='/processed-content',
-    adapter_map={
-        'instagram': InstagramRawAdapter,
-        'tiktok': TiktokRawAdapter  # New adapter
-    }
-)
-```
-
-## Monitoring and debugging
-
-### Check logs
-
-```bash
-# Review content processing logs
-grep "RawContentProcessor\|ContentProcessor" /var/log/bot.log
-
-# Review related errors
-grep "error\|Error\|ERROR" /var/log/bot.log | grep ContentProcessor
-```
-
-### Check WebDAV directories
-
-```bash
-# Use your WebDAV client to inspect the directory structure
-# Example with curl
-curl -X PROPFIND http://webdav.example.com/raw-content/
-```
-
-### Debug a specific post
-
-If a post is not processed:
-
-1. Validate the JSON or TXT metadata file.
-2. Make sure every file listed in `files` exists in the same directory.
-3. Verify WebDAV permissions.
-4. Inspect logs for the full error details.
-
-## Common issues
-
-### "Content processing is not configured"
-
-**Cause:** `WebUI` was initialized without the `uploader` argument.
-
-**Fix:**
-```python
-webui = WebUI(
-    # ... other parameters ...
-    uploader=uploader,  # Add this
-    raw_content_source_dir='/raw-content',
+    uploader=uploader,
+    raw_content_source_dir='/raw-content/__extension-ff',
     raw_content_dest_dir='/processed-content'
 )
 ```
 
-### "Invalid metadata format in file"
+If `uploader` is missing, raw content endpoints return `503` and the UI shows the feature as unavailable.
 
-**Cause:** The browser extension wrote invalid JSON or TXT metadata.
+## 2. Prepare WebDAV directories
 
-**Fix:**
-- For JSON, validate the payload with `jsonlint` or a similar tool.
-- For TXT, make sure every line follows `key=value` and arrays use square brackets.
+Create a source directory for grouped posts and a destination directory for processed output:
 
-### Files are not moved into the processed directory
-
-**Cause:** WebDAV permission or path mismatch.
-
-**Fix:** Verify that:
-- the WebDAV account has read/write access to both directories
-- the configured paths match `raw_content_source_dir` and `raw_content_dest_dir`
-
-## Browser extension example
-
-### Firefox extension (JavaScript)
-
-```javascript
-// content-script.js
-async function scrapeAndUpload() {
-    const postId = document.querySelector('[data-testid="post"]').id;
-    const username = document.querySelector('a[href="/' + getUsername() + '"]').href.split('/')[3];
-    const caption = document.querySelector('[data-testid="post-caption"]').textContent;
-
-    const metadata = {
-        post_id: postId,
-        username: username,
-        caption: caption,
-        created_at: new Date().toISOString(),
-        source: 'instagram',
-        files: [] // filled while media files are downloaded
-    };
-
-    // Upload to WebDAV
-    const formData = new FormData();
-    formData.append('metadata.json', new Blob([JSON.stringify(metadata)], {type: 'application/json'}));
-    formData.append('image1.jpg', imageBlob1);
-    formData.append('image2.jpg', imageBlob2);
-
-    await fetch('https://webdav.example.com/raw-content/', {
-        method: 'POST',
-        body: formData
-    });
-}
+```text
+/
+|-- raw-content/
+|   `-- __extension-ff/
+|       `-- example_shortcode_001/
+|           |-- metadata.txt
+|           |-- image_001.jpg
+|           `-- image_002.jpg
+`-- processed-content/
 ```
 
-## Future improvements
+Do not rely on the legacy flat format (`post.json` in the root plus loose media files). The current processor skips that layout.
 
-Potential follow-up enhancements:
-- store metadata in the database for search and filtering
-- run processing on a schedule
-- add a metadata editing UI
-- detect duplicate content
-- expose real-time processing progress via WebSocket
-- add support for YouTube, TikTok, Twitter, and other platforms
+## 3. Upload grouped post directories
+
+Each post should arrive as its own directory with:
+
+- `metadata.json` or `metadata.txt`
+- all referenced media files in the same directory
+
+Minimal example:
+
+```txt
+post_id: example_shortcode_001
+username: example.account
+caption: Example caption
+source: instagram
+files: [image_001.jpg, image_002.jpg]
+```
+
+`metadata.txt` accepts both `key=value` and `key: value` syntax. Arrays must stay in square brackets.
+
+`source` and `post_id` can be inferred, but `username`/owner must still be resolvable or processing will fail.
+
+## 4. Use the Raw Content page
+
+Open `/raw-content` and run the normal flow:
+
+1. **Scan Directory** to discover grouped candidates and fill the queue
+2. **Process Batch** to process queued items in the background
+
+Useful options on the page:
+
+- **Clear ALL queue items before scan**: removes prior scanned, completed, and error entries
+- **Use new format only**: keeps scan focused on grouped Firefox-extension items
+- **Dedupe files before processing**: removes exact byte-identical duplicates inside one post directory
+- **Directory Configuration**: saves per-user source and destination overrides
+
+## 5. Verify output
+
+Processed files are written under:
+
+```text
+{dest_dir}/{source}/{username}/
+```
+
+Example:
+
+```text
+/processed-content/instagram/example.account/
+|-- image_001.jpg
+|-- image_002.jpg
+`-- metadata.json
+```
+
+Current limitation: multiple posts from the same account share that directory, so `metadata.json` is replaced by the last processed post for that username.
+
+## 6. Recommended API flow
+
+Prefer the dedicated endpoints:
+
+```bash
+curl -X POST http://localhost:8080/api/raw-content/scan \
+  -H "Cookie: session=<your-session-token>"
+
+curl -X POST "http://localhost:8080/api/raw-content/process?batch_size=50" \
+  -H "Cookie: session=<your-session-token>"
+```
+
+`POST /api/process-raw-content` still exists, but it is now a compatibility wrapper around scan + one controlled batch.
+
+## 7. Common failures
+
+| Symptom | Likely cause | Fix |
+|---|---|---|
+| `Raw content processing is not configured on this instance` | `WebUI` was initialized without `uploader` | Pass `uploader` and raw-content directories |
+| `No metadata file found in directory ...` | Grouped directory is incomplete | Add `metadata.json` or `metadata.txt` |
+| `Missing required username/owner for post ...` | Metadata does not expose an owner | Add `username`, `post_owner`, `owner`, or another resolvable owner field |
+| Files are skipped during scan | Source still uses flat legacy layout | Migrate uploads to grouped directories |
+
+## Related docs
+
+- [RAW_CONTENT_PROCESSING.md](RAW_CONTENT_PROCESSING.md)
+- [FIREFOX_EXTENSION_INTEGRATION.md](FIREFOX_EXTENSION_INTEGRATION.md)

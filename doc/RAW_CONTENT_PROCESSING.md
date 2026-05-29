@@ -2,269 +2,203 @@
 
 ## Overview
 
-The raw content processing feature allows you to organize and index content that was scraped from external sources (such as browser extensions) into your bot's structured directory system. This is useful when you have content from sources like your Firefox extension that uploads raw files to WebDAV without database indexing.
+Raw content processing imports already-downloaded media from WebDAV into the bot's uploader-compatible storage layout.
 
-## Architecture
+Current implementation is **grouped-directory only**:
 
-### Components
+- supported: one directory per post with `metadata.json` or `metadata.txt`
+- not supported: legacy flat layouts such as `image.jpg` + `image.jpg.txt`
 
-1. **ContentProcessor** (base class)
-   - Abstract base class for source-specific content processors
-   - Defines interface for `fetch_content()`, `organize_content()`, and `save_content()`
-   - Extensible for future sources (TikTok, Twitter, etc.)
+The feature is exposed through the dedicated **Raw Content** page (`/raw-content`) and the related API endpoints.
 
-2. **RawContentProcessor**
-   - Processes already-downloaded content stored in WebDAV
-   - Handles file organization into structured directories
-   - Manages metadata parsing and validation
-   - Supports pluggable adapters for different sources
+## Current data flow
 
-3. **Adapters** (Source-specific implementations)
-   - `InstagramRawAdapter` - Handles Instagram metadata from browser extensions
-   - Extensible pattern for other sources
-   - Each adapter knows how to organize and validate source-specific metadata
-
-### Data Flow
-
-```
-Raw Content (WebDAV)
-    ↓
-RawContentProcessor.process_all()
-    ↓
-InstagramRawAdapter.organize()
-    ↓
-Structured directory with metadata.json
+```text
+WebDAV source directory
+    |
+scan_source()
+    |
+raw_content_queue
+    |
+process_candidate(mode="grouped")
+    |
+{dest_dir}/{source}/{username}/
 ```
 
-## Usage
+## Supported source layout
 
-### In Code
-
-```python
-from src.modules.content_processor import RawContentProcessor
-
-# Initialize processor
-processor = RawContentProcessor(
-    webdav_client=uploader.webdav_client,
-    source_dir='/raw-content',
-    dest_dir='/processed-content',
-    database=database
-)
-
-# Process all content
-result = processor.process_all()
-
-print(f"Processed: {result['processed_count']}")
-print(f"Errors: {result['errors']}")
+```text
+/raw-content/__extension-ff/
+`-- example_shortcode_001/
+    |-- metadata.txt
+    |-- image_001.jpg
+    |-- image_002.jpg
+    `-- video_001.mp4
 ```
 
-### Via Web UI
+Container directories are also supported during scan. If a top-level directory does not contain metadata itself, the scanner looks for nested grouped post directories and expands them into queue items.
 
-1. Go to the Dashboard
-2. Look for the "🔄 Process Raw Content" section
-3. Click "Start Processing"
-4. Monitor the progress and view results
+## Metadata contract
 
-### Configuration
+`metadata.json` and `metadata.txt` are both accepted.
 
-When initializing `WebUI`, pass these additional parameters:
+Minimal practical example:
 
-```python
-webui = WebUI(
-    database=database,
-    vault=vault,
-    users=users,
-    uploader=uploader,  # Required for content processing
-    raw_content_source_dir='/raw-content',  # WebDAV source directory
-    raw_content_dest_dir='/processed-content'  # WebDAV destination directory
-)
+```txt
+post_id: example_shortcode_001
+username: example.account
+caption: Example caption
+source: instagram
+created_at: 2026-02-20T13:47:46Z
+files: [image_001.jpg, image_002.jpg, video_001.mp4]
 ```
 
-## Output Structure
+### Field behavior
 
-After processing, files are organized as follows:
+| Field | Status | Notes |
+|---|---|---|
+| `post_id` | optional | Falls back to the directory name |
+| `source` | optional | Defaults to `instagram` |
+| `files` | optional | Auto-detected from files in the post directory when omitted |
+| `username` / `post_owner` / `owner` / `author` | effectively required | Processing stops if owner cannot be resolved |
+| `caption` | optional | Preserved in `metadata.json` |
+| `created_at` | optional | Written to the normalized top-level `metadata.json` |
+| `timestamp` | optional | Preserved only inside `raw_metadata` unless an adapter maps it |
+| `url` / `post_url` / `link` / `post_link` | optional | Can help owner resolution during scan |
 
+## Processing behavior
+
+### 1. Scan
+
+`scan_source()`:
+
+- lists the source directory
+- keeps only grouped directories
+- skips standalone files from the old flat format
+- reads metadata when present
+- stores candidates in `raw_content_queue`
+
+### 2. Process
+
+`process_candidate(..., mode="grouped")`:
+
+1. reads `metadata.json` or `metadata.txt`
+2. fills defaults for missing `source` and `post_id`
+3. auto-detects media files if `files` is missing
+4. validates that a username/owner can be resolved
+5. optionally removes exact byte-identical duplicates inside the same post directory
+6. moves media files to the destination directory
+7. writes normalized `metadata.json`
+8. removes source files and cleans up the source directory when possible
+
+## Destination layout
+
+Files are written to:
+
+```text
+{dest_dir}/{source}/{username}/
 ```
-/processed-content/
-├── instagram/
-│   ├── 2026-02/
-│   │   └── username/
-│   │       └── post_id_123/
-│   │           ├── image1.jpg
-│   │           ├── image2.jpg
-│   │           └── metadata.json
-│   └── 2026-01/
-│       └── another_user/
-│           └── post_id_456/
-│               ├── video.mp4
-│               └── metadata.json
+
+Example:
+
+```text
+/processed-content/instagram/example.account/
+|-- image_001.jpg
+|-- image_002.jpg
+|-- video_001.mp4
+`-- metadata.json
 ```
 
-### Metadata Format
+### Important current limitation
 
-Each post directory contains a `metadata.json` file:
+The destination is **per username, not per post**. If multiple posts from the same account are processed into the same destination:
+
+- media files accumulate in one directory
+- `metadata.json` is overwritten by the most recently processed post
+
+This is the current implementation, not a documentation shortcut.
+
+## Web UI
+
+The primary UI is `/raw-content`, not the main dashboard block.
+
+From this page you can:
+
+- scan the source directory
+- process queued items in batches
+- enable safe dedupe
+- clear queue items before rescanning
+- override source and destination directories per user
+
+## API endpoints
+
+### `POST /api/raw-content/scan`
+
+Scans the source directory and upserts candidates into `raw_content_queue`.
+
+Useful query/body params:
+
+- `limit`
+- `clear_all`
+- `new_format_only`
+
+### `POST /api/raw-content/process`
+
+Starts background batch processing for queued items.
+
+Useful query/body params:
+
+- `batch_size`
+- `dedupe_before_process`
+
+Typical response:
 
 ```json
 {
-  "post_id": "post_123",
-  "source": "instagram",
-  "username": "testuser",
-  "caption": "Sample caption",
-  "created_at": "2026-02-21T10:00:00",
-  "media_count": 2,
-  "raw_metadata": {
-    "post_id": "post_123",
-    "username": "testuser",
-    "caption": "Sample caption",
-    "created_at": "2026-02-21T10:00:00",
-    "source": "instagram",
-    "files": ["image1.jpg", "image2.jpg"]
-  }
-}
-```
-
-## Input Format (Raw Content)
-
-Your browser extension or script should create metadata files with the following structure:
-
-```json
-{
-  "post_id": "post_123",
-  "username": "testuser",
-  "caption": "Sample caption",
-  "created_at": "2026-02-21T10:00:00",
-  "source": "instagram",
-  "files": ["image1.jpg", "image2.jpg"]
-}
-```
-
-**Required fields:**
-- `post_id` - Unique identifier for the post
-- `source` - Content source (e.g., "instagram")
-- `files` - Array of media file names associated with the post
-
-**Optional fields:**
-- `username` - Username of the poster
-- `caption` - Post caption/description
-- `created_at` - Post creation timestamp (ISO format)
-
-## Adding New Sources
-
-To support a new source (e.g., TikTok), follow these steps:
-
-### 1. Create a New Adapter Class
-
-```python
-# In src/modules/content_processor.py
-
-class TiktokRawAdapter:
-    """Adapter for processing raw TikTok content."""
-
-    def __init__(self, metadata: Dict[str, Any], webdav_client: object):
-        self.metadata = metadata
-        self.webdav_client = webdav_client
-
-    def organize(self) -> Dict[str, Any]:
-        """Organize TikTok metadata into structured format."""
-        return {
-            'post_id': self.metadata.get('video_id'),
-            'source': 'tiktok',
-            'username': self.metadata.get('author'),
-            'description': self.metadata.get('description'),
-            'created_at': self.metadata.get('created_at'),
-            'media_count': len(self.metadata.get('files', [])),
-            'raw_metadata': self.metadata
-        }
-```
-
-### 2. Register the Adapter
-
-```python
-processor = RawContentProcessor(
-    webdav_client=webdav_client,
-    source_dir='/raw-content',
-    dest_dir='/processed-content',
-    adapter_map={
-        'instagram': InstagramRawAdapter,
-        'tiktok': TiktokRawAdapter  # New adapter
-    }
-)
-```
-
-## API Endpoint
-
-### Process Raw Content
-
-**POST** `/api/process-raw-content`
-
-**Authentication:** Required (Telegram OAuth)
-
-**Response Codes:**
-- `200 OK` - All content processed successfully
-- `207 Multi-Status` - Partial success (some items processed, some failed)
-- `400 Bad Request` - All items failed
-- `503 Service Unavailable` - Feature not configured
-- `500 Internal Server Error` - Unexpected error
-
-**Response Format:**
-
-```json
-{
-  "status": "success|partial|error",
-  "message": "Processing complete: X processed, Y skipped, Z errors",
+  "status": "processing",
+  "message": "Batch processing started (items: 12)",
   "details": {
-    "processed_count": 10,
-    "skipped_count": 2,
-    "error_count": 1,
-    "processed_items": [
-      {
-        "post_id": "post_123",
-        "source": "instagram",
-        "destination": "/processed-content/instagram/2026-02/username/post_123",
-        "files_moved": 2
-      }
-    ],
-    "errors": [
-      "Error processing file.json: Invalid JSON format"
-    ]
+    "batch_size": 50,
+    "queued_items": 12
   }
 }
 ```
 
-## Error Handling
+### `POST /api/process-raw-content`
 
-### Common Errors
+Backward-compatible endpoint that:
 
-| Error | Cause | Solution |
-|-------|-------|----------|
-| "Content processing is not configured" | Uploader not passed to WebUI | Provide `uploader` parameter during WebUI init |
-| "Invalid JSON in metadata file" | Malformed JSON in source directory | Ensure files in source directory are valid JSON |
-| "Could not move file X" | WebDAV permission or path issue | Check WebDAV credentials and directory permissions |
-| "Network error" | Frontend-to-API communication issue | Check network connection and API logs |
+1. runs a scan
+2. processes a single controlled batch
+3. returns a summary with `processed_count`, `error_count`, and `remaining_scanned`
 
-## Testing
+Prefer the two-step `/api/raw-content/scan` + `/api/raw-content/process` flow for normal use.
 
-Run tests for the content processor:
+## Metadata written to destination
 
-```bash
-pytest tests/test_content_processor.py -v
+The generated `metadata.json` currently follows the adapter output:
+
+```json
+{
+  "post_id": "example_shortcode_001",
+  "source": "instagram",
+  "username": "example.account",
+  "caption": "Example caption",
+  "created_at": "2026-02-20T13:47:46Z",
+  "media_count": 3,
+  "raw_metadata": {
+    "post_id": "example_shortcode_001",
+    "username": "example.account",
+    "caption": "Example caption",
+    "source": "instagram",
+    "timestamp": "2026-02-20T13:47:46Z",
+    "files": ["image_001.jpg", "image_002.jpg", "video_001.mp4"]
+  }
+}
 ```
 
-## Monitoring
+## Related docs
 
-Check logs for processing activity:
-
-```bash
-# Look for [RawContentProcessor] and [ContentProcessor] entries
-tail -f /var/log/bot.log | grep -i "content"
-```
-
-## Future Enhancements
-
-- Database storage of processed metadata for querying
-- Batch processing with progress tracking
-- Scheduled automatic processing
-- Support for more sources (TikTok, YouTube, Twitter)
-- Webhook notifications on processing completion
-- Metadata editing/organization UI
-- Duplicate detection and merging
+- [FIREFOX_EXTENSION_INTEGRATION.md](FIREFOX_EXTENSION_INTEGRATION.md) - extension-side upload format
+- [RAW_CONTENT_INTEGRATION.md](RAW_CONTENT_INTEGRATION.md) - setup checklist
+- [RAW_CONTENT_PROCESSING_ALGORITHM.md](RAW_CONTENT_PROCESSING_ALGORITHM.md) - concise maintainer flow
