@@ -536,6 +536,7 @@
                 // True while a fire-and-forget background batch is still running (busy is already
                 // false by then, because the POST returned 202 long before the work finished)
                 backgroundProcessing: false,
+                selectedPollHandle: null,
                 // Manual escape hatch if items are stuck in 'processing' server-side
                 lockOverride: false,
                 scanLimit: {{ default_scan_limit }},
@@ -727,9 +728,13 @@
                         this.progress.show = true;
                         this.progress.percent = 0;
                         this.progress.title = `Processing ${selectedCount} selected items...`;
-                        this.progress.text = 'Starting...';
+                        this.progress.text = 'Waiting for the first status update...';
 
-                        const response = await fetch('/api/raw-content/process-selected', {
+                        // Fire the request and start watching immediately - do NOT wait for the
+                        // response first. In sync mode the response only arrives when the whole
+                        // batch is done, and the backend writes each item's status as it goes, so
+                        // the queue is the only source that can show progress while it runs.
+                        const request = fetch('/api/raw-content/process-selected', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
@@ -738,7 +743,9 @@
                                 dedupe_before_process: this.dedupeBeforeProcess
                             })
                         });
+                        this.pollSelectedProcessingProgress(itemIds, selectedCount);
 
+                        const response = await request;
                         let data = {};
                         try {
                             data = await response.json();
@@ -750,8 +757,6 @@
                         // Gateway cut a long synchronous request: the backend keeps working, so
                         // switch to polling instead of reporting a failure and unlocking the table.
                         if ([502, 503, 504].includes(response.status)) {
-                            this.progress.text = 'Gateway timeout - processing continues in background...';
-                            this.pollSelectedProcessingProgress(itemIds, selectedCount);
                             this.alert = {
                                 show: true,
                                 type: 'partial',
@@ -762,18 +767,7 @@
                         }
 
                         if (response.ok) {
-                            if (runAsync) {
-                                // Async mode - show progress polling
-                                this.progress.text = 'Processing in background...';
-                                this.pollSelectedProcessingProgress(itemIds, selectedCount);
-                            } else {
-                                // Sync mode - work is already done, release the table
-                                this.progress.percent = 100;
-                                this.progress.text = 'Complete!';
-                                this.backgroundProcessing = false;
-                                setTimeout(() => { this.progress.show = false; }, 1500);
-                            }
-
+                            // The poller reports progress and closes the run out in both modes
                             this.alert = {
                                 show: true,
                                 type: 'success',
@@ -787,6 +781,7 @@
                                 this.loadFoundPage(this.foundPage);
                             }, runAsync ? 3000 : 2000);
                         } else {
+                            this.stopSelectedPolling();
                             this.progress.show = false;
                             this.backgroundProcessing = false;
                             this.alert = {
@@ -797,6 +792,7 @@
                         }
                     } catch (e) {
                         console.error('Error processing selected:', e);
+                        this.stopSelectedPolling();
                         this.progress.show = false;
                         this.backgroundProcessing = false;
                         this.alert = { show: true, type: 'error', message: 'Error processing selected items' };
@@ -811,13 +807,18 @@
                     // counters move continuously. Polling stops when the SERVER says nothing is in
                     // flight - never on a client-side deadline, because a slow item is not a dead
                     // batch. A long freeze is reported as a warning while watching continues.
+                    this.stopSelectedPolling();
+                    this.selectedPollHandle = 'pending';
+                    // Selected rows can already be terminal (re-processing 'error' items), so the
+                    // done-check only arms once the backend has actually taken the batch over.
+                    let sawInFlight = false;
                     let lastFinished = -1;
                     let lastChangeAt = Date.now();
                     let consecutiveErrors = 0;
                     const stallWarnMs = 10 * 60 * 1000;   // just annotate the text, keep polling
                     const giveUpMs = 60 * 60 * 1000;      // zero movement for an hour - stop watching
                     const maxConsecutiveErrors = 10;      // ~20s of failed polls (pod restart etc.)
-                    const pollInterval = setInterval(async () => {
+                    const poll = async () => {
                         try {
                             const response = await fetch('/api/raw-content/selected-status', {
                                 method: 'POST',
@@ -842,24 +843,34 @@
                             const scannedCount = Number(details.scanned || 0);
                             const finishedCount = completedCount + errorCount;
 
+                            if (processingCount + scannedCount > 0) {
+                                sawInFlight = true;
+                            }
+
                             if (finishedCount !== lastFinished) {
                                 lastFinished = finishedCount;
                                 lastChangeAt = Date.now();
                             }
                             const frozenMs = Date.now() - lastChangeAt;
 
-                            this.progress.percent = totalCount > 0 ? Math.min(100, Math.round((finishedCount / totalCount) * 100)) : 0;
-                            this.progress.title = `Processing ${finishedCount}/${totalCount} selected items...`;
-                            this.progress.text = `Processed: ${completedCount}, Errors: ${errorCount}, In progress: ${processingCount}, Waiting: ${scannedCount}`
-                                + (frozenMs > stallWarnMs ? ` — no new results for ${Math.round(frozenMs / 60000)} min, still watching` : '');
+                            if (!sawInFlight) {
+                                this.progress.percent = 0;
+                                this.progress.title = `Processing ${totalCount} selected items...`;
+                                this.progress.text = 'Waiting for the backend to pick up the batch...';
+                            } else {
+                                this.progress.percent = totalCount > 0 ? Math.min(100, Math.round((finishedCount / totalCount) * 100)) : 0;
+                                this.progress.title = `Processing ${finishedCount}/${totalCount} selected items...`;
+                                this.progress.text = `Processed: ${completedCount}, Errors: ${errorCount}, In progress: ${processingCount}, Waiting: ${scannedCount}`
+                                    + (frozenMs > stallWarnMs ? ` — no new results for ${Math.round(frozenMs / 60000)} min, still watching` : '');
+                            }
 
                             // Refresh the tables so finished items leave the queue view as they land
                             this.updateFoundStats();
                             this.loadFoundPage(this.foundPage);
 
                             // Done when the server has nothing left in flight
-                            if (finishedCount >= totalCount || (processingCount === 0 && scannedCount === 0)) {
-                                clearInterval(pollInterval);
+                            if (sawInFlight && (finishedCount >= totalCount || (processingCount === 0 && scannedCount === 0))) {
+                                this.stopSelectedPolling();
                                 this.progress.percent = 100;
                                 this.progress.text = `Complete! ${completedCount} processed, ${errorCount} errors`;
                                 this.backgroundProcessing = false;
@@ -872,7 +883,7 @@
                             }
 
                             if (frozenMs > giveUpMs) {
-                                clearInterval(pollInterval);
+                                this.stopSelectedPolling();
                                 this.backgroundProcessing = false;
                                 this.progress.text = `Stopped watching: ${finishedCount}/${totalCount} finished, nothing moved for 60 min — check pod logs`;
                                 this.updateFoundStats();
@@ -882,12 +893,26 @@
                             consecutiveErrors++;
                             console.error(`Error polling progress (${consecutiveErrors}/${maxConsecutiveErrors}):`, e);
                             if (consecutiveErrors >= maxConsecutiveErrors) {
-                                clearInterval(pollInterval);
+                                this.stopSelectedPolling();
                                 this.backgroundProcessing = false;
                                 this.progress.text = 'Lost contact with the API while polling progress — reload the page to resync';
                             }
                         }
-                    }, 2000); // Poll every 2 seconds
+                    };
+
+                    // First tick right away, so the overlay never sits on a placeholder
+                    await poll();
+                    if (this.selectedPollHandle === null) {
+                        return;
+                    }
+                    this.selectedPollHandle = setInterval(poll, 2000);
+                },
+
+                stopSelectedPolling() {
+                    if (this.selectedPollHandle && this.selectedPollHandle !== 'pending') {
+                        clearInterval(this.selectedPollHandle);
+                    }
+                    this.selectedPollHandle = null;
                 },
 
                 async updateFoundStats() {
