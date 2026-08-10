@@ -1017,6 +1017,43 @@ class DatabaseClient:
         conn.commit()
         self.close_connection(conn)
 
+    def update_raw_content_item_fields(self, item_id: int, user_id: str, fields: dict) -> bool:
+        """
+        Manually update editable metadata fields of a queue item.
+
+        Lets an operator fix values the app could not extract (e.g. a missing owner or post_id)
+        without re-scanning - processing reads these values directly from the queue. Only
+        whitelisted columns are written and the update is scoped to the owning user.
+
+        Args:
+            item_id: Queue row id.
+            user_id: Owning user (rows of other users are never touched).
+            fields: Candidate field->value map; keys outside the whitelist are ignored.
+
+        Returns:
+            True if a row was updated, False if nothing valid was provided or no row matched.
+        """
+        allowed = ('post_owner', 'post_id', 'post_url', 'source')
+        updates = {k: (v.strip() if isinstance(v, str) else v) for k, v in (fields or {}).items() if k in allowed}
+        if not updates:
+            return False
+
+        set_clause = ", ".join(f"{col} = %s" for col in updates)
+        params = list(updates.values()) + [item_id, user_id]
+
+        conn = self.get_connection()
+        updated = 0
+        with conn.cursor() as cursor:
+            cursor.execute(
+                f"UPDATE raw_content_queue SET {set_clause}, updated_at = CURRENT_TIMESTAMP "
+                "WHERE id = %s AND user_id = %s",
+                params
+            )
+            updated = cursor.rowcount
+        conn.commit()
+        self.close_connection(conn)
+        return updated > 0
+
     def get_user_raw_content_stats(self, user_id: str) -> dict:
         """
         Return status counters for raw content queue items.
