@@ -263,8 +263,8 @@
                     <template x-if="isTableLocked()">
                         <div class="table-lock">
                             <div class="spinner"></div>
-                            <div class="lock-title" x-text="progress.title || 'Working...'"></div>
-                            <div class="lock-text" x-text="progress.text || 'Please wait until the current operation finishes.'"></div>
+                            <div class="lock-title" x-text="lockTitle()"></div>
+                            <div class="lock-text" x-text="lockText()"></div>
                             <div class="lock-hint">Table is locked while processing — selection and actions are disabled</div>
                             <button @click="unlockTable()" style="padding: 5px 10px; background: #e5e7eb; border: 0; border-radius: 6px; cursor: pointer; font-size: 11px; color: #4b5563;">Unlock anyway</button>
                         </div>
@@ -675,6 +675,29 @@
                     if (this.dedupeBeforeProcess) parts.push('dedupe');
                     if (this.clearAll) parts.push('clear all');
                     return parts.join(' • ');
+                },
+
+                // After a page reload there is no client-side progress state, so the overlay falls
+                // back to what the queue itself reports. Only current-state counters are used -
+                // stats.completed/error are lifetime totals and would be misleading here.
+                lockTitle() {
+                    if (this.progress.show && this.progress.title) {
+                        return this.progress.title;
+                    }
+                    const inFlight = Number(this.foundStats.processing || 0);
+                    return inFlight > 0 ? `Processing ${inFlight} item${inFlight === 1 ? '' : 's'}...` : 'Working...';
+                },
+
+                lockText() {
+                    if (this.progress.show && this.progress.text) {
+                        return this.progress.text;
+                    }
+                    const inFlight = Number(this.foundStats.processing || 0);
+                    if (inFlight > 0) {
+                        return `In progress: ${inFlight}, waiting in queue: ${this.foundStats.scanned || 0}`
+                            + ' — started before this page was loaded, watching the queue';
+                    }
+                    return 'Please wait until the current operation finishes.';
                 },
 
                 isTableLocked() {
