@@ -46,6 +46,14 @@
         .progress-bar { width: 100%; height: 24px; background: #e5e7eb; border-radius: 12px; overflow: hidden; margin-top: 8px; }
         .progress-fill { height: 100%; background: linear-gradient(90deg, #2563eb 0%, #7c3aed 100%); transition: width 0.3s ease; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 12px; }
         .progress-text { color: #4b5563; font-size: 14px; margin-top: 6px; }
+        /* Table lock: covers the queue table while a batch is running so it can't be touched */
+        .lockable { position: relative; }
+        .table-lock { position: absolute; inset: 0; z-index: 20; background: rgba(249, 250, 251, 0.82); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; cursor: progress; border-radius: 8px; }
+        .table-lock .spinner { width: 40px; height: 40px; border: 4px solid #dbeafe; border-top-color: #2563eb; border-radius: 50%; animation: table-lock-spin 0.8s linear infinite; }
+        .table-lock .lock-title { font-size: 15px; font-weight: 700; color: #1f2937; }
+        .table-lock .lock-text { font-size: 13px; color: #4b5563; max-width: 520px; text-align: center; }
+        .table-lock .lock-hint { font-size: 12px; color: #9ca3af; }
+        @keyframes table-lock-spin { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
@@ -76,50 +84,114 @@
             </div>
 
             <div class="controls" style="margin-top: 14px;">
-                <button class="btn scan" @click="scan()" :disabled="busy || !enabled">📂 Scan Directory</button>
-                <button class="btn process" @click="processBatch()" :disabled="busy || !enabled">⚙️ Process Batch</button>
+                <button class="btn scan" @click="scan()" :disabled="isTableLocked() || !enabled">📂 Scan Directory</button>
+                <button class="btn process" @click="processBatch()" :disabled="isTableLocked() || !enabled">⚙️ Process Batch</button>
             </div>
 
-            <div style="margin-top: 14px; padding: 12px; background: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb;">
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 13px;">
-                    <div>
-                        <label style="display: block; color: #6b7280; font-weight: 500; margin-bottom: 4px;">Scan Limit:</label>
-                        <input type="number" x-model.number="scanLimit" min="10" max="10000" style="width: 100%; padding: 6px 8px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 12px;" placeholder="1000">
-                        <div class="hint" style="margin-top: 2px;">Items per scan</div>
+            <!-- All tunables in one collapsed block: scan/batch limits, flags, directories -->
+            <div style="margin-top: 14px; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden;">
+                <div @click="showSettings = !showSettings" style="display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 12px; background: #f9fafb; cursor: pointer;">
+                    <span style="font-size: 13px; font-weight: 600; color: #4b5563;">⚙️ Settings</span>
+                    <span style="display: flex; align-items: center; gap: 10px;">
+                        <span style="font-size: 12px; color: #9ca3af;" x-text="settingsSummary()"></span>
+                        <span style="font-size: 14px; color: #6b7280;" x-text="showSettings ? '▼' : '▶'"></span>
+                    </span>
+                </div>
+                <template x-if="showSettings">
+                    <div style="padding: 12px; border-top: 1px solid #e5e7eb;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 13px;">
+                            <div>
+                                <label style="display: block; color: #6b7280; font-weight: 500; margin-bottom: 4px;">Scan Limit:</label>
+                                <input type="number" x-model.number="scanLimit" min="10" max="10000" style="width: 100%; padding: 6px 8px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 12px;" placeholder="1000">
+                                <div class="hint" style="margin-top: 2px;">Items per scan</div>
+                            </div>
+                            <div>
+                                <label style="display: block; color: #6b7280; font-weight: 500; margin-bottom: 4px;">Batch Size:</label>
+                                <input type="number" x-model.number="batchSize" min="1" max="1000" style="width: 100%; padding: 6px 8px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 12px;" placeholder="50">
+                                <div class="hint" style="margin-top: 2px;">Items per batch</div>
+                            </div>
+                        </div>
+
+                        <div style="margin-top: 12px;">
+                            <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #4b5563; cursor: pointer;">
+                                <input type="checkbox" x-model="clearAll" style="cursor: pointer;">
+                                <span>🗑️ Clear ALL queue items before scan (including errors/completed)</span>
+                            </label>
+                        </div>
+
+                        <div style="margin-top: 8px;">
+                            <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #4b5563; cursor: pointer;">
+                                <input type="checkbox" x-model="newFormatOnly" style="cursor: pointer;">
+                                <span>🆕 Use new format only (ignore legacy, find only Firefox Extension items)</span>
+                            </label>
+                            <div style="font-size: 12px; color: #9ca3af; margin-top: 4px; margin-left: 24px;">
+                                Scans only for directory structure with metadata.txt/json (Firefox Extension format)
+                            </div>
+                        </div>
+
+                        <div style="margin-top: 8px;">
+                            <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #4b5563; cursor: pointer;">
+                                <input type="checkbox" x-model="dedupeBeforeProcess" style="cursor: pointer;">
+                                <span>🧹 Dedupe files before processing (safe mode, exact byte duplicates only)</span>
+                            </label>
+                            <div style="font-size: 12px; color: #9ca3af; margin-top: 4px; margin-left: 24px;">
+                                Removes only identical duplicate files inside one post and always keeps at least one copy
+                            </div>
+                        </div>
+
+                        <div style="margin-top: 14px; padding-top: 12px; border-top: 1px dashed #e5e7eb;">
+                            <div style="font-size: 13px; font-weight: 600; color: #4b5563; margin-bottom: 4px;">📁 Directory Configuration</div>
+                        <div>
+                            <div style="font-size: 12px; color: #9ca3af; margin-bottom: 10px;">
+                                WebDAV directories for scanning and processing. Saved persistently.
+                            </div>
+                            <div style="display: grid; gap: 12px;">
+                                <div>
+                                    <label style="display: block; color: #4b5563; font-weight: 500; margin-bottom: 4px;">Source Directory:</label>
+                                    <input
+                                        type="text"
+                                        x-model="config.source_dir"
+                                        placeholder="e.g., /webdav/raw-content"
+                                        style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; font-family: monospace;"
+                                    >
+                                    <div class="hint" style="margin-top: 4px;">WebDAV path where source files are located</div>
+                                </div>
+                                <div>
+                                    <label style="display: block; color: #4b5563; font-weight: 500; margin-bottom: 4px;">Destination Directory:</label>
+                                    <input
+                                        type="text"
+                                        x-model="config.dest_dir"
+                                        placeholder="e.g., /webdav/processed-content"
+                                        style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; font-family: monospace;"
+                                    >
+                                    <div class="hint" style="margin-top: 4px;">WebDAV path where processed files will be organized</div>
+                                </div>
+                                <div style="display: flex; gap: 8px;">
+                                    <button
+                                        @click="saveConfig()"
+                                        :disabled="configBusy"
+                                        style="flex: 1; padding: 8px; background: #2563eb; color: white; border: 0; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px;"
+                                    >
+                                        💾 Save Configuration
+                                    </button>
+                                    <button
+                                        @click="loadConfig()"
+                                        :disabled="configBusy"
+                                        style="flex: 1; padding: 8px; background: #6366f1; color: white; border: 0; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px;"
+                                    >
+                                        🔄 Reload
+                                    </button>
+                                </div>
+                                <template x-if="configAlert.show">
+                                    <div :class="{'alert': true, 'show': true, 'success': configAlert.type === 'success', 'error': configAlert.type === 'error'}" style="margin-top: 8px;">
+                                        <span x-text="configAlert.message"></span>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                        </div>
                     </div>
-                    <div>
-                        <label style="display: block; color: #6b7280; font-weight: 500; margin-bottom: 4px;">Batch Size:</label>
-                        <input type="number" x-model.number="batchSize" min="1" max="1000" style="width: 100%; padding: 6px 8px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 12px;" placeholder="50">
-                        <div class="hint" style="margin-top: 2px;">Items per batch</div>
-                    </div>
-                </div>
-            </div>
-
-            <div style="margin-top: 12px;">
-                <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #4b5563; cursor: pointer;">
-                    <input type="checkbox" x-model="clearAll" style="cursor: pointer;">
-                    <span>🗑️ Clear ALL queue items before scan (including errors/completed)</span>
-                </label>
-            </div>
-
-            <div style="margin-top: 8px;">
-                <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #4b5563; cursor: pointer;">
-                    <input type="checkbox" x-model="newFormatOnly" style="cursor: pointer;">
-                    <span>🆕 Use new format only (ignore legacy, find only Firefox Extension items)</span>
-                </label>
-                <div style="font-size: 12px; color: #9ca3af; margin-top: 4px; margin-left: 24px;">
-                    Scans only for directory structure with metadata.txt/json (Firefox Extension format)
-                </div>
-            </div>
-
-            <div style="margin-top: 8px;">
-                <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #4b5563; cursor: pointer;">
-                    <input type="checkbox" x-model="dedupeBeforeProcess" style="cursor: pointer;">
-                    <span>🧹 Dedupe files before processing (safe mode, exact byte duplicates only)</span>
-                </label>
-                <div style="font-size: 12px; color: #9ca3af; margin-top: 4px; margin-left: 24px;">
-                    Removes only identical duplicate files inside one post and always keeps at least one copy
-                </div>
+                </template>
             </div>
 
             <div class="progress-container" :class="{ show: progress.show }" style="margin-top: 14px;">
@@ -156,63 +228,6 @@
         </div>
 
         <div class="card">
-            <h3 style="display: flex; align-items: center; justify-content: space-between; cursor: pointer;" @click="showConfigEditor = !showConfigEditor">
-                <span>⚙️ Directory Configuration</span>
-                <span style="font-size: 18px;" x-text="showConfigEditor ? '▼' : '▶'"></span>
-            </h3>
-            <template x-if="showConfigEditor">
-                <div style="margin-top: 12px; padding: 14px; background: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb;">
-                    <div style="font-size: 13px; color: #6b7280; margin-bottom: 12px;">
-                        Configure WebDAV directories for raw content scanning and processing. Settings are saved persistently.
-                    </div>
-                    <div style="display: grid; gap: 12px;">
-                        <div>
-                            <label style="display: block; color: #4b5563; font-weight: 500; margin-bottom: 4px;">Source Directory:</label>
-                            <input
-                                type="text"
-                                x-model="config.source_dir"
-                                placeholder="e.g., /webdav/raw-content"
-                                style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; font-family: monospace;"
-                            >
-                            <div class="hint" style="margin-top: 4px;">WebDAV path where source files are located</div>
-                        </div>
-                        <div>
-                            <label style="display: block; color: #4b5563; font-weight: 500; margin-bottom: 4px;">Destination Directory:</label>
-                            <input
-                                type="text"
-                                x-model="config.dest_dir"
-                                placeholder="e.g., /webdav/processed-content"
-                                style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; font-family: monospace;"
-                            >
-                            <div class="hint" style="margin-top: 4px;">WebDAV path where processed files will be organized</div>
-                        </div>
-                        <div style="display: flex; gap: 8px;">
-                            <button
-                                @click="saveConfig()"
-                                :disabled="configBusy"
-                                style="flex: 1; padding: 8px; background: #2563eb; color: white; border: 0; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px;"
-                            >
-                                💾 Save Configuration
-                            </button>
-                            <button
-                                @click="loadConfig()"
-                                :disabled="configBusy"
-                                style="flex: 1; padding: 8px; background: #6366f1; color: white; border: 0; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px;"
-                            >
-                                🔄 Reload
-                            </button>
-                        </div>
-                        <template x-if="configAlert.show">
-                            <div :class="{'alert': true, 'show': true, 'success': configAlert.type === 'success', 'error': configAlert.type === 'error'}" style="margin-top: 8px;">
-                                <span x-text="configAlert.message"></span>
-                            </div>
-                        </template>
-                    </div>
-                </div>
-            </template>
-        </div>
-
-        <div class="card">
             <h3>Stats</h3>
             <div class="grid" style="margin-top: 12px;">
                 <div class="stat"><div class="label">Total</div><div class="value">{{ stats.total }}</div></div>
@@ -243,14 +258,25 @@
 
             <!-- FOUND TAB -->
             <template x-if="activeTab === 'found'">
-                <div>
+                <div class="lockable">
+                    <!-- Locked while a scan / batch is running: blocks clicks and shows what is going on -->
+                    <template x-if="isTableLocked()">
+                        <div class="table-lock">
+                            <div class="spinner"></div>
+                            <div class="lock-title" x-text="progress.title || 'Working...'"></div>
+                            <div class="lock-text" x-text="progress.text || 'Please wait until the current operation finishes.'"></div>
+                            <div class="lock-hint">Table is locked while processing — selection and actions are disabled</div>
+                            <button @click="unlockTable()" style="padding: 5px 10px; background: #e5e7eb; border: 0; border-radius: 6px; cursor: pointer; font-size: 11px; color: #4b5563;">Unlock anyway</button>
+                        </div>
+                    </template>
+
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid #e5e7eb;">
                         <div style="color: #6b7280; font-size: 13px;">
                             <span x-text="`Page ${foundPage} • Showing ${foundItems.length} of ${foundTotal} • Selected: ${getSelectedCount()}`"></span>
                         </div>
                         <div style="display: flex; gap: 6px;">
-                            <button @click="foundPrevPage()" :disabled="foundPage === 1" style="padding: 6px 12px; background: #e5e7eb; border: 0; border-radius: 6px; cursor: pointer; font-size: 12px;" :style="foundPage === 1 ? 'opacity: 0.5; cursor: not-allowed;' : ''">← Previous</button>
-                            <button @click="foundNextPage()" :disabled="!foundHasMore" style="padding: 6px 12px; background: #e5e7eb; border: 0; border-radius: 6px; cursor: pointer; font-size: 12px;" :style="!foundHasMore ? 'opacity: 0.5; cursor: not-allowed;' : ''">Next →</button>
+                            <button @click="foundPrevPage()" :disabled="foundPage === 1 || isTableLocked()" style="padding: 6px 12px; background: #e5e7eb; border: 0; border-radius: 6px; cursor: pointer; font-size: 12px;" :style="foundPage === 1 ? 'opacity: 0.5; cursor: not-allowed;' : ''">← Previous</button>
+                            <button @click="foundNextPage()" :disabled="!foundHasMore || isTableLocked()" style="padding: 6px 12px; background: #e5e7eb; border: 0; border-radius: 6px; cursor: pointer; font-size: 12px;" :style="!foundHasMore ? 'opacity: 0.5; cursor: not-allowed;' : ''">Next →</button>
                         </div>
                     </div>
 
@@ -258,14 +284,14 @@
                     <template x-if="foundItems.length > 0">
                         <div style="display: flex; gap: 8px; margin-bottom: 12px; padding: 8px; background: #f3f4f6; border-radius: 6px; flex-wrap: wrap; align-items: center;">
                             <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
-                                <input type="checkbox" @change="toggleSelectAll()" :checked="selectAll" style="cursor: pointer; width: 18px; height: 18px;">
+                                <input type="checkbox" @change="toggleSelectAll()" :checked="selectAll" :disabled="isTableLocked()" style="cursor: pointer; width: 18px; height: 18px;">
                                 <span style="font-size: 13px; font-weight: 600;">Select All</span>
                             </label>
                             <template x-if="getSelectedCount() > 0">
                                 <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-                                    <button @click="clearSelection()" style="padding: 6px 10px; background: #e5e7eb; border: 0; border-radius: 4px; cursor: pointer; font-size: 12px;">Clear Selection</button>
-                                    <button @click="processSelected(true)" :disabled="busy" style="padding: 6px 10px; background: #3b82f6; color: white; border: 0; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600;">⚙️ Process Selected (Async)</button>
-                                    <button @click="processSelected(false)" :disabled="busy" style="padding: 6px 10px; background: #8b5cf6; color: white; border: 0; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600;">⚙️ Process Now</button>
+                                    <button @click="clearSelection()" :disabled="isTableLocked()" style="padding: 6px 10px; background: #e5e7eb; border: 0; border-radius: 4px; cursor: pointer; font-size: 12px;">Clear Selection</button>
+                                    <button @click="processSelected(true)" :disabled="isTableLocked()" style="padding: 6px 10px; background: #3b82f6; color: white; border: 0; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600;">⚙️ Process Selected (Async)</button>
+                                    <button @click="processSelected(false)" :disabled="isTableLocked()" style="padding: 6px 10px; background: #8b5cf6; color: white; border: 0; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600;">⚙️ Process Now</button>
                                     <span style="font-size: 12px; color: #6b7280;">(<span x-text="getSelectedCount()"></span> selected)</span>
                                 </div>
                             </template>
@@ -296,20 +322,36 @@
                                     <template x-for="item in foundItems" :key="item.id">
                                         <tr :style="isItemSelected(item.id) ? 'background: #dbeafe;' : ''">
                                             <td style="text-align: center;">
-                                                <input type="checkbox" @change="toggleItemSelection(item.id)" :checked="isItemSelected(item.id)" style="cursor: pointer; width: 18px; height: 18px;">
+                                                <input type="checkbox" @change="toggleItemSelection(item.id)" :checked="isItemSelected(item.id)" :disabled="isTableLocked()" style="cursor: pointer; width: 18px; height: 18px;">
                                             </td>
                                             <td style="font-weight: 600; color: #4f46e5;"><span x-text="item.id"></span></td>
                                             <td class="mono" style="max-width: 180px; overflow: hidden; text-overflow: ellipsis;"><span x-text="item.item_name"></span></td>
                                             <td><span x-text="item.mode"></span></td>
-                                            <td class="mono" style="max-width: 100px; overflow: hidden; text-overflow: ellipsis;">
-                                                <span x-text="item.post_owner || '-'" :title="item.post_owner || ''"></span>
+                                            <td class="mono" style="max-width: 130px; overflow: hidden; text-overflow: ellipsis;">
+                                                <template x-if="editingId !== item.id">
+                                                    <span x-text="item.post_owner || '-'" :title="item.post_owner || ''"></span>
+                                                </template>
+                                                <template x-if="editingId === item.id">
+                                                    <span style="display: flex; flex-direction: column; gap: 3px;">
+                                                        <input x-model="editBuffer.post_owner" placeholder="owner" style="width: 115px; padding: 3px 5px; border: 1px solid #d1d5db; border-radius: 4px; font-size: 11px;">
+                                                        <input x-model="editBuffer.post_id" placeholder="post_id" style="width: 115px; padding: 3px 5px; border: 1px solid #d1d5db; border-radius: 4px; font-size: 11px;">
+                                                    </span>
+                                                </template>
                                             </td>
-                                            <td><span x-text="item.source || '-'"></span></td>
+                                            <td>
+                                                <template x-if="editingId !== item.id"><span x-text="item.source || '-'"></span></template>
+                                                <template x-if="editingId === item.id">
+                                                    <input x-model="editBuffer.source" placeholder="source" style="width: 80px; padding: 3px 5px; border: 1px solid #d1d5db; border-radius: 4px; font-size: 11px;">
+                                                </template>
+                                            </td>
                                             <td style="max-width: 180px; overflow: hidden; text-overflow: ellipsis;">
-                                                <template x-if="item.post_url">
+                                                <template x-if="editingId === item.id">
+                                                    <input x-model="editBuffer.post_url" placeholder="post url" style="width: 165px; padding: 3px 5px; border: 1px solid #d1d5db; border-radius: 4px; font-size: 11px;">
+                                                </template>
+                                                <template x-if="editingId !== item.id && item.post_url">
                                                     <a :href="item.post_url" target="_blank" rel="noopener noreferrer" style="color: #2563eb; text-decoration: none; font-size: 12px;" :title="item.post_url">open</a>
                                                 </template>
-                                                <template x-if="!item.post_url">
+                                                <template x-if="editingId !== item.id && !item.post_url">
                                                     <span style="color: #9ca3af;">-</span>
                                                 </template>
                                             </td>
@@ -326,7 +368,18 @@
                                             <td style="font-size: 12px; color: #dc2626;" :title="item.error_message || ''"><span x-text="item.error_message ? (item.error_message.substring(0, 30) + (item.error_message.length > 30 ? '...' : '')) : '-'"></span></td>
                                             <td style="font-size: 12px; color: #6b7280;"><span x-text="item.updated_at ? new Date(item.updated_at).toLocaleString() : '-'"></span></td>
                                             <td style="text-align: center; white-space: nowrap;">
-                                                <button @click="processItem(item.id)" style="padding: 4px 8px; background: #16a34a; color: white; border: 0; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600;" :disabled="busy || item.status === 'processing'">⚙️ Go</button>
+                                                <template x-if="editingId !== item.id">
+                                                    <span style="display: inline-flex; gap: 4px;">
+                                                        <button @click="startEdit(item)" title="Edit owner / post_id / source / url" style="padding: 4px 8px; background: #6366f1; color: white; border: 0; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600;" :disabled="isTableLocked()">✏️</button>
+                                                        <button @click="processItem(item.id)" style="padding: 4px 8px; background: #16a34a; color: white; border: 0; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600;" :disabled="isTableLocked() || item.status === 'processing'">⚙️ Go</button>
+                                                    </span>
+                                                </template>
+                                                <template x-if="editingId === item.id">
+                                                    <span style="display: inline-flex; gap: 4px;">
+                                                        <button @click="saveEdit(item)" title="Save" style="padding: 4px 8px; background: #16a34a; color: white; border: 0; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600;">💾</button>
+                                                        <button @click="cancelEdit()" title="Cancel" style="padding: 4px 8px; background: #9ca3af; color: white; border: 0; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600;">✖</button>
+                                                    </span>
+                                                </template>
                                             </td>
                                         </tr>
                                     </template>
@@ -472,17 +525,24 @@
         function rawContentPage() {
             return {
                 busy: false,
+                editingId: null,
+                editBuffer: { post_owner: '', post_id: '', source: '', post_url: '' },
                 enabled: {{ 'true' if content_processor_enabled else 'false' }},
                 clearAll: false,
                 newFormatOnly: true,
                 dedupeBeforeProcess: true,
                 alert: { show: false, type: 'success', message: '', details: null },
                 progress: { show: false, percent: 0, title: '', text: '' },
+                // True while a fire-and-forget background batch is still running (busy is already
+                // false by then, because the POST returned 202 long before the work finished)
+                backgroundProcessing: false,
+                // Manual escape hatch if items are stuck in 'processing' server-side
+                lockOverride: false,
                 scanLimit: {{ default_scan_limit }},
                 batchSize: {{ default_batch_size }},
 
                 // Config editor state
-                showConfigEditor: false,
+                showSettings: false,
                 configBusy: false,
                 config: { source_dir: '', dest_dir: '' },
                 configAlert: { show: false, type: 'success', message: '' },
@@ -609,6 +669,25 @@
                     return Object.keys(this.selectedItems).length;
                 },
 
+                settingsSummary() {
+                    const parts = [`scan ${this.scanLimit}`, `batch ${this.batchSize}`];
+                    if (this.newFormatOnly) parts.push('new format only');
+                    if (this.dedupeBeforeProcess) parts.push('dedupe');
+                    if (this.clearAll) parts.push('clear all');
+                    return parts.join(' • ');
+                },
+
+                isTableLocked() {
+                    if (this.lockOverride) {
+                        return false;
+                    }
+                    return this.busy || this.backgroundProcessing || (this.foundStats.processing || 0) > 0;
+                },
+
+                unlockTable() {
+                    this.lockOverride = true;
+                },
+
                 async processSelected(runAsync = true) {
                     if (this.getSelectedCount() === 0) {
                         alert('Please select items to process');
@@ -620,6 +699,8 @@
 
                     try {
                         this.busy = true;
+                        this.backgroundProcessing = true;
+                        this.lockOverride = false;
                         this.progress.show = true;
                         this.progress.percent = 0;
                         this.progress.title = `Processing ${selectedCount} selected items...`;
@@ -644,9 +725,10 @@
                                 this.progress.text = 'Processing in background...';
                                 this.pollSelectedProcessingProgress(itemIds, selectedCount);
                             } else {
-                                // Sync mode - show result
+                                // Sync mode - work is already done, release the table
                                 this.progress.percent = 100;
                                 this.progress.text = 'Complete!';
+                                this.backgroundProcessing = false;
                                 setTimeout(() => { this.progress.show = false; }, 1500);
                             }
 
@@ -664,6 +746,7 @@
                             }, runAsync ? 3000 : 2000);
                         } else {
                             this.progress.show = false;
+                            this.backgroundProcessing = false;
                             this.alert = {
                                 show: true,
                                 type: 'error',
@@ -673,6 +756,7 @@
                     } catch (e) {
                         console.error('Error processing selected:', e);
                         this.progress.show = false;
+                        this.backgroundProcessing = false;
                         this.alert = { show: true, type: 'error', message: 'Error processing selected items' };
                     } finally {
                         this.busy = false;
@@ -681,7 +765,12 @@
                 },
 
                 async pollSelectedProcessingProgress(itemIds, totalCount) {
-                    // Poll for progress updates by checking item statuses
+                    // Poll for progress updates by checking item statuses.
+                    // Backend writes each item's status the moment that item finishes, so the
+                    // counters below move continuously through the batch.
+                    let lastFinished = -1;
+                    let stallPolls = 0;
+                    const stallThreshold = 150; // 5 minutes without any status change
                     const pollInterval = setInterval(async () => {
                         try {
                             const response = await fetch('/api/raw-content/selected-status', {
@@ -701,36 +790,51 @@
                             const scannedCount = Number(details.scanned || 0);
                             const finishedCount = completedCount + errorCount;
 
-                            const percent = Math.round((finishedCount / totalCount) * 100);
+                            const percent = totalCount > 0 ? Math.min(100, Math.round((finishedCount / totalCount) * 100)) : 0;
                             this.progress.percent = percent;
+                            this.progress.title = `Processing ${finishedCount}/${totalCount} selected items...`;
                             this.progress.text = `Processed: ${completedCount}, Errors: ${errorCount}, In progress: ${processingCount}, Waiting: ${scannedCount}`;
 
-                            // Stop polling when all items are processed
-                            if (finishedCount >= totalCount) {
+                            // Refresh the tables so finished items leave the queue view as they land
+                            this.updateFoundStats();
+                            this.loadFoundPage(this.foundPage);
+
+                            // Stop polling when nothing is left in flight
+                            const done = finishedCount >= totalCount || (processingCount === 0 && scannedCount === 0);
+                            if (done) {
                                 clearInterval(pollInterval);
+                                this.progress.percent = 100;
                                 this.progress.text = `Complete! ${completedCount} processed, ${errorCount} errors`;
+                                this.backgroundProcessing = false;
                                 setTimeout(() => {
                                     this.progress.show = false;
                                     this.updateFoundStats();
                                     this.loadFoundPage(this.foundPage);
                                 }, 2000);
+                                return;
+                            }
+
+                            // Give up only after a long stall, so slow items are not cut off
+                            if (finishedCount === lastFinished) {
+                                stallPolls++;
+                                if (stallPolls >= stallThreshold) {
+                                    clearInterval(pollInterval);
+                                    this.backgroundProcessing = false;
+                                    this.progress.text = `Stalled: ${finishedCount}/${totalCount} finished, no progress for 5 minutes - check pod logs`;
+                                    this.updateFoundStats();
+                                    this.loadFoundPage(this.foundPage);
+                                }
+                            } else {
+                                stallPolls = 0;
+                                lastFinished = finishedCount;
                             }
                         } catch (e) {
                             console.error('Error polling progress:', e);
                             clearInterval(pollInterval);
+                            this.backgroundProcessing = false;
                             this.progress.show = false;
                         }
                     }, 2000); // Poll every 2 seconds
-
-                    // Safety timeout - stop polling after 5 minutes
-                    setTimeout(() => {
-                        clearInterval(pollInterval);
-                        if (this.progress.show) {
-                            this.progress.show = false;
-                            this.updateFoundStats();
-                            this.loadFoundPage(this.foundPage);
-                        }
-                    }, 300000);
                 },
 
                 async updateFoundStats() {
@@ -883,6 +987,7 @@
 
                 async scan() {
                     this.busy = true;
+                    this.lockOverride = false;
                     this.alert = { show: false, type: 'success', message: '', details: null };
                     this.progress = { show: true, percent: 0, title: 'Scanning...', text: 'Starting scan...' };
                     try {
@@ -952,6 +1057,7 @@
 
                 async processBatch() {
                     this.busy = true;
+                    this.lockOverride = false;
                     this.alert = { show: false, type: 'success', message: '', details: null };
                     this.progress = { show: true, percent: 0, title: 'Processing...', text: 'Starting batch processing...' };
 
@@ -969,6 +1075,11 @@
                             throw new Error('Invalid response from stats endpoint');
                         }
                         const initialScanned = stats.scanned || 0;
+                        // Stats counters are lifetime totals for the user, so progress has to be
+                        // measured as a delta from the moment this batch started.
+                        const initialCompleted = stats.completed || 0;
+                        const initialError = stats.error || 0;
+                        const batchTotal = Math.max(1, Math.min(Number(this.batchSize) || initialScanned, initialScanned));
 
                         if (initialScanned === 0) {
                             this.progress.show = false;
@@ -996,12 +1107,13 @@
 
                             // Poll for completion every 3 seconds and update tables every 5 seconds
                             let isProcessing = true;
+                            let batchFinished = false;
                             let pollCount = 0;
                             let updateCount = 0;
                             let noChangeCount = 0;
-                            let lastCompleted = 0;
-                            const maxPolls = 600; // 30 minutes max
-                            const noChangeThreshold = 3; // Stop if no changes for 3 polls (9 seconds)
+                            let lastFinished = -1;
+                            const maxPolls = 1200; // 60 minutes max
+                            const noChangeThreshold = 100; // Give up only after 5 minutes without progress
 
                             while (isProcessing && pollCount < maxPolls) {
                                 await new Promise(resolve => setTimeout(resolve, 3000)); // Wait 3 seconds
@@ -1019,16 +1131,19 @@
                                     const currentProcessing = updatedStats.processing || 0;
                                     const currentCompleted = updatedStats.completed || 0;
                                     const currentError = updatedStats.error || 0;
-                                    const processed = initialScanned - currentScanned;
-                                    const percent = Math.max(5, Math.min(99, Math.round((currentCompleted / initialScanned) * 100)));
+                                    const batchCompleted = Math.max(0, currentCompleted - initialCompleted);
+                                    const batchErrors = Math.max(0, currentError - initialError);
+                                    const finished = batchCompleted + batchErrors;
+                                    const percent = Math.max(5, Math.min(99, Math.round((finished / batchTotal) * 100)));
 
-                                    console.log(`[Poll ${pollCount}] completed=${currentCompleted}, scanned=${currentScanned}, processing=${currentProcessing}, error=${currentError}, percent=${percent}%`);
+                                    console.log(`[Poll ${pollCount}] finished=${finished}/${batchTotal}, scanned=${currentScanned}, processing=${currentProcessing}, percent=${percent}%`);
 
                                     this.progress.percent = percent;
-                                    this.progress.text = `Processing: ${currentCompleted} completed, ${currentError} errors, ${currentScanned} scanned, ${currentProcessing} processing...`;
+                                    this.progress.title = `Processing ${finished}/${batchTotal} items...`;
+                                    this.progress.text = `Processing: ${batchCompleted} completed, ${batchErrors} errors, ${currentScanned} scanned, ${currentProcessing} processing...`;
 
                                     // Refresh table views every 5 seconds (update 2 = 6 seconds passed)
-                                    if (updateCount >= 2 && currentCompleted > 0) {
+                                    if (updateCount >= 2 && finished > 0) {
                                         try {
                                             await this.updateFoundStats();
                                             await this.loadFoundPage(1);
@@ -1039,35 +1154,38 @@
                                         }
                                     }
 
-                                    // Check if we're done: scanned + processing both empty
-                                    if (currentScanned === 0 && currentProcessing === 0) {
-                                        console.log('[Progress] All items processed (scanned=0, processing=0)');
+                                    // Done when the whole batch landed, or nothing is left in flight
+                                    if (finished >= batchTotal || (currentScanned === 0 && currentProcessing === 0)) {
+                                        console.log('[Progress] Batch finished (finished=%d, scanned=%d, processing=%d)', finished, currentScanned, currentProcessing);
                                         isProcessing = false;
+                                        batchFinished = true;
                                     }
 
-                                    // Alternative: check if completed count isn't changing
-                                    if (currentCompleted === lastCompleted) {
+                                    // Stall guard: only bail out after a long stretch with no new results
+                                    if (finished === lastFinished) {
                                         noChangeCount++;
-                                        console.log(`[Progress] No change in completed count (${noChangeCount}/${noChangeThreshold})`);
                                         if (noChangeCount >= noChangeThreshold) {
-                                            console.log('[Progress] No changes for', noChangeThreshold, 'polls, stopping polling');
+                                            console.log('[Progress] No new results for', noChangeThreshold, 'polls, stopping polling');
                                             isProcessing = false;
                                         }
                                     } else {
                                         noChangeCount = 0;
-                                        lastCompleted = currentCompleted;
+                                        lastFinished = finished;
                                     }
                                 } catch (e) {
                                     console.debug('Error polling stats:', e);
                                 }
                             }
 
-                            this.progress.percent = 100;
-                            this.progress.text = 'Processing complete!';
+                            const stalled = !batchFinished;
+                            this.progress.percent = stalled ? this.progress.percent : 100;
+                            this.progress.text = stalled
+                                ? 'Stopped watching: no new results for 5 minutes - check pod logs'
+                                : 'Processing complete!';
                             this.alert = {
                                 show: true,
-                                type: 'success',
-                                message: 'Batch processing completed',
+                                type: stalled ? 'error' : 'success',
+                                message: stalled ? 'Batch processing stalled or still running - progress tracking stopped' : 'Batch processing completed',
                                 details: data.details || null
                             };
                             await this.updateFoundStats();
@@ -1108,6 +1226,60 @@
                     await this.updateFoundStats();
                     await this.loadFoundPage(1);
                     await this.loadProcessedPage(1);
+
+                    // If items are 'processing' server-side (e.g. the page was reloaded mid-batch),
+                    // keep refreshing until the queue drains so the lock releases on its own.
+                    setInterval(async () => {
+                        if (this.busy || this.backgroundProcessing) {
+                            return;
+                        }
+                        if ((this.foundStats.processing || 0) > 0) {
+                            await this.updateFoundStats();
+                            await this.loadFoundPage(this.foundPage);
+                        }
+                    }, 4000);
+                },
+
+                startEdit(item) {
+                    this.editingId = item.id;
+                    this.editBuffer = {
+                        post_owner: item.post_owner || '',
+                        post_id: item.post_id || '',
+                        source: item.source || '',
+                        post_url: item.post_url || ''
+                    };
+                },
+
+                cancelEdit() {
+                    this.editingId = null;
+                },
+
+                async saveEdit(item) {
+                    try {
+                        const response = await fetch(`/api/raw-content/item/${item.id}`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                post_owner: this.editBuffer.post_owner,
+                                post_id: this.editBuffer.post_id,
+                                source: this.editBuffer.source,
+                                post_url: this.editBuffer.post_url
+                            })
+                        });
+                        const data = await response.json();
+                        if (!response.ok) {
+                            throw new Error(data.message || 'Update failed');
+                        }
+                        // Reflect the change locally without a full reload
+                        item.post_owner = this.editBuffer.post_owner;
+                        item.post_id = this.editBuffer.post_id;
+                        item.source = this.editBuffer.source;
+                        item.post_url = this.editBuffer.post_url;
+                        this.editingId = null;
+                        this.alert = { show: true, type: 'success', message: `Item ${item.id} updated`, details: null };
+                    } catch (e) {
+                        this.alert = { show: true, type: 'error', message: 'Failed to update item: ' + e.message, details: null };
+                    }
                 },
 
                 async processItem(itemId) {
