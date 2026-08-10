@@ -590,8 +590,6 @@ class WebUI:
                 limit (int): Items per page (default: 10)
             """
             user_id = str(user['id'])
-            source_dir_override, dest_dir_override = self._get_user_raw_processing_dirs(user_id)
-            source_dir_override, dest_dir_override = self._get_user_raw_processing_dirs(user_id)
             offset = (page - 1) * limit
 
             messages = self.database._select(
@@ -2017,7 +2015,7 @@ class WebUI:
 
             user_id = str(user['id'])
             effective_batch_size = max(1, min(int(batch_size or self.raw_process_batch_size), 1000))
-            source_dir_override, dest_dir_override = self._get_user_raw_processing_dirs(user_id)
+            _, dest_dir_override = self._get_user_raw_processing_dirs(user_id)
 
             log.info('[WebUI]: Starting raw content batch processing for user %s (batch_size=%d)', user_id, effective_batch_size)
 
@@ -2295,7 +2293,7 @@ class WebUI:
                 )
 
             user_id = str(user['id'])
-            source_dir_override, dest_dir_override = self._get_user_raw_processing_dirs(user_id)
+            _, dest_dir_override = self._get_user_raw_processing_dirs(user_id)
 
             try:
                 body = await request.json()
@@ -2390,19 +2388,16 @@ class WebUI:
                     )
 
                 else:
-                    # Process synchronously
-                    processed_count = 0
-                    error_count = 0
-                    errors = []
-
+                    # Process synchronously - but still off the event loop. Calling
+                    # process_candidate() directly here used to block the whole loop for the
+                    # duration of the batch (minutes per post), so /selected-status could not be
+                    # served and the UI had no way to show progress. The streaming helper runs the
+                    # work in a worker thread and writes each item's status as it finishes, so the
+                    # API stays responsive and the queue reflects progress while this request is
+                    # still open.
+                    candidates = []
                     for item in selected_items:
-                        item_id = item['id']
-                        item_name = item['item_name']
-                        item_path = item['item_path']
-                        mode = item['mode']
                         content_files_json = item.get('content_files', '[]')
-
-                        # Parse content_files from JSON if it's a string
                         content_files = []
                         if content_files_json:
                             try:
@@ -2412,59 +2407,28 @@ class WebUI:
                                     content_files = content_files_json
                             except (json.JSONDecodeError, ValueError):
                                 content_files = []
+                        candidates.append({
+                            'id': item['id'],
+                            'item_name': item['item_name'],
+                            'item_path': item['item_path'],
+                            'mode': item['mode'],
+                            'content_files': content_files,
+                            'post_owner': item.get('post_owner'),
+                            'post_id': item.get('post_id'),
+                            'source': item.get('source')
+                        })
+                        self.database.update_raw_content_item_status(item_id=item['id'], status='processing')
 
-                        try:
-                            self.database.update_raw_content_item_status(item_id=item_id, status='processing')
-                            result = self.content_processor.process_candidate(
-                                item_path=item_path,
-                                item_name=item_name,
-                                mode=mode,
-                                content_files=content_files,
-                                post_owner=item.get('post_owner'),
-                                post_id=item.get('post_id'),
-                                source=item.get('source'),
-                                source_dir_override=source_dir_override,
-                                dest_dir_override=dest_dir_override,
-                                dedupe_before_process=dedupe_before_process
-                            )
+                    processed_count, error_count = await self._process_raw_candidates_streaming(
+                        user_id=user_id,
+                        candidates=candidates,
+                        dest_dir_override=dest_dir_override,
+                        dedupe_before_process=dedupe_before_process
+                    )
+                    errors = []
 
-                            if result.get('status') == 'success':
-                                data = result.get('data', {})
-                                self.database.update_raw_content_item_status(
-                                    item_id=item_id,
-                                    status='completed',
-                                    destination=data.get('destination'),
-                                    files_moved=data.get('files_moved'),
-                                    error_message=None
-                                )
-                                self.database.add_raw_item_to_processed(
-                                    user_id=user_id,
-                                    item_id=item_id,
-                                    item_path=item_path,
-                                    source=data.get('source', 'instagram'),
-                                    post_id=data.get('post_id', item_name),
-                                    destination=data.get('destination')
-                                )
-                                processed_count += 1
-                            else:
-                                error_msg = result.get('error', f'Failed to process {item_name}')
-                                self.database.update_raw_content_item_status(
-                                    item_id=item_id,
-                                    status='error',
-                                    error_message=error_msg
-                                )
-                                error_count += 1
-                                errors.append({'item_id': item_id, 'error': error_msg})
-
-                        except Exception as e:
-                            log.error('[WebUI]: Exception processing item_id=%d: %s', item_id, str(e))
-                            self.database.update_raw_content_item_status(
-                                item_id=item_id,
-                                status='error',
-                                error_message=str(e)
-                            )
-                            error_count += 1
-                            errors.append({'item_id': item_id, 'error': str(e)})
+                    log.info('[WebUI]: Selected items processing complete (sync) - processed=%d, errors=%d',
+                             processed_count, error_count)
 
                     return JSONResponse(
                         status_code=200 if error_count == 0 else 207,
