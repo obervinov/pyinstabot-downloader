@@ -2126,7 +2126,7 @@ class WebUI:
                 )
 
             user_id = str(user['id'])
-            source_dir_override, dest_dir_override = self._get_user_raw_processing_dirs(user_id)
+            _, dest_dir_override = self._get_user_raw_processing_dirs(user_id)
             log.info('[WebUI]: Processing single item_id=%d for user %s', item_id, user_id)
 
             try:
@@ -2174,8 +2174,11 @@ class WebUI:
                 # Update status to processing
                 self.database.update_raw_content_item_status(item_id=item_id, status='processing')
 
-                # Process the item
-                result = self.content_processor.process_candidate(
+                # Process the item off the event loop - one post can take minutes of WebDAV
+                # work, and blocking here would freeze every other request (including the
+                # progress polls) for that whole time.
+                result = await asyncio.to_thread(
+                    self.content_processor.process_candidate,
                     item_path=item_path,
                     item_name=item_name,
                     mode=mode,
@@ -2183,7 +2186,6 @@ class WebUI:
                     post_owner=item_post_owner,
                     post_id=item_post_id,
                     source=item_source,
-                    source_dir_override=source_dir_override,
                     dest_dir_override=dest_dir_override,
                     dedupe_before_process=dedupe_before_process
                 )
@@ -2621,7 +2623,8 @@ class WebUI:
                             content_files = []
 
                     self.database.update_raw_content_item_status(item_id=item['id'], status='processing')
-                    result = self.content_processor.process_candidate(
+                    result = await asyncio.to_thread(
+                        self.content_processor.process_candidate,
                         item_path=item['item_path'],
                         item_name=item['item_name'],
                         mode=item['mode'],
@@ -2629,7 +2632,6 @@ class WebUI:
                         post_owner=item.get('post_owner'),
                         post_id=item.get('post_id'),
                         source=item.get('source'),
-                        source_dir_override=source_dir_override,
                         dest_dir_override=dest_dir_override,
                         dedupe_before_process=dedupe_before_process
                     )
