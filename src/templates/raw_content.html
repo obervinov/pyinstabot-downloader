@@ -716,8 +716,27 @@
                             })
                         });
 
-                        const data = await response.json();
-                        console.log('Process selected response:', data);
+                        let data = {};
+                        try {
+                            data = await response.json();
+                        } catch (_) {
+                            data = {};
+                        }
+                        console.log('Process selected response:', response.status, data);
+
+                        // Gateway cut a long synchronous request: the backend keeps working, so
+                        // switch to polling instead of reporting a failure and unlocking the table.
+                        if ([502, 503, 504].includes(response.status)) {
+                            this.progress.text = 'Gateway timeout - processing continues in background...';
+                            this.pollSelectedProcessingProgress(itemIds, selectedCount);
+                            this.alert = {
+                                show: true,
+                                type: 'partial',
+                                message: 'Request timed out at the gateway, but processing is still running - watching progress'
+                            };
+                            this.clearSelection();
+                            return;
+                        }
 
                         if (response.ok) {
                             if (runAsync) {
@@ -765,12 +784,16 @@
                 },
 
                 async pollSelectedProcessingProgress(itemIds, totalCount) {
-                    // Poll for progress updates by checking item statuses.
-                    // Backend writes each item's status the moment that item finishes, so the
-                    // counters below move continuously through the batch.
+                    // The backend writes each item's status the moment that item finishes, so these
+                    // counters move continuously. Polling stops when the SERVER says nothing is in
+                    // flight - never on a client-side deadline, because a slow item is not a dead
+                    // batch. A long freeze is reported as a warning while watching continues.
                     let lastFinished = -1;
-                    let stallPolls = 0;
-                    const stallThreshold = 150; // 5 minutes without any status change
+                    let lastChangeAt = Date.now();
+                    let consecutiveErrors = 0;
+                    const stallWarnMs = 10 * 60 * 1000;   // just annotate the text, keep polling
+                    const giveUpMs = 60 * 60 * 1000;      // zero movement for an hour - stop watching
+                    const maxConsecutiveErrors = 10;      // ~20s of failed polls (pod restart etc.)
                     const pollInterval = setInterval(async () => {
                         try {
                             const response = await fetch('/api/raw-content/selected-status', {
@@ -778,10 +801,16 @@
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({ item_ids: itemIds })
                             });
-                            const data = await response.json();
-                            if (!response.ok) {
-                                throw new Error(data.message || 'Failed to fetch selected status');
+                            let data = {};
+                            try {
+                                data = await response.json();
+                            } catch (_) {
+                                data = {};
                             }
+                            if (!response.ok) {
+                                throw new Error(data.message || `status ${response.status}`);
+                            }
+                            consecutiveErrors = 0;
 
                             const details = data.details || {};
                             const completedCount = Number(details.completed || 0);
@@ -790,18 +819,23 @@
                             const scannedCount = Number(details.scanned || 0);
                             const finishedCount = completedCount + errorCount;
 
-                            const percent = totalCount > 0 ? Math.min(100, Math.round((finishedCount / totalCount) * 100)) : 0;
-                            this.progress.percent = percent;
+                            if (finishedCount !== lastFinished) {
+                                lastFinished = finishedCount;
+                                lastChangeAt = Date.now();
+                            }
+                            const frozenMs = Date.now() - lastChangeAt;
+
+                            this.progress.percent = totalCount > 0 ? Math.min(100, Math.round((finishedCount / totalCount) * 100)) : 0;
                             this.progress.title = `Processing ${finishedCount}/${totalCount} selected items...`;
-                            this.progress.text = `Processed: ${completedCount}, Errors: ${errorCount}, In progress: ${processingCount}, Waiting: ${scannedCount}`;
+                            this.progress.text = `Processed: ${completedCount}, Errors: ${errorCount}, In progress: ${processingCount}, Waiting: ${scannedCount}`
+                                + (frozenMs > stallWarnMs ? ` — no new results for ${Math.round(frozenMs / 60000)} min, still watching` : '');
 
                             // Refresh the tables so finished items leave the queue view as they land
                             this.updateFoundStats();
                             this.loadFoundPage(this.foundPage);
 
-                            // Stop polling when nothing is left in flight
-                            const done = finishedCount >= totalCount || (processingCount === 0 && scannedCount === 0);
-                            if (done) {
+                            // Done when the server has nothing left in flight
+                            if (finishedCount >= totalCount || (processingCount === 0 && scannedCount === 0)) {
                                 clearInterval(pollInterval);
                                 this.progress.percent = 100;
                                 this.progress.text = `Complete! ${completedCount} processed, ${errorCount} errors`;
@@ -814,25 +848,21 @@
                                 return;
                             }
 
-                            // Give up only after a long stall, so slow items are not cut off
-                            if (finishedCount === lastFinished) {
-                                stallPolls++;
-                                if (stallPolls >= stallThreshold) {
-                                    clearInterval(pollInterval);
-                                    this.backgroundProcessing = false;
-                                    this.progress.text = `Stalled: ${finishedCount}/${totalCount} finished, no progress for 5 minutes - check pod logs`;
-                                    this.updateFoundStats();
-                                    this.loadFoundPage(this.foundPage);
-                                }
-                            } else {
-                                stallPolls = 0;
-                                lastFinished = finishedCount;
+                            if (frozenMs > giveUpMs) {
+                                clearInterval(pollInterval);
+                                this.backgroundProcessing = false;
+                                this.progress.text = `Stopped watching: ${finishedCount}/${totalCount} finished, nothing moved for 60 min — check pod logs`;
+                                this.updateFoundStats();
+                                this.loadFoundPage(this.foundPage);
                             }
                         } catch (e) {
-                            console.error('Error polling progress:', e);
-                            clearInterval(pollInterval);
-                            this.backgroundProcessing = false;
-                            this.progress.show = false;
+                            consecutiveErrors++;
+                            console.error(`Error polling progress (${consecutiveErrors}/${maxConsecutiveErrors}):`, e);
+                            if (consecutiveErrors >= maxConsecutiveErrors) {
+                                clearInterval(pollInterval);
+                                this.backgroundProcessing = false;
+                                this.progress.text = 'Lost contact with the API while polling progress — reload the page to resync';
+                            }
                         }
                     }, 2000); // Poll every 2 seconds
                 },
@@ -1110,12 +1140,17 @@
                             let batchFinished = false;
                             let pollCount = 0;
                             let updateCount = 0;
-                            let noChangeCount = 0;
                             let lastFinished = -1;
-                            const maxPolls = 1200; // 60 minutes max
-                            const noChangeThreshold = 100; // Give up only after 5 minutes without progress
+                            let lastChangeAt = Date.now();
+                            let consecutiveErrors = 0;
+                            const maxConsecutiveErrors = 20;      // ~60s of failed stats polls
+                            const stallWarnMs = 10 * 60 * 1000;   // annotate the text, keep polling
+                            const giveUpMs = 60 * 60 * 1000;      // zero movement for an hour - stop watching
 
-                            while (isProcessing && pollCount < maxPolls) {
+                            // No poll-count cap: the server decides when the batch is over. A long
+                            // freeze is surfaced as a warning, and only an hour of zero movement
+                            // stops the watch.
+                            while (isProcessing) {
                                 await new Promise(resolve => setTimeout(resolve, 3000)); // Wait 3 seconds
                                 pollCount++;
                                 updateCount++;
@@ -1123,9 +1158,14 @@
                                 try {
                                     const statsCheck = await fetch('/api/raw-content/stats');
                                     if (!statsCheck.ok) {
-                                        console.debug('Stats check returned non-ok status');
+                                        consecutiveErrors++;
+                                        console.debug(`Stats check returned non-ok status (${consecutiveErrors}/${maxConsecutiveErrors})`);
+                                        if (consecutiveErrors >= maxConsecutiveErrors) {
+                                            isProcessing = false;
+                                        }
                                         continue;
                                     }
+                                    consecutiveErrors = 0;
                                     const updatedStats = await statsCheck.json();
                                     const currentScanned = updatedStats.scanned || 0;
                                     const currentProcessing = updatedStats.processing || 0;
@@ -1138,9 +1178,16 @@
 
                                     console.log(`[Poll ${pollCount}] finished=${finished}/${batchTotal}, scanned=${currentScanned}, processing=${currentProcessing}, percent=${percent}%`);
 
+                                    if (finished !== lastFinished) {
+                                        lastFinished = finished;
+                                        lastChangeAt = Date.now();
+                                    }
+                                    const frozenMs = Date.now() - lastChangeAt;
+
                                     this.progress.percent = percent;
                                     this.progress.title = `Processing ${finished}/${batchTotal} items...`;
-                                    this.progress.text = `Processing: ${batchCompleted} completed, ${batchErrors} errors, ${currentScanned} scanned, ${currentProcessing} processing...`;
+                                    this.progress.text = `Processing: ${batchCompleted} completed, ${batchErrors} errors, ${currentScanned} scanned, ${currentProcessing} processing...`
+                                        + (frozenMs > stallWarnMs ? ` — no new results for ${Math.round(frozenMs / 60000)} min, still watching` : '');
 
                                     // Refresh table views every 5 seconds (update 2 = 6 seconds passed)
                                     if (updateCount >= 2 && finished > 0) {
@@ -1161,31 +1208,29 @@
                                         batchFinished = true;
                                     }
 
-                                    // Stall guard: only bail out after a long stretch with no new results
-                                    if (finished === lastFinished) {
-                                        noChangeCount++;
-                                        if (noChangeCount >= noChangeThreshold) {
-                                            console.log('[Progress] No new results for', noChangeThreshold, 'polls, stopping polling');
-                                            isProcessing = false;
-                                        }
-                                    } else {
-                                        noChangeCount = 0;
-                                        lastFinished = finished;
+                                    // Hard stop only when nothing has moved for an hour
+                                    if (frozenMs > giveUpMs) {
+                                        console.log('[Progress] Nothing moved for 60 min, stopping the watch');
+                                        isProcessing = false;
                                     }
                                 } catch (e) {
-                                    console.debug('Error polling stats:', e);
+                                    consecutiveErrors++;
+                                    console.debug(`Error polling stats (${consecutiveErrors}/${maxConsecutiveErrors}):`, e);
+                                    if (consecutiveErrors >= maxConsecutiveErrors) {
+                                        isProcessing = false;
+                                    }
                                 }
                             }
 
                             const stalled = !batchFinished;
                             this.progress.percent = stalled ? this.progress.percent : 100;
                             this.progress.text = stalled
-                                ? 'Stopped watching: no new results for 5 minutes - check pod logs'
+                                ? 'Stopped watching: nothing moved for 60 min — check pod logs'
                                 : 'Processing complete!';
                             this.alert = {
                                 show: true,
                                 type: stalled ? 'error' : 'success',
-                                message: stalled ? 'Batch processing stalled or still running - progress tracking stopped' : 'Batch processing completed',
+                                message: stalled ? 'Nothing moved for 60 minutes - progress tracking stopped, the batch may still be running' : 'Batch processing completed',
                                 details: data.details || null
                             };
                             await this.updateFoundStats();
