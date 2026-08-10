@@ -133,7 +133,10 @@ class WebUI:
                     webdav_client=self.uploader.webdav_client,
                     source_dir=default_source_dir,
                     dest_dir=default_dest_dir,
-                    database=self.database
+                    database=self.database,
+                    # Factory for per-thread clients so raw content can be processed in parallel
+                    # (webdav3's shared requests.Session is not thread-safe).
+                    client_factory=getattr(self.uploader, 'new_webdav_client', None)
                 )
                 log.info(
                     '[WebUI]: Content processor initialized with defaults (source=%s, dest=%s). '
@@ -182,6 +185,11 @@ class WebUI:
         self.raw_process_batch_size = int(
             kwargs.get('raw_process_batch_size', webui_secret.get('raw-content-process-batch-size', 50))
         )
+        # Concurrency for raw content processing. Kept modest by default so Nextcloud is not
+        # flooded with parallel WebDAV requests (it locks resources and returns 423 under load).
+        self.raw_process_max_workers = max(1, int(
+            kwargs.get('raw_process_max_workers', webui_secret.get('raw-content-process-max-workers', 4))
+        ))
 
         # Host and port configuration
         self.host = host
@@ -325,6 +333,124 @@ class WebUI:
         except Exception as e:
             log.warning('[WebUI]: Failed to read raw_processing config for user %s: %s', user_id, str(e))
             return None, None
+
+    async def _process_raw_candidates_streaming(
+        self,
+        user_id: str,
+        candidates: list[dict],
+        dest_dir_override: Optional[str],
+        dedupe_before_process: bool
+    ) -> tuple[int, int]:
+        """
+        Process candidates in parallel and persist each item's terminal status as soon as that item
+        finishes, so raw_content_queue (which the WebUI progress poll reads) reflects live progress
+        instead of flipping from 'processing' to 'completed' only when the whole batch is done.
+
+        Worker threads just report results through a queue - every DB write stays on the event loop
+        thread, because the psycopg pool is a SimpleConnectionPool and is not thread-safe.
+
+        Args:
+            user_id: Owner of the queue items.
+            candidates: Candidate dicts as built for process_candidates_parallel (must include 'id').
+            dest_dir_override: Optional destination directory override.
+            dedupe_before_process: If True, dedupe byte-identical files before moving.
+
+        Returns:
+            Tuple of (processed_count, error_count).
+        """
+        if not candidates:
+            return (0, 0)
+
+        loop = asyncio.get_running_loop()
+        results_queue: asyncio.Queue = asyncio.Queue()
+
+        def on_result(entry: dict) -> None:
+            loop.call_soon_threadsafe(results_queue.put_nowait, entry)
+
+        worker_task = asyncio.create_task(asyncio.to_thread(
+            self.content_processor.process_candidates_parallel,
+            candidates,
+            self.raw_process_max_workers,
+            dest_dir_override,
+            dedupe_before_process,
+            on_result
+        ))
+
+        counts = {'processed': 0, 'errors': 0}
+        handled_ids = set()
+
+        async def apply_results() -> None:
+            while True:
+                entry = await results_queue.get()
+                if entry is None:
+                    return
+                candidate = entry['candidate']
+                result = entry['result']
+                item_id = candidate['id']
+                item_name = candidate['item_name']
+                item_path = candidate['item_path']
+                handled_ids.add(item_id)
+
+                try:
+                    if result.get('status') == 'success':
+                        data = result.get('data', {})
+                        self.database.update_raw_content_item_status(
+                            item_id=item_id,
+                            status='completed',
+                            destination=data.get('destination'),
+                            files_moved=data.get('files_moved'),
+                            error_message=None
+                        )
+                        self.database.add_raw_item_to_processed(
+                            user_id=user_id,
+                            item_id=item_id,
+                            item_path=item_path,
+                            source=data.get('source', 'instagram'),
+                            post_id=data.get('post_id', item_name),
+                            destination=data.get('destination')
+                        )
+                        counts['processed'] += 1
+                        log.info(
+                            '[WebUI]: Item_id=%d completed (%d/%d done)',
+                            item_id, counts['processed'] + counts['errors'], len(candidates)
+                        )
+                    else:
+                        error_message = result.get('error', f'Failed to process {item_name}')
+                        self.database.update_raw_content_item_status(
+                            item_id=item_id,
+                            status='error',
+                            error_message=error_message
+                        )
+                        counts['errors'] += 1
+                        log.error('[WebUI]: Item_id=%d error: %s', item_id, error_message)
+                except Exception as db_error:  # pylint: disable=broad-exception-caught
+                    counts['errors'] += 1
+                    log.error('[WebUI]: Failed to persist result for item_id=%d: %s', item_id, str(db_error))
+
+        apply_task = asyncio.create_task(apply_results())
+
+        # asyncio.wait() never raises, so the sentinel is always queued and the consumer always exits
+        await asyncio.wait([worker_task])
+        worker_error = worker_task.exception()
+        results_queue.put_nowait(None)
+        await apply_task
+
+        if worker_error:
+            log.error('[WebUI]: Parallel processing failed: %s', str(worker_error), exc_info=worker_error)
+
+        # Never leave items stuck in 'processing' if the batch died before reporting them.
+        for candidate in candidates:
+            if candidate['id'] in handled_ids:
+                continue
+            counts['errors'] += 1
+            self.database.update_raw_content_item_status(
+                item_id=candidate['id'],
+                status='error',
+                error_message=f"Processing aborted: {worker_error}" if worker_error else 'Processing aborted without result'
+            )
+            log.error('[WebUI]: Item_id=%d left unprocessed by the batch - marked as error', candidate['id'])
+
+        return (counts['processed'], counts['errors'])
 
     def _register_routes(self):
         """Register all FastAPI routes for the web UI."""
@@ -1221,6 +1347,48 @@ class WebUI:
                     }
                 )
 
+        @self.app.post("/api/raw-content/item/{item_id}")
+        async def update_raw_content_item(
+            request: Request,
+            item_id: int,
+            user: dict = Depends(self.get_current_user)
+        ):
+            """
+            Manually edit metadata fields (owner/post_id/post_url/source) of a queue item.
+
+            Lets the operator fix values the app could not extract without re-scanning; processing
+            reads these values directly from the queue.
+            """
+            user_id = str(user['id'])
+            try:
+                body = await request.json()
+                editable = ('post_owner', 'post_id', 'post_url', 'source')
+                fields = {k: body[k] for k in editable if k in body}
+                if not fields:
+                    return JSONResponse(
+                        status_code=400,
+                        content={"status": "error", "message": f"No editable fields provided (allowed: {', '.join(editable)})"}
+                    )
+
+                updated = self.database.update_raw_content_item_fields(item_id=item_id, user_id=user_id, fields=fields)
+                if not updated:
+                    return JSONResponse(
+                        status_code=404,
+                        content={"status": "error", "message": f"Item {item_id} not found for this user"}
+                    )
+
+                log.info('[WebUI]: User %s edited raw content item %d fields: %s', user_id, item_id, list(fields.keys()))
+                return JSONResponse(
+                    status_code=200,
+                    content={"status": "success", "message": "Item updated", "item_id": item_id, "updated_fields": fields}
+                )
+            except Exception as e:
+                log.error('[WebUI]: Failed to update raw content item %d for user %s: %s', item_id, user_id, str(e))
+                return JSONResponse(
+                    status_code=500,
+                    content={"status": "error", "message": f"Failed to update item: {str(e)}"}
+                )
+
         @self.app.get("/api/raw-content/item-details/{item_id}")
         async def get_raw_content_item_details(
             request: Request,
@@ -1869,14 +2037,9 @@ class WebUI:
                         log.info('[WebUI]: No scanned items found.')
                         return
 
-                    processed_count = 0
-                    error_count = 0
-
+                    # Build candidates (parse content_files once) and mark them 'processing'.
+                    candidates = []
                     for item in batch_items:
-                        item_id = item['id']
-                        item_name = item['item_name']
-                        item_path = item['item_path']
-                        mode = item['mode']
                         content_files_json = item.get('content_files', '[]')
                         content_files = []
                         if content_files_json:
@@ -1887,58 +2050,26 @@ class WebUI:
                                     content_files = content_files_json
                             except (json.JSONDecodeError, ValueError):
                                 content_files = []
+                        candidates.append({
+                            'id': item['id'],
+                            'item_name': item['item_name'],
+                            'item_path': item['item_path'],
+                            'mode': item['mode'],
+                            'content_files': content_files,
+                            'post_owner': item.get('post_owner'),
+                            'post_id': item.get('post_id'),
+                            'source': item.get('source')
+                        })
+                        self.database.update_raw_content_item_status(item_id=item['id'], status='processing')
 
-                        log.info('[WebUI]: [%d/%d] Processing item_id=%d, name=%s, mode=%s',
-                                 processed_count + error_count + 1, len(batch_items), item_id, item_name, mode)
-
-                        try:
-                            self.database.update_raw_content_item_status(item_id=item_id, status='processing')
-                            result = self.content_processor.process_candidate(
-                                item_path=item_path,
-                                item_name=item_name,
-                                mode=mode,
-                                content_files=content_files,
-                                source_dir_override=source_dir_override,
-                                dest_dir_override=dest_dir_override,
-                                dedupe_before_process=dedupe_before_process
-                            )
-
-                            if result.get('status') == 'success':
-                                log.info('[WebUI]: Item_id=%d processed successfully', item_id)
-                                data = result.get('data', {})
-                                self.database.update_raw_content_item_status(
-                                    item_id=item_id,
-                                    status='completed',
-                                    destination=data.get('destination'),
-                                    files_moved=data.get('files_moved'),
-                                    error_message=None
-                                )
-                                self.database.add_raw_item_to_processed(
-                                    user_id=user_id,
-                                    item_id=item_id,
-                                    item_path=item_path,
-                                    source=data.get('source', 'instagram'),
-                                    post_id=data.get('post_id', item_name),
-                                    destination=data.get('destination')
-                                )
-                                processed_count += 1
-                            else:
-                                error_message = result.get('error', f'Failed to process {item_name}')
-                                log.error('[WebUI]: Item_id=%d error: %s', item_id, error_message)
-                                self.database.update_raw_content_item_status(
-                                    item_id=item_id,
-                                    status='error',
-                                    error_message=error_message
-                                )
-                                error_count += 1
-                        except Exception as item_error:
-                            log.error('[WebUI]: Failed to process item_id=%d: %s', item_id, str(item_error), exc_info=True)
-                            self.database.update_raw_content_item_status(
-                                item_id=item_id,
-                                status='error',
-                                error_message=str(item_error)
-                            )
-                            error_count += 1
+                    # Process candidates concurrently (one WebDAV client per worker). File I/O runs
+                    # off the event loop; each item's status is written as soon as it finishes.
+                    processed_count, error_count = await self._process_raw_candidates_streaming(
+                        user_id=user_id,
+                        candidates=candidates,
+                        dest_dir_override=dest_dir_override,
+                        dedupe_before_process=dedupe_before_process
+                    )
 
                     log.info('[WebUI]: Batch processing complete: processed=%d, errors=%d', processed_count, error_count)
                 except Exception as e:
@@ -2004,7 +2135,7 @@ class WebUI:
                 # Get item from database
                 item = self.database._select(
                     table_name='raw_content_queue',
-                    columns=('id', 'item_name', 'item_path', 'mode', 'status', 'content_files'),
+                    columns=('id', 'item_name', 'item_path', 'mode', 'status', 'content_files', 'post_id', 'post_owner', 'source'),
                     condition=f"id = {item_id} AND user_id = '{user_id}'"
                 )
 
@@ -2024,6 +2155,9 @@ class WebUI:
                 item_path = item_rec[2]
                 mode = item_rec[3]
                 content_files_json = item_rec[5] if len(item_rec) > 5 else '[]'
+                item_post_id = item_rec[6] if len(item_rec) > 6 else None
+                item_post_owner = item_rec[7] if len(item_rec) > 7 else None
+                item_source = item_rec[8] if len(item_rec) > 8 else None
 
                 # Parse content_files from JSON
                 content_files = []
@@ -2048,6 +2182,9 @@ class WebUI:
                     item_name=item_name,
                     mode=mode,
                     content_files=content_files,
+                    post_owner=item_post_owner,
+                    post_id=item_post_id,
+                    source=item_source,
                     source_dir_override=source_dir_override,
                     dest_dir_override=dest_dir_override,
                     dedupe_before_process=dedupe_before_process
@@ -2198,17 +2335,10 @@ class WebUI:
                 if run_async:
                     async def process_selected_background():
                         try:
-                            processed_count = 0
-                            error_count = 0
-
+                            # Build candidates (parse content_files once) and mark them 'processing'.
+                            candidates = []
                             for item in selected_items:
-                                item_id = item['id']
-                                item_name = item['item_name']
-                                item_path = item['item_path']
-                                mode = item['mode']
                                 content_files_json = item.get('content_files', '[]')
-
-                                # Parse content_files from JSON if it's a string
                                 content_files = []
                                 if content_files_json:
                                     try:
@@ -2218,59 +2348,26 @@ class WebUI:
                                             content_files = content_files_json
                                     except (json.JSONDecodeError, ValueError):
                                         content_files = []
+                                candidates.append({
+                                    'id': item['id'],
+                                    'item_name': item['item_name'],
+                                    'item_path': item['item_path'],
+                                    'mode': item['mode'],
+                                    'content_files': content_files,
+                                    'post_owner': item.get('post_owner'),
+                                    'post_id': item.get('post_id'),
+                                    'source': item.get('source')
+                                })
+                                self.database.update_raw_content_item_status(item_id=item['id'], status='processing')
 
-                                log.info('[WebUI]: [%d/%d] Processing selected item_id=%d, name=%s, files=%d',
-                                         processed_count + error_count + 1, len(selected_items), item_id, item_name, len(content_files))
-
-                                try:
-                                    self.database.update_raw_content_item_status(item_id=item_id, status='processing')
-                                    result = self.content_processor.process_candidate(
-                                        item_path=item_path,
-                                        item_name=item_name,
-                                        mode=mode,
-                                        content_files=content_files,
-                                        source_dir_override=source_dir_override,
-                                        dest_dir_override=dest_dir_override,
-                                        dedupe_before_process=dedupe_before_process
-                                    )
-
-                                    if result.get('status') == 'success':
-                                        data = result.get('data', {})
-                                        self.database.update_raw_content_item_status(
-                                            item_id=item_id,
-                                            status='completed',
-                                            destination=data.get('destination'),
-                                            files_moved=data.get('files_moved'),
-                                            error_message=None
-                                        )
-                                        self.database.add_raw_item_to_processed(
-                                            user_id=user_id,
-                                            item_id=item_id,
-                                            item_path=item_path,
-                                            source=data.get('source', 'instagram'),
-                                            post_id=data.get('post_id', item_name),
-                                            destination=data.get('destination')
-                                        )
-                                        log.info('[WebUI]: Selected item_id=%d completed', item_id)
-                                        processed_count += 1
-                                    else:
-                                        error_msg = result.get('error', f'Failed to process {item_name}')
-                                        self.database.update_raw_content_item_status(
-                                            item_id=item_id,
-                                            status='error',
-                                            error_message=error_msg
-                                        )
-                                        log.warning('[WebUI]: Selected item_id=%d error: %s', item_id, error_msg)
-                                        error_count += 1
-
-                                except Exception as e:
-                                    log.error('[WebUI]: Exception processing selected item_id=%d: %s', item_id, str(e))
-                                    self.database.update_raw_content_item_status(
-                                        item_id=item_id,
-                                        status='error',
-                                        error_message=str(e)
-                                    )
-                                    error_count += 1
+                            # Process concurrently off the event loop; each item's status is written
+                            # as soon as it finishes so the UI progress poll can follow it live.
+                            processed_count, error_count = await self._process_raw_candidates_streaming(
+                                user_id=user_id,
+                                candidates=candidates,
+                                dest_dir_override=dest_dir_override,
+                                dedupe_before_process=dedupe_before_process
+                            )
 
                             log.info('[WebUI]: Selected items processing complete - processed=%d, errors=%d',
                                      processed_count, error_count)
@@ -2323,6 +2420,9 @@ class WebUI:
                                 item_name=item_name,
                                 mode=mode,
                                 content_files=content_files,
+                                post_owner=item.get('post_owner'),
+                                post_id=item.get('post_id'),
+                                source=item.get('source'),
                                 source_dir_override=source_dir_override,
                                 dest_dir_override=dest_dir_override,
                                 dedupe_before_process=dedupe_before_process
@@ -2562,6 +2662,9 @@ class WebUI:
                         item_name=item['item_name'],
                         mode=item['mode'],
                         content_files=content_files,
+                        post_owner=item.get('post_owner'),
+                        post_id=item.get('post_id'),
+                        source=item.get('source'),
                         source_dir_override=source_dir_override,
                         dest_dir_override=dest_dir_override,
                         dedupe_before_process=dedupe_before_process
