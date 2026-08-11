@@ -166,6 +166,16 @@
                                     >
                                     <div class="hint" style="margin-top: 4px;">WebDAV path where processed files will be organized</div>
                                 </div>
+                                <div>
+                                    <label style="display: block; color: #4b5563; font-weight: 500; margin-bottom: 4px;">Nextcloud Base URL:</label>
+                                    <input
+                                        type="text"
+                                        x-model="config.nc_base_url"
+                                        placeholder="e.g., https://cloud.example.com"
+                                        style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; font-family: monospace;"
+                                    >
+                                    <div class="hint" style="margin-top: 4px;">Auto-detected from the bot's WebDAV endpoint. Used to link item names to their folder in Nextcloud — clear it to disable the links.</div>
+                                </div>
                                 <div style="display: flex; gap: 8px;">
                                     <button
                                         @click="saveConfig()"
@@ -298,21 +308,23 @@
                         </div>
                     </template>
 
+                    <template x-if="foundItems.length > 0">
+                        <div style="font-size: 12px; color: #6b7280; margin-bottom: 6px;">
+                            Double-click a row to edit owner / post_id / source / url — Enter saves, Esc cancels
+                        </div>
+                    </template>
+
                     <div style="overflow-x: auto;">
                         <template x-if="foundItems.length > 0">
                             <table>
                                 <thead>
                                     <tr>
                                         <th style="width: 30px; text-align: center;">✓</th>
-                                        <th>ID</th>
                                         <th>Item Name</th>
-                                        <th>Mode</th>
                                         <th>Owner</th>
                                         <th>Source</th>
-                                        <th>Post URL</th>
                                         <th>Status</th>
                                         <th>📦 Content Files</th>
-                                        <th>Files</th>
                                         <th>Error Message</th>
                                         <th>Updated</th>
                                         <th>Action</th>
@@ -320,13 +332,21 @@
                                 </thead>
                                 <tbody>
                                     <template x-for="item in foundItems" :key="item.id">
-                                        <tr :style="isItemSelected(item.id) ? 'background: #dbeafe;' : ''">
+                                        <tr :style="isItemSelected(item.id) ? 'background: #dbeafe;' : ''"
+                                            @dblclick="tryStartEdit(item)"
+                                            @keydown.enter="commitEditIfActive(item)"
+                                            @keydown.escape="cancelEditIfActive(item)">
                                             <td style="text-align: center;">
                                                 <input type="checkbox" @change="toggleItemSelection(item.id)" :checked="isItemSelected(item.id)" :disabled="isTableLocked()" style="cursor: pointer; width: 18px; height: 18px;">
                                             </td>
-                                            <td style="font-weight: 600; color: #4f46e5;"><span x-text="item.id"></span></td>
-                                            <td class="mono" style="max-width: 180px; overflow: hidden; text-overflow: ellipsis;"><span x-text="item.item_name"></span></td>
-                                            <td><span x-text="item.mode"></span></td>
+                                            <td class="mono" style="max-width: 180px; overflow: hidden; text-overflow: ellipsis;">
+                                                <template x-if="ncFolderUrl(item)">
+                                                    <a :href="ncFolderUrl(item)" target="_blank" rel="noopener noreferrer" style="color: #2563eb; text-decoration: none;" x-text="item.item_name" :title="`Open in Nextcloud: ${item.item_path} (id ${item.id})`"></a>
+                                                </template>
+                                                <template x-if="!ncFolderUrl(item)">
+                                                    <span x-text="item.item_name" :title="`${item.item_name} (id ${item.id})`"></span>
+                                                </template>
+                                            </td>
                                             <td class="mono" style="max-width: 130px; overflow: hidden; text-overflow: ellipsis;">
                                                 <template x-if="editingId !== item.id">
                                                     <span x-text="item.post_owner || '-'" :title="item.post_owner || ''"></span>
@@ -339,20 +359,18 @@
                                                 </template>
                                             </td>
                                             <td>
-                                                <template x-if="editingId !== item.id"><span x-text="item.source || '-'"></span></template>
-                                                <template x-if="editingId === item.id">
-                                                    <input x-model="editBuffer.source" placeholder="source" style="width: 80px; padding: 3px 5px; border: 1px solid #d1d5db; border-radius: 4px; font-size: 11px;">
-                                                </template>
-                                            </td>
-                                            <td style="max-width: 180px; overflow: hidden; text-overflow: ellipsis;">
-                                                <template x-if="editingId === item.id">
-                                                    <input x-model="editBuffer.post_url" placeholder="post url" style="width: 165px; padding: 3px 5px; border: 1px solid #d1d5db; border-radius: 4px; font-size: 11px;">
-                                                </template>
+                                                <!-- The source name doubles as the post link, so Post URL needs no column of its own -->
                                                 <template x-if="editingId !== item.id && item.post_url">
-                                                    <a :href="item.post_url" target="_blank" rel="noopener noreferrer" style="color: #2563eb; text-decoration: none; font-size: 12px;" :title="item.post_url">open</a>
+                                                    <a :href="item.post_url" target="_blank" rel="noopener noreferrer" style="color: #2563eb; text-decoration: none;" x-text="item.source || 'open'" :title="item.post_url"></a>
                                                 </template>
                                                 <template x-if="editingId !== item.id && !item.post_url">
-                                                    <span style="color: #9ca3af;">-</span>
+                                                    <span x-text="item.source || '-'" title="No post URL"></span>
+                                                </template>
+                                                <template x-if="editingId === item.id">
+                                                    <span style="display: flex; flex-direction: column; gap: 3px;">
+                                                        <input x-model="editBuffer.source" placeholder="source" style="width: 165px; padding: 3px 5px; border: 1px solid #d1d5db; border-radius: 4px; font-size: 11px;">
+                                                        <input x-model="editBuffer.post_url" placeholder="post url" style="width: 165px; padding: 3px 5px; border: 1px solid #d1d5db; border-radius: 4px; font-size: 11px;">
+                                                    </span>
                                                 </template>
                                             </td>
                                             <td><span class="badge" :class="item.status" x-text="item.status"></span></td>
@@ -364,15 +382,11 @@
                                                     <span style="color: #9ca3af;">—</span>
                                                 </template>
                                             </td>
-                                            <td style="text-align: center;"><span x-text="item.files_moved !== null ? item.files_moved : '-'"></span></td>
                                             <td style="font-size: 12px; color: #dc2626;" :title="item.error_message || ''"><span x-text="item.error_message ? (item.error_message.substring(0, 30) + (item.error_message.length > 30 ? '...' : '')) : '-'"></span></td>
                                             <td style="font-size: 12px; color: #6b7280;"><span x-text="item.updated_at ? new Date(item.updated_at).toLocaleString() : '-'"></span></td>
                                             <td style="text-align: center; white-space: nowrap;">
                                                 <template x-if="editingId !== item.id">
-                                                    <span style="display: inline-flex; gap: 4px;">
-                                                        <button @click="startEdit(item)" title="Edit owner / post_id / source / url" style="padding: 4px 8px; background: #6366f1; color: white; border: 0; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600;" :disabled="isTableLocked()">✏️</button>
-                                                        <button @click="processItem(item.id)" style="padding: 4px 8px; background: #16a34a; color: white; border: 0; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600;" :disabled="isTableLocked() || item.status === 'processing'">⚙️ Go</button>
-                                                    </span>
+                                                    <button @click="processItem(item.id)" style="padding: 4px 8px; background: #16a34a; color: white; border: 0; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600;" :disabled="isTableLocked() || item.status === 'processing'">⚙️ Go</button>
                                                 </template>
                                                 <template x-if="editingId === item.id">
                                                     <span style="display: inline-flex; gap: 4px;">
@@ -545,7 +559,7 @@
                 // Config editor state
                 showSettings: false,
                 configBusy: false,
-                config: { source_dir: '', dest_dir: '' },
+                config: { source_dir: '', dest_dir: '', nc_base_url: '' },
                 configAlert: { show: false, type: 'success', message: '' },
 
                 // Active tab: 'found' or 'processed'
@@ -588,7 +602,9 @@
                         const data = await response.json();
                         this.config = {
                             source_dir: data.source_dir || '',
-                            dest_dir: data.dest_dir || ''
+                            dest_dir: data.dest_dir || '',
+                            // Empty until the server can derive it from the WebDAV endpoint
+                            nc_base_url: data.nc_base_url || ''
                         };
                         this.configAlert = { show: true, type: 'success', message: 'Configuration loaded' };
                         setTimeout(() => { this.configAlert.show = false; }, 2000);
@@ -608,7 +624,8 @@
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
                                 source_dir: this.config.source_dir,
-                                dest_dir: this.config.dest_dir
+                                dest_dir: this.config.dest_dir,
+                                nc_base_url: this.config.nc_base_url
                             })
                         });
                         const data = await response.json();
@@ -1331,6 +1348,34 @@
                             await this.loadFoundPage(this.foundPage);
                         }
                     }, 4000);
+                },
+
+                // Link an item to its folder in the Nextcloud web UI. The base URL comes from the
+                // server (auto-detected from the bot's WebDAV endpoint, overridable in Settings);
+                // returns '' when it is unset or the item has no path, and the name renders as text.
+                ncFolderUrl(item) {
+                    const base = (this.config.nc_base_url || '').replace(/\/+$/, '');
+                    const path = item.item_path || '';
+                    if (!base || !path) return '';
+                    const dir = '/' + path.replace(/^\/+/, '');
+                    return `${base}/index.php/apps/files/?dir=${encodeURIComponent(dir)}`;
+                },
+
+                // Double-click on a row opens the inline editor: the vertical-screen layout has no
+                // room for a per-row edit button next to the table's own horizontal scroll
+                tryStartEdit(item) {
+                    if (this.editingId === item.id || this.isTableLocked()) return;
+                    this.startEdit(item);
+                },
+
+                commitEditIfActive(item) {
+                    if (this.editingId !== item.id) return;
+                    this.saveEdit(item);
+                },
+
+                cancelEditIfActive(item) {
+                    if (this.editingId !== item.id) return;
+                    this.cancelEdit();
                 },
 
                 startEdit(item) {
