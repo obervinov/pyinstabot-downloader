@@ -46,6 +46,13 @@
         .progress-bar { width: 100%; height: 24px; background: #e5e7eb; border-radius: 12px; overflow: hidden; margin-top: 8px; }
         .progress-fill { height: 100%; background: linear-gradient(90deg, #2563eb 0%, #7c3aed 100%); transition: width 0.3s ease; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 12px; }
         .progress-text { color: #4b5563; font-size: 14px; margin-top: 6px; }
+        /* Inline-editable cells: a dashed underline marks the value as editable, and the hover
+           tint plus the caret cursor tell the user the cell reacts to a double-click. Dropped
+           while the table is locked, when editing is not allowed anyway. */
+        td.editable { cursor: text; }
+        td.editable .editable-value { border-bottom: 1px dashed #a5b4fc; }
+        td.editable:hover { background: #f5f3ff; }
+        td.editable:hover .editable-value { border-bottom-style: solid; border-bottom-color: #6366f1; }
         /* Table lock: covers the queue table while a batch is running so it can't be touched */
         .lockable { position: relative; }
         .table-lock { position: absolute; inset: 0; z-index: 20; background: rgba(249, 250, 251, 0.82); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; cursor: progress; border-radius: 8px; }
@@ -347,9 +354,9 @@
                                                     <span x-text="item.item_name" :title="`${item.item_name} (id ${item.id})`"></span>
                                                 </template>
                                             </td>
-                                            <td class="mono" style="max-width: 130px; overflow: hidden; text-overflow: ellipsis;">
+                                            <td class="mono" :class="{ 'editable': isRowEditable(item) }" style="max-width: 130px; overflow: hidden; text-overflow: ellipsis;">
                                                 <template x-if="editingId !== item.id">
-                                                    <span x-text="item.post_owner || '-'" :title="item.post_owner || ''"></span>
+                                                    <span class="editable-value" x-text="item.post_owner || '-'" :title="editHint(item, item.post_owner)"></span>
                                                 </template>
                                                 <template x-if="editingId === item.id">
                                                     <span style="display: flex; flex-direction: column; gap: 3px;">
@@ -358,13 +365,13 @@
                                                     </span>
                                                 </template>
                                             </td>
-                                            <td>
+                                            <td :class="{ 'editable': isRowEditable(item) }">
                                                 <!-- The source name doubles as the post link, so Post URL needs no column of its own -->
                                                 <template x-if="editingId !== item.id && item.post_url">
-                                                    <a :href="item.post_url" target="_blank" rel="noopener noreferrer" style="color: #2563eb; text-decoration: none;" x-text="item.source || 'open'" :title="item.post_url"></a>
+                                                    <a class="editable-value" :href="item.post_url" target="_blank" rel="noopener noreferrer" style="color: #2563eb; text-decoration: none;" x-text="item.source || 'open'" :title="editHint(item, item.post_url)"></a>
                                                 </template>
                                                 <template x-if="editingId !== item.id && !item.post_url">
-                                                    <span x-text="item.source || '-'" title="No post URL"></span>
+                                                    <span class="editable-value" x-text="item.source || '-'" :title="editHint(item, 'no post URL')"></span>
                                                 </template>
                                                 <template x-if="editingId === item.id">
                                                     <span style="display: flex; flex-direction: column; gap: 3px;">
@@ -1359,6 +1366,17 @@
                     if (!base || !path) return '';
                     const dir = '/' + path.replace(/^\/+/, '');
                     return `${base}/index.php/apps/files/?dir=${encodeURIComponent(dir)}`;
+                },
+
+                // Drives the "this cell can be edited" styling: dropped while the row is already in
+                // the editor or the table is locked, so the hint never promises what a click can't do
+                isRowEditable(item) {
+                    return this.editingId !== item.id && !this.isTableLocked();
+                },
+
+                editHint(item, value) {
+                    const shown = value || '-';
+                    return this.isRowEditable(item) ? `${shown} — double-click to edit` : String(shown);
                 },
 
                 // Double-click on a row opens the inline editor: the vertical-screen layout has no
