@@ -14,6 +14,7 @@ import asyncio
 from datetime import datetime, timedelta
 from typing import Optional
 from uuid import uuid4
+from urllib.parse import urlparse
 from fastapi import FastAPI, Request, HTTPException, Depends, Form
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
@@ -333,6 +334,43 @@ class WebUI:
         except Exception as e:
             log.warning('[WebUI]: Failed to read raw_processing config for user %s: %s', user_id, str(e))
             return None, None
+
+    def _derive_nextcloud_base_url(self) -> str:
+        """
+        Derive the Nextcloud web base URL from the uploader's WebDAV endpoint.
+
+        The WebDAV URL is a DAV endpoint (`https://cloud.example.com/remote.php/dav/files/user`),
+        while the WebUI needs the plain web root (`https://cloud.example.com`) to build
+        "open this folder in Nextcloud" links. Everything from `/remote.php` (or `/webdav`) onwards
+        is stripped, so an instance served from a subpath keeps its prefix. The value is only a
+        default: the user can override and persist it via the raw content config form.
+
+        Returns:
+            (str) Base URL without a trailing slash, or an empty string if it cannot be derived.
+        """
+        try:
+            webdav_url = (self.uploader.configuration.get('url') or '').strip() if self.uploader else ''
+            if not webdav_url:
+                return ''
+
+            parsed = urlparse(webdav_url)
+            if not parsed.scheme or not parsed.netloc:
+                return ''
+
+            path = parsed.path or ''
+            for marker in ('/remote.php', '/public.php', '/webdav'):
+                index = path.find(marker)
+                if index != -1:
+                    path = path[:index]
+                    break
+            else:
+                # No DAV marker: the URL points at a plain directory, keep the host only
+                path = ''
+
+            return f"{parsed.scheme}://{parsed.netloc}{path.rstrip('/')}"
+        except Exception as e:
+            log.warning('[WebUI]: Could not derive Nextcloud base URL from the uploader config: %s', str(e))
+            return ''
 
     async def _process_raw_candidates_streaming(
         self,
@@ -1250,6 +1288,7 @@ class WebUI:
             """
             Get raw content directory configuration for the user.
             Returns stored source_dir and dest_dir, or defaults from processor.
+            The Nextcloud base URL falls back to the one derived from the bot's WebDAV endpoint.
             """
             user_id = str(user['id'])
             try:
@@ -1263,6 +1302,11 @@ class WebUI:
                         'source_dir': self.content_processor.source_dir,
                         'dest_dir': self.content_processor.dest_dir
                     }
+
+                # Auto-discovered default: only used until the user saves an explicit override
+                if not config.get('nc_base_url'):
+                    config = dict(config)
+                    config['nc_base_url'] = self._derive_nextcloud_base_url()
 
                 return JSONResponse(
                     status_code=200,
@@ -1301,6 +1345,7 @@ class WebUI:
                 body = await request.json()
                 source_dir = body.get('source_dir', '').strip()
                 dest_dir = body.get('dest_dir', '').strip()
+                nc_base_url = (body.get('nc_base_url') or '').strip().rstrip('/')
 
                 if not source_dir or not dest_dir:
                     return JSONResponse(
@@ -1311,18 +1356,31 @@ class WebUI:
                         }
                     )
 
+                # Empty is allowed and simply disables the "open in Nextcloud" links
+                if nc_base_url:
+                    parsed_nc = urlparse(nc_base_url)
+                    if parsed_nc.scheme not in ('http', 'https') or not parsed_nc.netloc:
+                        return JSONResponse(
+                            status_code=400,
+                            content={
+                                "status": "error",
+                                "message": "nc_base_url must be an http(s) URL, for example https://cloud.example.com"
+                            }
+                        )
+
                 # Update database config using generic app_config table
                 self.database.set_user_config(
                     user_id=user_id,
                     component='raw_processing',
                     config={
                         'source_dir': source_dir,
-                        'dest_dir': dest_dir
+                        'dest_dir': dest_dir,
+                        'nc_base_url': nc_base_url
                     }
                 )
 
-                log.info('[WebUI]: Updated raw_processing config for user %s: source=%s, dest=%s',
-                         user_id, source_dir, dest_dir)
+                log.info('[WebUI]: Updated raw_processing config for user %s: source=%s, dest=%s, nc_base_url=%s',
+                         user_id, source_dir, dest_dir, nc_base_url or '-')
 
                 return JSONResponse(
                     status_code=200,
@@ -1331,7 +1389,8 @@ class WebUI:
                         "message": "Configuration updated successfully",
                         "config": {
                             "source_dir": source_dir,
-                            "dest_dir": dest_dir
+                            "dest_dir": dest_dir,
+                            "nc_base_url": nc_base_url
                         }
                     }
                 )
@@ -1618,6 +1677,7 @@ class WebUI:
                         formatted_items.append({
                             'id': item[0],
                             'item_name': item[1],
+                            # Needed by the WebUI to build the "open this folder in Nextcloud" link
                             'item_path': item[2],
                             'mode': item[3],
                             'post_id': item[4],
