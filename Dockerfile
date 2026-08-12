@@ -45,7 +45,7 @@ COPY src/ src/
 COPY tests/ tests/
 COPY pyproject.toml .
 COPY poetry.lock .
-COPY *.md ./
+COPY README.md ./
 COPY LICENSE ./
 
 ### Installing poetry and python dependeces ###

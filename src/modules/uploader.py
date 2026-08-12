@@ -81,10 +81,29 @@ class Uploader:
         options = {
             'webdav_hostname': self.configuration['url'],
             'webdav_login': self.configuration['username'],
-            'webdav_password': self.configuration['password']
+            'webdav_password': self.configuration['password'],
+            # webdav3 defaults to a 30s timeout, too short for a MOVE/GET against a loaded Nextcloud
+            # (server-side copy, antivirus/preview hooks). Configurable via the uploader config.
+            'webdav_timeout': int(self.configuration.get('timeout', 120))
         }
+        # Keep the raw options so additional (per-thread) clients can be built on demand.
+        self._webdav_options = options
         self.storage = WebDavClient(options)
+        self.webdav_client = self.storage
         log.info('[Uploader]: Connection to the WebDav remote directory is established')
+
+    def new_webdav_client(self) -> WebDavClient:
+        """
+        Build a fresh WebDAV client with its own requests.Session.
+
+        webdav3's Client shares a single non-thread-safe requests.Session, so any code that
+        drives the storage from multiple threads (e.g. parallel raw-content processing) must
+        give each worker its own client instead of sharing self.webdav_client.
+
+        Returns:
+            (WebDavClient) a new, independent client bound to the same storage/credentials.
+        """
+        return WebDavClient(self._webdav_options)
 
     def run_transfers(
         self,

@@ -14,6 +14,8 @@
 ## Table of contents
 - [About this project](#-about-this-project)
 - [Project architecture](#-project-architecture)
+- [Web UI](#web-ui)
+- [Raw Content Processing](#raw-content-processing)
 - [Requirements](#-requirements)
 - [Environment variables](#-environment-variables)
 - [Prepare and configure environment](#-prepare-and-configure-environment)
@@ -24,7 +26,11 @@
 
 
 ## <img src="https://github.com/obervinov/_templates/blob/v1.2.2/icons/book.png" width="25" title="about"> About this project
-This project is a Telegram bot that allows you to upload posts from your Instagram profile to WebDav compatible storage.
+This project is a Telegram bot and Web UI for archiving Instagram posts you already have access to and uploading them to WebDAV-compatible storage.
+
+It is primarily a Python integration project around Telegram, Vault, PostgreSQL, WebDAV, background processing, and content organization pipelines.
+
+It started as a hobby project for practicing Python and learning how application code interacts with real infrastructure during rollout, configuration, storage integration, and ongoing maintenance. That experimentation gradually turned into a useful archival workflow and a practical way to better understand the kinds of operational problems developers and platform teams run into in production environments.
 <p align="center">
   <img src="doc/preview-main.png" width="600" title="preview-main">
 </p>
@@ -32,6 +38,17 @@ This project is a Telegram bot that allows you to upload posts from your Instagr
 **Main functions**
 - a backup copy of a __specific post__ by link
 - a backup copy of __list of posts__ by links
+
+### Project focus
+
+Current repository focus:
+- Instagram archiving workflow
+- Telegram-driven queue and job management
+- WebDAV-based storage and media organization
+- Raw content ingestion from external exporters and browser extensions
+- Reusable processing components for future archival integrations
+
+The repository may grow into a broader content-archiving toolkit over time, but the current public scope is centered on Instagram archival and the surrounding integration pipeline.
 
 **Preview of the bot in action**
 <p align="center">
@@ -46,6 +63,26 @@ This project is a Telegram bot that allows you to upload posts from your Instagr
 
 **Code structure**
 ![Diagram](doc/diagram-structure.png)
+</br>
+
+## Web UI
+FastAPI-based dashboard for Telegram login, per-user stats, queue views, and link submission.
+
+- Token login available: run `/webui_login` in Telegram to generate one-time tokens for the WebUI.
+- [Web UI guide](doc/README_WEBUI.md)
+
+## Raw Content Processing
+Process and organize raw content from browser extensions and external sources into structured directories.
+
+- [Raw Content Processing documentation](doc/RAW_CONTENT_PROCESSING.md) - Technical architecture and API reference
+- [Integration guide](doc/RAW_CONTENT_INTEGRATION.md) - How to set up and use the feature
+- Vault configuration (configuration/webui):
+  - `raw_content_source_dir` - source directory in WebDAV (e.g. `/raw-content`)
+  - `raw_content_dest_dir` - destination directory in WebDAV (e.g. `/processed-content`)
+- Supports multiple content sources through pluggable adapters
+- Extensible framework for adding new platforms
+
+See [RAW_CONTENT_PROCESSING.md](doc/RAW_CONTENT_PROCESSING.md) for the current scan/process flow and API behavior.
 </br>
 
 ## <img src="https://github.com/obervinov/_templates/blob/v1.2.2/icons/requirements.png" width="25" title="requirements"> Requirements
@@ -159,6 +196,7 @@ This project is a Telegram bot that allows you to upload posts from your Instagr
     - `android_release`: the android release version of the device
     - `android_version`: the android api version of the device
   - `challenge-timeout`: the timeout if the challenge is happened (in seconds)
+  - advanced request pacing options are also supported for backward compatibility, but they are intentionally not part of the quick-start path
   </br>
 
 - `configuration/uploader-api`: uploader module configuration (for upload content to the target storage)

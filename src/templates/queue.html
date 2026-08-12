@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Queue - Pyinstabot Downloader</title>
+    <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+    <link rel="icon" type="image/png" sizes="16x16" href="/static/favicon-16x16.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32x32.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/static/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/static/android-chrome-192x192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="/static/android-chrome-512x512.png">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f5f7fa;
+            color: #333;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .header h1 {
+            font-size: 24px;
+        }
+
+        .nav-link {
+            color: white;
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            transition: background 0.2s;
+        }
+
+        .nav-link:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .github-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: background 0.2s;
+        }
+
+        .github-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+
+        .page-header {
+            margin-bottom: 24px;
+        }
+
+        .page-header h2 {
+            font-size: 28px;
+            color: #1f2937;
+            margin-bottom: 8px;
+        }
+
+        .page-header p {
+            color: #6b7280;
+            font-size: 14px;
+        }
+
+        .message-list {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .message-item {
+            padding: 16px 20px;
+            border-bottom: 1px solid #f3f4f6;
+        }
+
+        .message-item:last-child {
+            border-bottom: none;
+        }
+
+        .message-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .post-id {
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .post-url {
+            color: #6b7280;
+            font-size: 13px;
+            word-break: break-all;
+            margin-bottom: 8px;
+        }
+
+        .message-meta {
+            font-size: 13px;
+            color: #9ca3af;
+        }
+
+        .status {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status.waiting {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .status.error {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .status.processing {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .retry-btn {
+            padding: 4px 12px;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .retry-btn:hover {
+            background: #2563eb;
+        }
+
+        .retry-btn:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            margin-top: 24px;
+        }
+
+        .pagination a, .pagination span {
+            padding: 8px 12px;
+            background: white;
+            border-radius: 6px;
+            text-decoration: none;
+            color: #667eea;
+            font-size: 14px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .pagination span.current {
+            background: #667eea;
+            color: white;
+        }
+
+        .pagination a:hover {
+            background: #f3f4f6;
+        }
+
+        .empty-state {
+            background: white;
+            border-radius: 12px;
+            padding: 48px;
+            text-align: center;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .empty-state-icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+        }
+
+        .empty-state p {
+            color: #9ca3af;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-left">
+            <img src="/static/logo.png" alt="Logo" class="logo">
+            <h1>Queue</h1>
+        </div>
+        <div style="display: flex; align-items: center; gap: 16px;">
+            <a href="https://github.com/obervinov/pyinstabot-downloader" target="_blank" rel="noopener noreferrer" class="github-btn">
+                <span>🐙</span>
+                <span>GitHub</span>
+            </a>
+            <a href="/dashboard" class="nav-link">← Back to Dashboard</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="page-header">
+            <h2>Queue ({{ total }} items)</h2>
+            <p>Messages waiting to be processed</p>
+        </div>
+
+        {% if messages %}
+        <div class="message-list">
+            {% for msg in messages %}
+            <div class="message-item">
+                <div class="message-header">
+                    <span class="post-id">{{ msg.post_id }}</span>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        {% if msg.state == 'error' or msg.download_status == 'download_error' or msg.upload_status == 'upload_error' %}
+                        <span class="status error">Error</span>
+                        <button class="retry-btn" onclick="retryPost('{{ msg.post_id }}', this)">Retry</button>
+                        {% elif msg.state == 'processing' %}
+                        <span class="status processing">Processing</span>
+                        {% else %}
+                        <span class="status waiting">Waiting</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="post-url">{{ msg.post_url }}</div>
+                <div class="message-meta">
+                    Scheduled: {{ msg.scheduled_time }}
+                    {% if msg.post_owner %} | Owner: {{ msg.post_owner }}{% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        {% if total > limit %}
+        <div class="pagination">
+            {% if page > 1 %}
+            <a href="?page={{ page - 1 }}">← Previous</a>
+            {% endif %}
+
+            {% set total_pages = (total + limit - 1) // limit %}
+            {% for p in range(1, total_pages + 1) %}
+                {% if p == page %}
+                <span class="current">{{ p }}</span>
+                {% elif p == 1 or p == total_pages or (p >= page - 2 and p <= page + 2) %}
+                <a href="?page={{ p }}">{{ p }}</a>
+                {% elif p == page - 3 or p == page + 3 %}
+                <span>...</span>
+                {% endif %}
+            {% endfor %}
+
+            {% if page < total_pages %}
+            <a href="?page={{ page + 1 }}">Next →</a>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-state-icon">📭</div>
+            <p>Your queue is empty</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <script>
+        async function retryPost(postId, button) {
+            // Disable button during request
+            button.disabled = true;
+            button.textContent = 'Retrying...';
+
+            try {
+                const response = await fetch(`/api/retry/${postId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    // Show success message
+                    alert(data.message || 'Post reset successfully!');
+                    // Reload page to show updated status
+                    window.location.reload();
+                } else {
+                    // Show error message
+                    alert(data.message || 'Failed to retry post');
+                    button.disabled = false;
+                    button.textContent = 'Retry';
+                }
+            } catch (error) {
+                console.error('Error retrying post:', error);
+                alert('Network error. Please try again.');
+                button.disabled = false;
+                button.textContent = 'Retry';
+            }
+        }
+    </script>
+</body>
+</html>
