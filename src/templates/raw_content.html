@@ -249,7 +249,8 @@
             <div class="grid" style="margin-top: 12px;">
                 <div class="stat"><div class="label">Total</div><div class="value">{{ stats.total }}</div></div>
                 <div class="stat"><div class="label">Scanned</div><div class="value">{{ stats.scanned }}</div></div>
-                <div class="stat"><div class="label">Processing</div><div class="value">{{ stats.processing }}</div></div>
+                <!-- No Processing tile: this card is rendered once server-side, so a live counter
+                     never appears here. In-flight work is shown by the lock overlay on the table. -->
                 <div class="stat"><div class="label">Completed</div><div class="value">{{ stats.completed }}</div></div>
                 <div class="stat"><div class="label">Error</div><div class="value">{{ stats.error }}</div></div>
             </div>
