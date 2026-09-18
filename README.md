@@ -8,7 +8,7 @@
 ![GitHub Release Date](https://img.shields.io/github/release-date/obervinov/pyinstabot-downloader?style=for-the-badge)
 ![GitHub issues](https://img.shields.io/github/issues/obervinov/pyinstabot-downloader?style=for-the-badge)
 ![GitHub repo size](https://img.shields.io/github/repo-size/obervinov/pyinstabot-downloader?style=for-the-badge)
-[![Python version](https://img.shields.io/badge/python-3.12.7-blue.svg?style=for-the-badge)](https://www.python.org/downloads/release/python-3127/)
+[![Python version](https://img.shields.io/badge/dynamic/toml?url=https%3A%2F%2Fraw.githubusercontent.com%2Fobervinov%2Fpyinstabot-downloader%2FHEAD%2Fpyproject.toml&query=%24.tool.poetry.dependencies.python&label=python&color=blue&style=for-the-badge)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
 
 ## Table of contents
@@ -23,7 +23,7 @@
 - [How to run project locally](#-how-to-run-project-locally)
 
 
-## <img src="https://github.com/obervinov/_templates/blob/v1.2.2/icons/book.png" width="25" title="about"> About this project
+## <img src="https://github.com/obervinov/_templates/blob/main/icons/book.png" width="25" title="about"> About this project
 This project is a Telegram bot that allows you to upload posts from your Instagram profile to WebDav compatible storage.
 <p align="center">
   <img src="doc/preview-main.png" width="600" title="preview-main">
@@ -40,7 +40,7 @@ This project is a Telegram bot that allows you to upload posts from your Instagr
 </p>
 
 
-## <img src="https://github.com/obervinov/_templates/blob/v1.2.2/icons/requirements.png" width="25" title="diagram"> Project architecture
+## <img src="https://github.com/obervinov/_templates/blob/main/icons/requirements.png" width="25" title="diagram"> Project architecture
 **Users flow**
 ![Diagram](doc/diagram-flow.png)
 
@@ -48,23 +48,23 @@ This project is a Telegram bot that allows you to upload posts from your Instagr
 ![Diagram](doc/diagram-structure.png)
 </br>
 
-## <img src="https://github.com/obervinov/_templates/blob/v1.2.2/icons/requirements.png" width="25" title="requirements"> Requirements
-- <img src="https://github.com/obervinov/_templates/blob/v1.2.2/icons/vault.png" width="15" title="vault"> **Vault Server**
+## <img src="https://github.com/obervinov/_templates/blob/main/icons/requirements.png" width="25" title="requirements"> Requirements
+- <img src="https://github.com/obervinov/_templates/blob/main/icons/vault.png" width="15" title="vault"> **Vault Server**
    - [store the project configuration in kv2](https://developer.hashicorp.com/vault/docs/secrets/kv/kv-v2)
    - [generate access credentials in the database](https://developer.hashicorp.com/vault/docs/secrets/databases)
    - [prepare the vault server](scripts/vault-init.sh)
 - <img src="https://github.com/obervinov/_templates/blob/main/icons/file.png" width="15" title="webdav"> **WebDav Cloud**
    - remote directory url
    - [username and password](https://docs.nextcloud.com/server/latest/user_manual/en/files/access_webdav.html)
-- <img src="https://github.com/obervinov/_templates/blob/v1.2.2/icons/telegram.png" width="15" title="telegram"> **Telegram Bot**
+- <img src="https://github.com/obervinov/_templates/blob/main/icons/telegram.png" width="15" title="telegram"> **Telegram Bot**
    - [api token](https://learn.microsoft.com/en-us/azure/bot-service/bot-service-channel-connect-telegram?view=azure-bot-service-4.0)
-- <img src="https://github.com/obervinov/_templates/blob/v1.2.2/icons/instagram.png" width="15" title="instagram"> **Instagram Account**
+- <img src="https://github.com/obervinov/_templates/blob/main/icons/instagram.png" width="15" title="instagram"> **Instagram Account**
    - [username and password](https://www.instagram.com/accounts/emailsignup/)
-- <img src="https://github.com/obervinov/_templates/blob/v1.2.2/icons/postgres.png" width="15" title="postgresql"> **Postgresql Database**
+- <img src="https://github.com/obervinov/_templates/blob/main/icons/postgres.png" width="15" title="postgresql"> **Postgresql Database**
    - [empty database](scripts/psql-init.sh)
 </br>
 
-## <img src="https://github.com/obervinov/_templates/blob/v1.2.2/icons/build.png" width="25" title="build"> Environment variables
+## <img src="https://github.com/obervinov/_templates/blob/main/icons/build.png" width="25" title="build"> Environment variables
 | Variable  | Description | Default value |
 | ------------- | ------------- | ------------- |
 | `LOGGER_LEVEL` | [The logging level of the logging module](https://docs.python.org/3/library/logging.html#logging-levels) | `INFO` |
@@ -75,10 +75,10 @@ This project is a Telegram bot that allows you to upload posts from your Instagr
 | `TELEGRAM_BOT_METRICS_PORT` | The port for the metrics server | `8000` |
 | `TELEGRAM_BOT_METRICS_INTERVAL` | The interval for collecting metrics in seconds | `30` |
 | `MESSAGES_CONFIG` | The path to the message template file | `src/configs/messages.json` |
-| `VAULT_*` | All supported vault environment variables can be found [here](https://github.com/obervinov/vault-package/tree/v3.0.0?tab=readme-ov-file#-supported-environment-variables) | - |
+| `VAULT_*` | All supported vault environment variables can be found [here](https://github.com/obervinov/vault-package?tab=readme-ov-file#-supported-environment-variables) | - |
 </br>
 
-## <img src="https://github.com/obervinov/_templates/blob/v1.2.2/icons/config.png" width="25" title="config"> Prepare and configure environment
+## <img src="https://github.com/obervinov/_templates/blob/main/icons/config.png" width="25" title="config"> Prepare and configure environment
 
 ### WebDav as the target storage of the content
 - Create an account in any cloud that supports WebDav
@@ -87,7 +87,7 @@ This project is a Telegram bot that allows you to upload posts from your Instagr
 </br>
 
 ### Bot configuration source and supported parameters
-<img src="https://github.com/obervinov/_templates/blob/v1.2.2/icons/vault.png" width="15" title="vault"> All bot configuration is stored in the `Vault Secrets` (_except for the part of the configuration that configures the connection to `Vault`_)
+<img src="https://github.com/obervinov/_templates/blob/main/icons/vault.png" width="15" title="vault"> All bot configuration is stored in the `Vault Secrets` (_except for the part of the configuration that configures the connection to `Vault`_)
 </br>
 
 - `pyinstabot-downloader-database` - vault database engine mount point, returns the temporary username and password for the database. More information about the database engine can be found [here](https://developer.hashicorp.com/vault/docs/secrets/databases/postgresql) and [here](https://developer.hashicorp.com/vault/tutorials/db-credentials/database-secrets)
@@ -197,7 +197,7 @@ This project is a Telegram bot that allows you to upload posts from your Instagr
 
   Description of parameters
   - `requests`: the number of requests that the user can make per day and per hour, as well as the random shift in minutes (scheduling of message processing from the queue works on the basis of this parameter)
-  - `roles`: list of roles that allow to use the corresponding functionality ([available roles](src/configs/constants.py#L11-L14)).
+  - `roles`: list of roles that allow to use the corresponding functionality ([available roles](src/configs/constants.py#L12-L16)).
   - `status`: allowed or denied user access to the bot
 
 
@@ -210,7 +210,7 @@ git clone https://github.com/obervinov/pyinstabot-downloader.git
 cd pyinstabot-downloader
 
 # Run vault-server
-docker-compose -f docker-compose.yml up vault-server -d
+docker compose -f docker-compose.yml up vault-server -d
 
 # Initialize and unseal new vault-server
 export VAULT_ADDR=http://0.0.0.0:8200
@@ -236,7 +236,7 @@ export VAULT_TOKEN=hvs.123456qwerty
 </br>
 
 ### Bot persistent data storage
-<img src="https://github.com/obervinov/_templates/blob/v1.2.2/icons/postgres.png" width="15" title="postgres"> Persistent data storage is implemented using `Postgresql`
+<img src="https://github.com/obervinov/_templates/blob/main/icons/postgres.png" width="15" title="postgres"> Persistent data storage is implemented using `Postgresql`
 - data structure, tables and assignment of tables [here](src/configs/databases.json)
 - migrations [here](src/migrations/)
 
@@ -268,7 +268,7 @@ export PGDATABASE=postgres
 - bot messages
 </br>
 
-## <img src="https://github.com/obervinov/_templates/blob/v1.2.2/icons/docker.png" width="25" title="docker"> How to run project locally
+## <img src="https://github.com/obervinov/_templates/blob/main/icons/docker.png" width="25" title="docker"> How to run project locally
 ```sh
 export VAULT_APPROLE_ID={change_me}
 export VAULT_APPROLE_SECRET_ID={change_me}
@@ -277,7 +277,5 @@ docker compose -f docker-compose.yml up -d
 ```
 </br>
 
-## <img src="https://github.com/obervinov/_templates/blob/v1.2.2/icons/github-actions.png" width="25" title="github-actions"> GitHub Actions
-| Name  | Version |
-| ------------------------ | ----------- |
-| GitHub Actions Templates | [v2.1.1](https://github.com/obervinov/_templates/tree/v2.1.1) |
+## <img src="https://github.com/obervinov/_templates/blob/main/icons/github-actions.png" width="25" title="github-actions"> GitHub Actions
+[![GitHub Actions Templates](https://img.shields.io/badge/dynamic/regex?url=https%3A%2F%2Fraw.githubusercontent.com%2Fobervinov%2Fpyinstabot-downloader%2FHEAD%2F.github%2Fworkflows%2Fpr.yaml&search=pr.yaml%40%28v%5B0-9.%5D%2B%29&replace=%241&label=_templates&color=blue&logo=githubactions&logoColor=white)](https://github.com/obervinov/_templates)

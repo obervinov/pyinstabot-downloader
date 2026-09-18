@@ -1,6 +1,15 @@
 ---
   name: PR
   
+  # pr.yaml opens or updates the pull request for the pushed branch and
+  # docker.yaml pushes the PR image to GHCR. A reusable workflow only gets
+  # what the caller grants, and CodeQL flags a workflow that leaves the
+  # token at its default scope.
+  permissions:
+    contents: read
+    pull-requests: write
+    packages: write
+  
   on:
     push:
       branches:
@@ -11,10 +20,10 @@
   
   jobs:    
     pr:
-      uses: obervinov/_templates/.github/workflows/pr.yaml@v2.1.1
+      uses: obervinov/_templates/.github/workflows/pr.yaml@v4.0.0
     pyproject:
-      uses: obervinov/_templates/.github/workflows/pyproject.yaml@v2.1.1
+      uses: obervinov/_templates/.github/workflows/pyproject.yaml@v4.0.0
 
     build-pr-image:
-      uses: obervinov/_templates/.github/workflows/docker.yaml@v2.1.1
+      uses: obervinov/_templates/.github/workflows/docker.yaml@v4.0.0
       needs: [pr, pyproject]

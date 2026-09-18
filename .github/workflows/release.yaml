@@ -1,6 +1,13 @@
 ---
   name: Release
   
+  # release.yaml now calls softprops/action-gh-release, which makes the REST
+  # call as the job itself, and docker.yaml pushes to GHCR. A reusable workflow
+  # only gets what the caller grants, so both are declared here.
+  permissions:
+    contents: write
+    packages: write
+  
   on:
     pull_request:
       branches:
@@ -11,9 +18,9 @@
   jobs:
     create-release:
       if: github.event.pull_request.merged == true
-      uses: obervinov/_templates/.github/workflows/release.yaml@v2.1.1
+      uses: obervinov/_templates/.github/workflows/release.yaml@v4.0.0
   
     build-release-image:
       if: github.event.pull_request.merged == true
-      uses: obervinov/_templates/.github/workflows/docker.yaml@v2.1.1
+      uses: obervinov/_templates/.github/workflows/docker.yaml@v4.0.0
       needs: [create-release]
