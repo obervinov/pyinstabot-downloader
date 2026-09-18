@@ -8,7 +8,7 @@
 ![GitHub Release Date](https://img.shields.io/github/release-date/obervinov/pyinstabot-downloader?style=for-the-badge)
 ![GitHub issues](https://img.shields.io/github/issues/obervinov/pyinstabot-downloader?style=for-the-badge)
 ![GitHub repo size](https://img.shields.io/github/repo-size/obervinov/pyinstabot-downloader?style=for-the-badge)
-[![Python version](https://img.shields.io/badge/python-3.12.7-blue.svg?style=for-the-badge)](https://www.python.org/downloads/release/python-3127/)
+[![Python version](https://img.shields.io/badge/dynamic/toml?url=https%3A%2F%2Fraw.githubusercontent.com%2Fobervinov%2Fpyinstabot-downloader%2FHEAD%2Fpyproject.toml&query=%24.tool.poetry.dependencies.python&label=python&color=blue&style=for-the-badge)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
 
 ## Table of contents
@@ -75,7 +75,7 @@ This project is a Telegram bot that allows you to upload posts from your Instagr
 | `TELEGRAM_BOT_METRICS_PORT` | The port for the metrics server | `8000` |
 | `TELEGRAM_BOT_METRICS_INTERVAL` | The interval for collecting metrics in seconds | `30` |
 | `MESSAGES_CONFIG` | The path to the message template file | `src/configs/messages.json` |
-| `VAULT_*` | All supported vault environment variables can be found [here](https://github.com/obervinov/vault-package/tree/v4.0.4?tab=readme-ov-file#-supported-environment-variables) | - |
+| `VAULT_*` | All supported vault environment variables can be found [here](https://github.com/obervinov/vault-package?tab=readme-ov-file#-supported-environment-variables) | - |
 </br>
 
 ## <img src="https://github.com/obervinov/_templates/blob/main/icons/config.png" width="25" title="config"> Prepare and configure environment
@@ -278,6 +278,4 @@ docker compose -f docker-compose.yml up -d
 </br>
 
 ## <img src="https://github.com/obervinov/_templates/blob/main/icons/github-actions.png" width="25" title="github-actions"> GitHub Actions
-| Name  | Version |
-| ------------------------ | ----------- |
-| GitHub Actions Templates | [v4.0.0](https://github.com/obervinov/_templates/tree/v4.0.0) |
+[![GitHub Actions Templates](https://img.shields.io/badge/dynamic/regex?url=https%3A%2F%2Fraw.githubusercontent.com%2Fobervinov%2Fpyinstabot-downloader%2FHEAD%2F.github%2Fworkflows%2Fpr.yaml&search=pr.yaml%40%28v%5B0-9.%5D%2B%29&replace=%241&label=_templates&color=blue&logo=githubactions&logoColor=white)](https://github.com/obervinov/_templates)
