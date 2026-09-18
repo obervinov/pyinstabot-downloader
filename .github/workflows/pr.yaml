@@ -3,12 +3,18 @@
   
   # pr.yaml opens or updates the pull request for the pushed branch and
   # docker.yaml pushes the PR image to GHCR. A reusable workflow only gets
-  # what the caller grants, and CodeQL flags a workflow that leaves the
-  # token at its default scope.
+  # what the caller grants, and the whole run is rejected at startup when it
+  # asks for more — with no log and no check to explain it — so this is the
+  # full set docker.yaml declares on its job, contents at write rather than
+  # read. CodeQL also flags a workflow that leaves the token at its default
+  # scope, which is why the block is here at all.
   permissions:
-    contents: read
-    pull-requests: write
+    actions: write
+    checks: read
+    contents: write
     packages: write
+    pull-requests: write
+    security-events: write
   
   on:
     push:

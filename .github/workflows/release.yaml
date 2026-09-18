@@ -3,10 +3,15 @@
   
   # release.yaml now calls softprops/action-gh-release, which makes the REST
   # call as the job itself, and docker.yaml pushes to GHCR. A reusable workflow
-  # only gets what the caller grants, so both are declared here.
+  # only gets what the caller grants, and the whole run is rejected at startup
+  # when it asks for more — with no log to explain it — so this has to be the
+  # full set docker.yaml declares on its job, not just the obvious two.
   permissions:
+    actions: write
+    checks: read
     contents: write
     packages: write
+    security-events: write
   
   on:
     pull_request:
