@@ -30,7 +30,7 @@ users = { git = "https://github.com/obervinov/users-package.git", tag = "v4.1.2"
 telegram = { git = "https://github.com/obervinov/telegram-package.git", tag = "v3.0.2" }
 
 [tool.poetry.group.dev.dependencies]
-pylint = "^3"
+pylint = "^4"
 flake8 = "^7"
 pytest = "^8"
 
