@@ -413,7 +413,8 @@ class RawContentProcessor:
             if items_in_dir and not metadata_file:
                 for item in items_in_dir:
                     nested_name = self._normalize_webdav_name(item)
-                    if not nested_name:
+                    # Nextcloud lists the directory itself first: listing it again as <dir>/<dir> 404s
+                    if not nested_name or nested_name == file_name:
                         continue
                     nested_path = f"{file_path}/{nested_name}"
                     if not self._is_directory(
@@ -583,9 +584,11 @@ class RawContentProcessor:
             # don't have to probe each entry with a separate info()/list() request later.
             dir_hints: Dict[str, Optional[bool]] = {}
             normalized_items = []
+            source_basename = str(source_dir).rstrip('/').rsplit('/', 1)[-1]
             for item in raw_items:
                 name = self._normalize_webdav_name(item)
-                if not name:
+                # Skip the source directory's own self-reference entry
+                if not name or name == source_basename:
                     continue
                 normalized_items.append(name)
                 dir_hints[name] = self._raw_item_is_dir(item)

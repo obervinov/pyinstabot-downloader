@@ -28,8 +28,9 @@ class FakeWebdav:
 
     def list(self, path, get_info=False):  # pylint: disable=unused-argument
         if path not in self.tree:
-            raise RuntimeError(f'no such dir {path}')
-        return list(self.tree[path])
+            raise RuntimeError(f'Remote resource: {path} not found')
+        # Like Nextcloud: the listing starts with the directory itself
+        return [path.rsplit('/', 1)[-1] + '/'] + list(self.tree[path])
 
     def check(self, path):
         return path in self.tree or path in self.files
