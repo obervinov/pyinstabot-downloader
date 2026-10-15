@@ -10,118 +10,27 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/static/apple-touch-icon.png">
     <link rel="icon" type="image/png" sizes="192x192" href="/static/android-chrome-192x192.png">
     <link rel="icon" type="image/png" sizes="512x512" href="/static/android-chrome-512x512.png">
+    <link rel="stylesheet" href="/static/app.css">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-
-        .login-container {
-            background: white;
-            border-radius: 16px;
-            padding: 48px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            max-width: 400px;
-            width: 100%;
-            text-align: center;
-        }
-
-        .logo {
-            width: 120px;
-            height: 120px;
-            margin-bottom: 16px;
-            border-radius: 50%;
-            object-fit: cover;
-        }
-
-        h1 {
-            color: #333;
-            margin-bottom: 8px;
-            font-size: 28px;
-        }
-
-        p {
-            color: #666;
-            margin-bottom: 32px;
-            font-size: 16px;
-        }
-
-        .telegram-login {
-            display: inline-block;
-            margin-top: 16px;
-        }
-
-        .divider {
-            margin: 24px 0 8px 0;
-            color: #aaa;
-            font-size: 14px;
-        }
-
-        .token-form {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            margin-top: 12px;
-        }
-
-        .token-form input {
-            padding: 12px 14px;
-            border: 2px solid #e0e0e0;
-            border-radius: 10px;
-            font-size: 15px;
-            transition: border-color 0.2s;
-        }
-
-        .token-form input:focus {
-            outline: none;
-            border-color: #667eea;
-        }
-
-        .token-form button {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            padding: 12px;
-            border-radius: 10px;
-            font-size: 15px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-
-        .token-form button:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 6px 18px rgba(102, 126, 234, 0.35);
-        }
-
-        .token-hint {
-            color: #777;
-            font-size: 14px;
-        }
-
-        .footer {
-            margin-top: 32px;
-            color: #999;
-            font-size: 14px;
-        }
+        body { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 16px; }
+        .login-card { max-width: 400px; width: 100%; padding: 36px 32px; text-align: center; margin-bottom: 0; }
+        .login-logo { width: 88px; height: 88px; border-radius: 50%; object-fit: cover; margin-bottom: 14px; }
+        .login-card .page-sub { margin: 4px 0 24px; }
+        .telegram-login { display: inline-block; min-height: 40px; }
+        .divider { display: flex; align-items: center; gap: 10px; margin: 20px 0 12px; color: var(--text-3); font-size: 12px; }
+        .divider::before, .divider::after { content: ''; flex: 1; border-top: 1px solid var(--border); }
+        .token-form { display: flex; flex-direction: column; gap: 10px; }
+        .token-form .btn { width: 100%; }
+        .token-hint { margin-top: 10px; }
+        .login-foot { margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border); }
+        @media (max-width: 720px) { .login-card { padding: 28px 20px; } }
     </style>
 </head>
 <body>
-    <div class="login-container">
-        <img src="/static/logo.png" alt="Pyinstabot Downloader" class="logo">
-        <h1>Pyinstabot Downloader</h1>
-        <p>Backup your Instagram content to WebDAV storage</p>
+    <main class="card login-card">
+        <img src="/static/logo.png" alt="Pyinstabot Downloader" class="login-logo">
+        <h1 class="page-title">Pyinstabot Downloader</h1>
+        <p class="page-sub">Backup your Instagram content to WebDAV storage</p>
 
         <div class="telegram-login">
             <!-- Telegram Login Widget -->
@@ -136,16 +45,16 @@
         {% if token_enabled %}
         <div class="divider">or</div>
         <form class="token-form" method="post" action="/auth/token">
-            <input type="text" name="token" placeholder="Paste one-time token" autocomplete="off" required />
-            <button type="submit">Login with Token</button>
+            <input class="input" type="text" name="token" placeholder="Paste one-time token" autocomplete="off" required />
+            <button type="submit" class="btn primary">Login with Token</button>
         </form>
-        <p class="token-hint">Press <b>WebUI Access</b> button in the bot to get a one-time token.</p>
+        <p class="token-hint small muted">Press <b>WebUI Access</b> button in the bot to get a one-time token.</p>
         {% endif %}
 
-        <div class="footer">
-            <p>Login with your Telegram account to continue</p>
+        <div class="login-foot">
+            <p class="small muted">Login with your Telegram account to continue</p>
         </div>
-    </div>
+    </main>
 
     <!-- Optional: JavaScript callback alternative (not used with data-auth-url) -->
     <!--

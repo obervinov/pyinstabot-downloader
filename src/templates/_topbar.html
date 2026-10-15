@@ -1,0 +1,27 @@
+{# Shared top navigation. Set `active_page` before including: dashboard | queue | processed | accounts | raw #}
+<header class="topbar">
+    <div class="topbar-inner">
+        <a href="/dashboard" class="brand">
+            <img src="/static/logo.png" alt="">
+            <span>Pyinstabot</span>
+        </a>
+        <nav class="nav">
+            <a href="/dashboard" class="{{ 'active' if active_page == 'dashboard' }}">Dashboard</a>
+            <a href="/queue" class="{{ 'active' if active_page == 'queue' }}">Queue</a>
+            <a href="/processed" class="{{ 'active' if active_page == 'processed' }}">Processed</a>
+            <a href="/accounts" class="{{ 'active' if active_page == 'accounts' }}">Accounts</a>
+            <a href="/raw-content" class="{{ 'active' if active_page == 'raw' }}">Raw content</a>
+        </nav>
+        {% if user %}
+        <div class="topbar-user">
+            {% if user.photo_url %}
+            <img src="{{ user.photo_url }}" alt="" class="avatar">
+            {% else %}
+            <span class="avatar">{{ user.first_name[0] if user.first_name else 'U' }}</span>
+            {% endif %}
+            <span>{{ user.first_name }}</span>
+            <a href="/logout" class="btn ghost sm">Log out</a>
+        </div>
+        {% endif %}
+    </div>
+</header>

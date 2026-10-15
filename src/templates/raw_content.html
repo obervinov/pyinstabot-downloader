@@ -5,274 +5,170 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Raw Content - Pyinstabot Downloader</title>
     <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
-    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <link rel="stylesheet" href="/static/app.css">
+    <script src="https://unpkg.com/alpinejs@3.14.1/dist/cdn.min.js" defer></script>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f7fa; color: #333; }
-        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 16px 24px; display: flex; justify-content: space-between; align-items: center; }
-        .header-left { display: flex; align-items: center; gap: 12px; }
-        .logo { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; }
-        .nav-link { color: white; text-decoration: none; padding: 8px 16px; border-radius: 6px; transition: background 0.2s; }
-        .nav-link:hover { background: rgba(255, 255, 255, 0.15); }
-        .container { max-width: 1600px; margin: 0 auto; padding: 24px; }
-        .card { background: white; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); padding: 20px; margin-bottom: 20px; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
-        .stat { background: #f9fafb; border-radius: 10px; padding: 14px; }
-        .stat .label { color: #6b7280; font-size: 12px; text-transform: uppercase; letter-spacing: .4px; }
-        .stat .value { font-size: 28px; font-weight: 700; color: #4f46e5; }
-        .controls { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 12px; }
-        .btn { border: 0; border-radius: 8px; padding: 10px 16px; color: white; font-weight: 600; cursor: pointer; }
-        .btn:disabled { opacity: .55; cursor: not-allowed; }
-        .btn.scan { background: #2563eb; }
-        .btn.process { background: #16a34a; }
-        .hint { font-size: 13px; color: #6b7280; margin-top: 8px; }
-        .alert { margin-top: 12px; padding: 12px; border-radius: 8px; display: none; }
-        .alert.show { display: block; }
-        .alert.success { background: #dcfce7; color: #166534; }
-        .alert.partial { background: #fef9c3; color: #854d0e; }
-        .alert.error { background: #fee2e2; color: #991b1b; }
-        table { width: 100%; border-collapse: collapse; }
-        th, td { text-align: left; padding: 10px; border-bottom: 1px solid #e5e7eb; font-size: 13px; }
-        th { color: #6b7280; font-weight: 600; }
-        .badge { display: inline-block; padding: 4px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; }
-        .badge.scanned { background: #dbeafe; color: #1d4ed8; }
-        .badge.processing { background: #fef3c7; color: #92400e; }
-        .badge.completed { background: #dcfce7; color: #166534; }
-        .badge.error { background: #fee2e2; color: #991b1b; }
-        .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
-        .empty { color: #9ca3af; text-align: center; padding: 28px 0; }
-        .progress-container { margin-top: 16px; padding: 16px; background: #f9fafb; border-radius: 8px; display: none; }
-        .progress-container.show { display: block; }
-        .progress-bar { width: 100%; height: 24px; background: #e5e7eb; border-radius: 12px; overflow: hidden; margin-top: 8px; }
-        .progress-fill { height: 100%; background: linear-gradient(90deg, #2563eb 0%, #7c3aed 100%); transition: width 0.3s ease; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 12px; }
-        .progress-text { color: #4b5563; font-size: 14px; margin-top: 6px; }
         /* Inline-editable cells: a dashed underline marks the value as editable, and the hover
            tint plus the caret cursor tell the user the cell reacts to a double-click. Dropped
            while the table is locked, when editing is not allowed anyway. */
         td.editable { cursor: text; }
-        td.editable .editable-value { border-bottom: 1px dashed #a5b4fc; }
-        td.editable:hover { background: #f5f3ff; }
-        td.editable:hover .editable-value { border-bottom-style: solid; border-bottom-color: #6366f1; }
+        td.editable .editable-value { border-bottom: 1px dashed var(--border-strong); }
+        td.editable:hover .editable-value { border-bottom: 1px solid var(--accent); }
+        .owner-missing { color: var(--warning); font-style: italic; }
+        .edit-stack { display: flex; flex-direction: column; gap: 4px; min-width: 150px; }
         /* Table lock: covers the queue table while a batch is running so it can't be touched */
         .lockable { position: relative; }
-        .table-lock { position: absolute; inset: 0; z-index: 20; background: rgba(249, 250, 251, 0.82); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; cursor: progress; border-radius: 8px; }
-        .table-lock .spinner { width: 40px; height: 40px; border: 4px solid #dbeafe; border-top-color: #2563eb; border-radius: 50%; animation: table-lock-spin 0.8s linear infinite; }
-        .table-lock .lock-title { font-size: 15px; font-weight: 700; color: #1f2937; }
-        .table-lock .lock-text { font-size: 13px; color: #4b5563; max-width: 520px; text-align: center; }
-        .table-lock .lock-hint { font-size: 12px; color: #9ca3af; }
-        @keyframes table-lock-spin { to { transform: rotate(360deg); } }
+        .table-lock {
+            position: absolute; inset: 0; z-index: 20; background: var(--overlay);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            gap: 10px; cursor: progress; border-radius: var(--radius-sm); text-align: center; padding: 16px;
+        }
+        .table-lock .lock-title { font-size: 15px; font-weight: 650; }
+        .table-lock .lock-text { color: var(--text-2); max-width: 520px; }
+        .files-cell { max-width: 260px; color: var(--text-2); }
+        .reason-detail { color: var(--text-3); font-size: 12px; margin-top: 2px; }
+        .skipped-note { color: var(--warning); font-size: 12px; margin-top: 2px; }
     </style>
 </head>
 <body>
-    <div class="header">
-        <div class="header-left">
-            <img src="/static/logo.png" alt="Logo" class="logo">
-            <h1>Raw Content</h1>
+    {% set active_page = 'raw' %}
+    {% include '_topbar.html' %}
+
+    <main class="page" x-data="rawContentPage()" x-init="init()">
+        <div class="page-head">
+            <div>
+                <h1 class="page-title">Raw content</h1>
+                <p class="page-sub">Scan the WebDAV source, then move each post into its owner's folder.</p>
+            </div>
+            <div class="row">
+                <button class="btn" @click="scan()" :disabled="isTableLocked() || !enabled">Scan source</button>
+                <button class="btn primary" @click="processBatch()" :disabled="isTableLocked() || !enabled">Process batch</button>
+            </div>
         </div>
-        <a href="/dashboard" class="nav-link">← Back to Dashboard</a>
-    </div>
 
-    <div class="container" x-data="rawContentPage()" @load="init()" x-init="init()">
-        <div class="card">
-            <h2 style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
-                <span>🔄 Batch Processing</span>
-            </h2>
-            <p class="hint" style="margin-top: 4px;">Scan and process raw content from WebDAV in two simple steps.</p>
+        {% if not content_processor_enabled %}
+        <div class="alert error" style="margin: 0 0 16px;">Raw content processor is not configured on this instance.</div>
+        {% endif %}
 
-            {% if not content_processor_enabled %}
-            <div class="alert show error" style="margin-top: 12px;">⚠️ Raw content processor is not configured on this instance.</div>
-            {% endif %}
-
-            <div style="margin-top: 16px; padding: 12px; background: #f0f9ff; border-left: 3px solid #0284c7; border-radius: 6px;">
-                <div style="font-size: 13px; color: #0c4a6e; line-height: 1.6;">
-                    <strong>Step 1: Scan</strong> - Scans the WebDAV source directory and adds all candidates to queue<br>
-                    <strong>Step 2: Process</strong> - Processes queued items in batches, organizes files into structured directories
-                </div>
+        <div class="card progress" x-show="progress.show" x-cloak>
+            <div class="row">
+                <strong x-text="progress.title"></strong>
+                <span class="spacer"></span>
+                <span class="muted small" x-text="`${progress.percent}%`"></span>
             </div>
+            <div class="progress-track"><div class="progress-fill" :style="`width: ${progress.percent}%`"></div></div>
+            <div class="muted small" style="margin-top: 6px;" x-text="progress.text"></div>
+        </div>
 
-            <div class="controls" style="margin-top: 14px;">
-                <button class="btn scan" @click="scan()" :disabled="isTableLocked() || !enabled">📂 Scan Directory</button>
-                <button class="btn process" @click="processBatch()" :disabled="isTableLocked() || !enabled">⚙️ Process Batch</button>
-            </div>
-
-            <!-- All tunables in one collapsed block: scan/batch limits, flags, directories -->
-            <div style="margin-top: 14px; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden;">
-                <div @click="showSettings = !showSettings" style="display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 12px; background: #f9fafb; cursor: pointer;">
-                    <span style="font-size: 13px; font-weight: 600; color: #4b5563;">⚙️ Settings</span>
-                    <span style="display: flex; align-items: center; gap: 10px;">
-                        <span style="font-size: 12px; color: #9ca3af;" x-text="settingsSummary()"></span>
-                        <span style="font-size: 14px; color: #6b7280;" x-text="showSettings ? '▼' : '▶'"></span>
-                    </span>
-                </div>
-                <template x-if="showSettings">
-                    <div style="padding: 12px; border-top: 1px solid #e5e7eb;">
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 13px;">
-                            <div>
-                                <label style="display: block; color: #6b7280; font-weight: 500; margin-bottom: 4px;">Scan Limit:</label>
-                                <input type="number" x-model.number="scanLimit" min="10" max="10000" style="width: 100%; padding: 6px 8px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 12px;" placeholder="1000">
-                                <div class="hint" style="margin-top: 2px;">Items per scan</div>
-                            </div>
-                            <div>
-                                <label style="display: block; color: #6b7280; font-weight: 500; margin-bottom: 4px;">Batch Size:</label>
-                                <input type="number" x-model.number="batchSize" min="1" max="1000" style="width: 100%; padding: 6px 8px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 12px;" placeholder="50">
-                                <div class="hint" style="margin-top: 2px;">Items per batch</div>
-                            </div>
-                        </div>
-
-                        <div style="margin-top: 12px;">
-                            <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #4b5563; cursor: pointer;">
-                                <input type="checkbox" x-model="clearAll" style="cursor: pointer;">
-                                <span>🗑️ Clear ALL queue items before scan (including errors/completed)</span>
-                            </label>
-                        </div>
-
-                        <div style="margin-top: 8px;">
-                            <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #4b5563; cursor: pointer;">
-                                <input type="checkbox" x-model="newFormatOnly" style="cursor: pointer;">
-                                <span>🆕 Use new format only (ignore legacy, find only Firefox Extension items)</span>
-                            </label>
-                            <div style="font-size: 12px; color: #9ca3af; margin-top: 4px; margin-left: 24px;">
-                                Scans only for directory structure with metadata.txt/json (Firefox Extension format)
-                            </div>
-                        </div>
-
-                        <div style="margin-top: 8px;">
-                            <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #4b5563; cursor: pointer;">
-                                <input type="checkbox" x-model="dedupeBeforeProcess" style="cursor: pointer;">
-                                <span>🧹 Dedupe files before processing (safe mode, exact byte duplicates only)</span>
-                            </label>
-                            <div style="font-size: 12px; color: #9ca3af; margin-top: 4px; margin-left: 24px;">
-                                Removes only identical duplicate files inside one post and always keeps at least one copy
-                            </div>
-                        </div>
-
-                        <div style="margin-top: 14px; padding-top: 12px; border-top: 1px dashed #e5e7eb;">
-                            <div style="font-size: 13px; font-weight: 600; color: #4b5563; margin-bottom: 4px;">📁 Directory Configuration</div>
-                        <div>
-                            <div style="font-size: 12px; color: #9ca3af; margin-bottom: 10px;">
-                                WebDAV directories for scanning and processing. Saved persistently.
-                            </div>
-                            <div style="display: grid; gap: 12px;">
-                                <div>
-                                    <label style="display: block; color: #4b5563; font-weight: 500; margin-bottom: 4px;">Source Directory:</label>
-                                    <input
-                                        type="text"
-                                        x-model="config.source_dir"
-                                        placeholder="e.g., /webdav/raw-content"
-                                        style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; font-family: monospace;"
-                                    >
-                                    <div class="hint" style="margin-top: 4px;">WebDAV path where source files are located</div>
-                                </div>
-                                <div>
-                                    <label style="display: block; color: #4b5563; font-weight: 500; margin-bottom: 4px;">Destination Directory:</label>
-                                    <input
-                                        type="text"
-                                        x-model="config.dest_dir"
-                                        placeholder="e.g., /webdav/processed-content"
-                                        style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; font-family: monospace;"
-                                    >
-                                    <div class="hint" style="margin-top: 4px;">WebDAV path where processed files will be organized</div>
-                                </div>
-                                <div>
-                                    <label style="display: block; color: #4b5563; font-weight: 500; margin-bottom: 4px;">Nextcloud Base URL:</label>
-                                    <input
-                                        type="text"
-                                        x-model="config.nc_base_url"
-                                        placeholder="e.g., https://cloud.example.com"
-                                        style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; font-family: monospace;"
-                                    >
-                                    <div class="hint" style="margin-top: 4px;">Auto-detected from the bot's WebDAV endpoint. Used to link item names to their folder in Nextcloud — clear it to disable the links.</div>
-                                </div>
-                                <div style="display: flex; gap: 8px;">
-                                    <button
-                                        @click="saveConfig()"
-                                        :disabled="configBusy"
-                                        style="flex: 1; padding: 8px; background: #2563eb; color: white; border: 0; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px;"
-                                    >
-                                        💾 Save Configuration
-                                    </button>
-                                    <button
-                                        @click="loadConfig()"
-                                        :disabled="configBusy"
-                                        style="flex: 1; padding: 8px; background: #6366f1; color: white; border: 0; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px;"
-                                    >
-                                        🔄 Reload
-                                    </button>
-                                </div>
-                                <template x-if="configAlert.show">
-                                    <div :class="{'alert': true, 'show': true, 'success': configAlert.type === 'success', 'error': configAlert.type === 'error'}" style="margin-top: 8px;">
-                                        <span x-text="configAlert.message"></span>
-                                    </div>
-                                </template>
-                            </div>
-                        </div>
-                        </div>
-                    </div>
-                </template>
-            </div>
-
-            <div class="progress-container" :class="{ show: progress.show }" style="margin-top: 14px;">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <strong x-text="progress.title"></strong>
-                    <span style="font-size: 12px; color: #6b7280;" x-text="`${progress.percent}%`"></span>
-                </div>
-                <div class="progress-bar">
-                    <div class="progress-fill" :style="`width: ${progress.percent}%`"></div>
-                </div>
-                <div class="progress-text" x-text="progress.text"></div>
-            </div>
-
-            <div class="alert" :class="{ show: alert.show, success: alert.type==='success', partial: alert.type==='partial', error: alert.type==='error' }" style="margin-top: 12px;">
+        <div class="alert" x-show="alert.show" x-cloak style="margin: 0 0 16px;"
+             :class="{ success: alert.type==='success', partial: alert.type==='partial', error: alert.type==='error' }">
+            <div class="row">
                 <strong x-text="alert.message"></strong>
+                <span class="spacer"></span>
                 <template x-if="alert.showRefresh === true">
-                    <div style="margin-top: 10px;">
-                        <button
-                            @click="refreshPage()"
-                            style="padding: 6px 12px; background: rgba(0,0,0,0.08); border: 1px solid rgba(0,0,0,0.15); border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;"
-                        >
-                            🔄 Refresh page
-                        </button>
-                    </div>
+                    <button class="btn xs" @click="refreshPage()">Refresh page</button>
                 </template>
-                <template x-if="alert.details && alert.details.errors && alert.details.errors.length">
-                    <div style="margin-top: 6px;">
-                        <template x-for="err in alert.details.errors.slice(0, 5)" :key="err">
-                            <div style="font-size: 12px;">• <span x-text="err"></span></div>
+                <button class="btn ghost xs" @click="alert.show = false" title="Dismiss">✕</button>
+            </div>
+            <template x-if="alert.details && alert.details.errors && alert.details.errors.length">
+                <div style="margin-top: 6px;">
+                    <template x-for="err in alert.details.errors.slice(0, 5)" :key="err">
+                        <div class="small">• <span x-text="err"></span></div>
+                    </template>
+                </div>
+            </template>
+        </div>
+
+        <!-- Live counters come from foundStats (Alpine), never from the Jinja context: a value
+             rendered server-side is frozen at page load. -->
+        <div class="stats" style="margin-bottom: 16px;">
+            <div class="stat"><div class="label">Waiting</div><div class="value" x-text="foundStats.scanned ?? 0">{{ stats.scanned }}</div></div>
+            <div class="stat success"><div class="label">Completed</div><div class="value" x-text="foundStats.completed ?? 0">{{ stats.completed }}</div></div>
+            <div class="stat danger"><div class="label">Errors</div><div class="value" x-text="foundStats.error ?? 0">{{ stats.error }}</div></div>
+            <div class="stat warning"><div class="label">Left out by last scan</div><div class="value" x-text="skipped.total">0</div></div>
+            <div class="stat"><div class="label">Total in queue</div><div class="value" x-text="foundStats.total ?? 0">{{ stats.total }}</div></div>
+        </div>
+
+        <!-- All tunables in one collapsed block: scan/batch limits, flags, directories -->
+        <details class="panel card" style="padding: 0;" @toggle="showSettings = $el.open">
+            <summary>
+                <span>Settings</span>
+                <span class="spacer"></span>
+                <span class="muted small" style="font-weight: 400;" x-text="settingsSummary()"></span>
+            </summary>
+            <div class="panel-body">
+                <div class="form-grid">
+                    <div class="field">
+                        <label>Scan limit</label>
+                        <input class="input" type="number" x-model.number="scanLimit" min="10" max="10000" placeholder="1000">
+                        <div class="hint">Posts queued per scan</div>
+                    </div>
+                    <div class="field">
+                        <label>Batch size</label>
+                        <input class="input" type="number" x-model.number="batchSize" min="1" max="1000" placeholder="50">
+                        <div class="hint">Posts processed per batch</div>
+                    </div>
+                </div>
+
+                <div style="display: grid; gap: 10px; margin-top: 16px;">
+                    <label class="check">
+                        <input type="checkbox" x-model="dedupeBeforeProcess">
+                        <span>Dedupe files before processing<div class="hint">Drops only byte-identical copies inside one post and always keeps one</div></span>
+                    </label>
+                    <label class="check">
+                        <input type="checkbox" x-model="newFormatOnly">
+                        <span>Firefox extension format only<div class="hint">Directories with metadata.txt / metadata.json</div></span>
+                    </label>
+                    <label class="check">
+                        <input type="checkbox" x-model="clearAll">
+                        <span>Clear the whole queue before scan<div class="hint">Includes errored and completed rows</div></span>
+                    </label>
+                </div>
+
+                <div style="margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--border);">
+                    <div class="card-title" style="margin-bottom: 2px;">Directories</div>
+                    <div class="hint" style="margin-bottom: 12px;">WebDAV paths, saved per user.</div>
+                    <div class="form-grid">
+                        <div class="field">
+                            <label>Source directory</label>
+                            <input class="input mono" type="text" x-model="config.source_dir" placeholder="data/instagram/__extension-ff">
+                        </div>
+                        <div class="field">
+                            <label>Destination directory</label>
+                            <input class="input mono" type="text" x-model="config.dest_dir" placeholder="data/instagram">
+                        </div>
+                        <div class="field">
+                            <label>Nextcloud base URL</label>
+                            <input class="input mono" type="text" x-model="config.nc_base_url" placeholder="https://cloud.example.com">
+                            <div class="hint">Detected from the WebDAV endpoint; links folders to Nextcloud. Empty disables the links.</div>
+                        </div>
+                    </div>
+                    <div class="row" style="margin-top: 12px;">
+                        <button class="btn primary sm" @click="saveConfig()" :disabled="configBusy">Save</button>
+                        <button class="btn sm" @click="loadConfig()" :disabled="configBusy">Reload</button>
+                        <template x-if="configAlert.show">
+                            <span class="badge" :class="configAlert.type === 'error' ? 'danger' : 'success'" x-text="configAlert.message"></span>
                         </template>
                     </div>
-                </template>
+                </div>
             </div>
-        </div>
+        </details>
 
         <div class="card">
-            <h3>Stats</h3>
-            <div class="grid" style="margin-top: 12px;">
-                <div class="stat"><div class="label">Total</div><div class="value">{{ stats.total }}</div></div>
-                <div class="stat"><div class="label">Scanned</div><div class="value">{{ stats.scanned }}</div></div>
-                <!-- No Processing tile: this card is rendered once server-side, so a live counter
-                     never appears here. In-flight work is shown by the lock overlay on the table. -->
-                <div class="stat"><div class="label">Completed</div><div class="value">{{ stats.completed }}</div></div>
-                <div class="stat"><div class="label">Error</div><div class="value">{{ stats.error }}</div></div>
-            </div>
-        </div>
-
-        <div class="card">
-            <div style="display: flex; gap: 20px; border-bottom: 1px solid #e5e7eb; margin-bottom: 20px;">
-                <button @click="activeTab = 'found'" :class="activeTab === 'found' ? 'tab-active' : 'tab-inactive'" style="border: 0; background: none; padding: 12px 0; font-size: 14px; font-weight: 600; cursor: pointer; border-bottom: 3px solid transparent; position: relative; bottom: -1px;">
-                    📋 Found <span style="color: #6b7280; font-weight: 400;">(<span x-text="foundStats.scanned"></span>)</span>
+            <div class="tabs">
+                <button class="tab" :class="{ active: activeTab === 'found' }" @click="activeTab = 'found'">
+                    Found<span class="count" x-text="foundStats.scanned ?? 0"></span>
                 </button>
-                <button @click="activeTab = 'processed'" :class="activeTab === 'processed' ? 'tab-active' : 'tab-inactive'" style="border: 0; background: none; padding: 12px 0; font-size: 14px; font-weight: 600; cursor: pointer; border-bottom: 3px solid transparent; position: relative; bottom: -1px;">
-                    ✅ Processed <span style="color: #6b7280; font-weight: 400;">(<span x-text="foundStats.completed"></span>)</span>
+                <button class="tab" :class="{ active: activeTab === 'skipped' }" @click="activeTab = 'skipped'; loadSkipped()">
+                    Left out<span class="count" x-text="skipped.total"></span>
                 </button>
-                <button @click="activeTab = 'legacy'; loadLegacyPage(1)" :class="activeTab === 'legacy' ? 'tab-active' : 'tab-inactive'" style="border: 0; background: none; padding: 12px 0; font-size: 14px; font-weight: 600; cursor: pointer; border-bottom: 3px solid transparent; position: relative; bottom: -1px;">
-                    🧯 Legacy Errors <span style="color: #6b7280; font-weight: 400;">(<span x-text="legacyTotal"></span>)</span>
+                <button class="tab" :class="{ active: activeTab === 'processed' }" @click="activeTab = 'processed'">
+                    Processed<span class="count" x-text="foundStats.completed ?? 0"></span>
+                </button>
+                <button class="tab" :class="{ active: activeTab === 'legacy' }" @click="activeTab = 'legacy'; loadLegacyPage(1)">
+                    Legacy errors<span class="count" x-text="legacyTotal"></span>
                 </button>
             </div>
-
-            <style>
-                .tab-active { color: #2563eb; border-bottom-color: #2563eb !important; }
-                .tab-inactive { color: #6b7280; }
-            </style>
 
             <!-- FOUND TAB -->
             <template x-if="activeTab === 'found'">
@@ -283,123 +179,110 @@
                             <div class="spinner"></div>
                             <div class="lock-title" x-text="lockTitle()"></div>
                             <div class="lock-text" x-text="lockText()"></div>
-                            <div class="lock-hint">Table is locked while processing — selection and actions are disabled</div>
-                            <button @click="unlockTable()" style="padding: 5px 10px; background: #e5e7eb; border: 0; border-radius: 6px; cursor: pointer; font-size: 11px; color: #4b5563;">Unlock anyway</button>
+                            <div class="muted small">Selection and actions are disabled until it finishes</div>
+                            <button class="btn xs" @click="unlockTable()">Unlock anyway</button>
                         </div>
                     </template>
 
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid #e5e7eb;">
-                        <div style="color: #6b7280; font-size: 13px;">
-                            <span x-text="`Page ${foundPage} • Showing ${foundItems.length} of ${foundTotal} • Selected: ${getSelectedCount()}`"></span>
-                        </div>
-                        <div style="display: flex; gap: 6px;">
-                            <button @click="foundPrevPage()" :disabled="foundPage === 1 || isTableLocked()" style="padding: 6px 12px; background: #e5e7eb; border: 0; border-radius: 6px; cursor: pointer; font-size: 12px;" :style="foundPage === 1 ? 'opacity: 0.5; cursor: not-allowed;' : ''">← Previous</button>
-                            <button @click="foundNextPage()" :disabled="!foundHasMore || isTableLocked()" style="padding: 6px 12px; background: #e5e7eb; border: 0; border-radius: 6px; cursor: pointer; font-size: 12px;" :style="!foundHasMore ? 'opacity: 0.5; cursor: not-allowed;' : ''">Next →</button>
+                    <div class="toolbar">
+                        <label class="check" style="align-items: center;">
+                            <input type="checkbox" @change="toggleSelectAll()" :checked="selectAll" :disabled="isTableLocked() || foundItems.length === 0" style="margin-top: 0;">
+                            <span>Select page</span>
+                        </label>
+                        <template x-if="getSelectedCount() > 0">
+                            <div class="row">
+                                <span class="badge accent" x-text="`${getSelectedCount()} selected`"></span>
+                                <button class="btn primary sm" @click="processSelected(true)" :disabled="isTableLocked()">Process selected</button>
+                                <button class="btn sm" @click="processSelected(false)" :disabled="isTableLocked()" title="Synchronous: waits for the result">Process now</button>
+                                <button class="btn ghost sm" @click="clearSelection()" :disabled="isTableLocked()">Clear</button>
+                            </div>
+                        </template>
+                        <span class="spacer"></span>
+                        <button class="chip" :class="{ active: foundSort.key === 'owner' }" @click="setFoundSort('owner')" :disabled="isTableLocked()">
+                            Owner <span x-text="foundSort.key === 'owner' ? (foundSort.order === 'asc' ? 'A→Z' : 'Z→A') : ''"></span>
+                        </button>
+                        <span class="muted small" x-text="`${foundTotal ? (foundPage - 1) * foundItemsPerPage + 1 : 0}–${(foundPage - 1) * foundItemsPerPage + foundItems.length} of ${foundTotal}`"></span>
+                        <div class="pager">
+                            <button class="btn sm" @click="foundPrevPage()" :disabled="foundPage === 1 || isTableLocked()">←</button>
+                            <button class="btn sm" @click="foundNextPage()" :disabled="!foundHasMore || isTableLocked()">→</button>
                         </div>
                     </div>
 
-                    <!-- Selection toolbar -->
                     <template x-if="foundItems.length > 0">
-                        <div style="display: flex; gap: 8px; margin-bottom: 12px; padding: 8px; background: #f3f4f6; border-radius: 6px; flex-wrap: wrap; align-items: center;">
-                            <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
-                                <input type="checkbox" @change="toggleSelectAll()" :checked="selectAll" :disabled="isTableLocked()" style="cursor: pointer; width: 18px; height: 18px;">
-                                <span style="font-size: 13px; font-weight: 600;">Select All</span>
-                            </label>
-                            <template x-if="getSelectedCount() > 0">
-                                <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-                                    <button @click="clearSelection()" :disabled="isTableLocked()" style="padding: 6px 10px; background: #e5e7eb; border: 0; border-radius: 4px; cursor: pointer; font-size: 12px;">Clear Selection</button>
-                                    <button @click="processSelected(true)" :disabled="isTableLocked()" style="padding: 6px 10px; background: #3b82f6; color: white; border: 0; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600;">⚙️ Process Selected (Async)</button>
-                                    <button @click="processSelected(false)" :disabled="isTableLocked()" style="padding: 6px 10px; background: #8b5cf6; color: white; border: 0; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600;">⚙️ Process Now</button>
-                                    <span style="font-size: 12px; color: #6b7280;">(<span x-text="getSelectedCount()"></span> selected)</span>
-                                </div>
-                            </template>
-                        </div>
-                    </template>
-
-                    <template x-if="foundItems.length > 0">
-                        <div style="font-size: 12px; color: #6b7280; margin-bottom: 6px;">
-                            Double-click a row to edit owner / post_id / source / url — Enter saves, Esc cancels
-                        </div>
-                    </template>
-
-                    <div style="overflow-x: auto;">
-                        <template x-if="foundItems.length > 0">
-                            <table>
+                        <div class="table-wrap">
+                            <table class="table">
                                 <thead>
                                     <tr>
-                                        <th style="width: 30px; text-align: center;">✓</th>
-                                        <th>Item Name</th>
-                                        <th>Owner</th>
+                                        <th style="width: 36px;"></th>
+                                        <th class="sortable" @click="setFoundSort('name')">Folder<span class="sort-ind" x-text="sortIndicator('name')"></span></th>
+                                        <th class="sortable" @click="setFoundSort('owner')">Owner<span class="sort-ind" x-text="sortIndicator('owner')"></span></th>
                                         <th>Source</th>
-                                        <th>Status</th>
-                                        <th>📦 Content Files</th>
-                                        <th>Error Message</th>
-                                        <th>Updated</th>
-                                        <th>Action</th>
+                                        <th class="sortable" @click="setFoundSort('status')">Status<span class="sort-ind" x-text="sortIndicator('status')"></span></th>
+                                        <th>Files</th>
+                                        <th>Error</th>
+                                        <th class="sortable" @click="setFoundSort('updated')">Updated<span class="sort-ind" x-text="sortIndicator('updated')"></span></th>
+                                        <th></th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <template x-for="item in foundItems" :key="item.id">
-                                        <tr :style="isItemSelected(item.id) ? 'background: #dbeafe;' : ''"
+                                        <tr :class="{ selected: isItemSelected(item.id) }"
                                             @dblclick="tryStartEdit(item)"
                                             @keydown.enter="commitEditIfActive(item)"
                                             @keydown.escape="cancelEditIfActive(item)">
-                                            <td style="text-align: center;">
-                                                <input type="checkbox" @change="toggleItemSelection(item.id)" :checked="isItemSelected(item.id)" :disabled="isTableLocked()" style="cursor: pointer; width: 18px; height: 18px;">
+                                            <td>
+                                                <input type="checkbox" @change="toggleItemSelection(item.id)" :checked="isItemSelected(item.id)" :disabled="isTableLocked()">
                                             </td>
-                                            <td class="mono" style="max-width: 180px; overflow: hidden; text-overflow: ellipsis;">
+                                            <td class="mono truncate" style="max-width: 180px;">
                                                 <template x-if="ncFolderUrl(item)">
-                                                    <a :href="ncFolderUrl(item)" target="_blank" rel="noopener noreferrer" style="color: #2563eb; text-decoration: none;" x-text="item.item_name" :title="`Open in Nextcloud: ${item.item_path} (id ${item.id})`"></a>
+                                                    <a :href="ncFolderUrl(item)" target="_blank" rel="noopener noreferrer" x-text="item.item_name" :title="`Open in Nextcloud: ${item.item_path} (id ${item.id})`"></a>
                                                 </template>
                                                 <template x-if="!ncFolderUrl(item)">
                                                     <span x-text="item.item_name" :title="`${item.item_name} (id ${item.id})`"></span>
                                                 </template>
                                             </td>
-                                            <td class="mono" :class="{ 'editable': isRowEditable(item) }" style="max-width: 130px; overflow: hidden; text-overflow: ellipsis;">
+                                            <td class="mono truncate" :class="{ 'editable': isRowEditable(item) }" style="max-width: 160px;">
                                                 <template x-if="editingId !== item.id">
-                                                    <span class="editable-value" x-text="item.post_owner || '-'" :title="editHint(item, item.post_owner)"></span>
+                                                    <span class="editable-value" :class="{ 'owner-missing': !item.post_owner }" x-text="item.post_owner || 'no owner'" :title="editHint(item, item.post_owner)"></span>
                                                 </template>
                                                 <template x-if="editingId === item.id">
-                                                    <span style="display: flex; flex-direction: column; gap: 3px;">
-                                                        <input x-model="editBuffer.post_owner" placeholder="owner" style="width: 115px; padding: 3px 5px; border: 1px solid #d1d5db; border-radius: 4px; font-size: 11px;">
-                                                        <input x-model="editBuffer.post_id" placeholder="post_id" style="width: 115px; padding: 3px 5px; border: 1px solid #d1d5db; border-radius: 4px; font-size: 11px;">
+                                                    <span class="edit-stack">
+                                                        <input class="input sm" x-model="editBuffer.post_owner" placeholder="owner">
+                                                        <input class="input sm" x-model="editBuffer.post_id" placeholder="post_id">
                                                     </span>
                                                 </template>
                                             </td>
                                             <td :class="{ 'editable': isRowEditable(item) }">
                                                 <!-- The source name doubles as the post link, so Post URL needs no column of its own -->
                                                 <template x-if="editingId !== item.id && item.post_url">
-                                                    <a class="editable-value" :href="item.post_url" target="_blank" rel="noopener noreferrer" style="color: #2563eb; text-decoration: none;" x-text="item.source || 'open'" :title="editHint(item, item.post_url)"></a>
+                                                    <a class="editable-value" :href="item.post_url" target="_blank" rel="noopener noreferrer" x-text="item.source || 'open'" :title="editHint(item, item.post_url)"></a>
                                                 </template>
                                                 <template x-if="editingId !== item.id && !item.post_url">
-                                                    <span class="editable-value" x-text="item.source || '-'" :title="editHint(item, 'no post URL')"></span>
+                                                    <span class="editable-value" x-text="item.source || '—'" :title="editHint(item, 'no post URL')"></span>
                                                 </template>
                                                 <template x-if="editingId === item.id">
-                                                    <span style="display: flex; flex-direction: column; gap: 3px;">
-                                                        <input x-model="editBuffer.source" placeholder="source" style="width: 165px; padding: 3px 5px; border: 1px solid #d1d5db; border-radius: 4px; font-size: 11px;">
-                                                        <input x-model="editBuffer.post_url" placeholder="post url" style="width: 165px; padding: 3px 5px; border: 1px solid #d1d5db; border-radius: 4px; font-size: 11px;">
+                                                    <span class="edit-stack" style="min-width: 200px;">
+                                                        <input class="input sm" x-model="editBuffer.source" placeholder="source">
+                                                        <input class="input sm" x-model="editBuffer.post_url" placeholder="post url">
                                                     </span>
                                                 </template>
                                             </td>
                                             <td><span class="badge" :class="item.status" x-text="item.status"></span></td>
-                                            <td style="font-size: 12px; color: #4b5563; max-width: 200px;">
-                                                <template x-if="item.content_files && item.content_files.length > 0">
-                                                    <span x-text="item.content_files.slice(0, 3).join(', ') + (item.content_files.length > 3 ? ` +${item.content_files.length - 3} more` : '')"></span>
-                                                </template>
-                                                <template x-if="!item.content_files || item.content_files.length === 0">
-                                                    <span style="color: #9ca3af;">—</span>
-                                                </template>
+                                            <td class="small files-cell truncate" :title="(item.content_files || []).join('\n')">
+                                                <span x-text="filesSummary(item.content_files)"></span>
                                             </td>
-                                            <td style="font-size: 12px; color: #dc2626;" :title="item.error_message || ''"><span x-text="item.error_message ? (item.error_message.substring(0, 30) + (item.error_message.length > 30 ? '...' : '')) : '-'"></span></td>
-                                            <td style="font-size: 12px; color: #6b7280;"><span x-text="item.updated_at ? new Date(item.updated_at).toLocaleString() : '-'"></span></td>
-                                            <td style="text-align: center; white-space: nowrap;">
+                                            <td class="small truncate" style="max-width: 200px; color: var(--danger);" :title="item.error_message || ''">
+                                                <span x-text="item.error_message || ''"></span>
+                                            </td>
+                                            <td class="small muted nowrap"><span x-text="item.updated_at ? new Date(item.updated_at).toLocaleString() : '—'"></span></td>
+                                            <td class="nowrap" style="text-align: right;">
                                                 <template x-if="editingId !== item.id">
-                                                    <button @click="processItem(item.id)" style="padding: 4px 8px; background: #16a34a; color: white; border: 0; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600;" :disabled="isTableLocked() || item.status === 'processing'">⚙️ Go</button>
+                                                    <button class="btn xs" @click="processItem(item.id)" :disabled="isTableLocked() || item.status === 'processing'">Process</button>
                                                 </template>
                                                 <template x-if="editingId === item.id">
-                                                    <span style="display: inline-flex; gap: 4px;">
-                                                        <button @click="saveEdit(item)" title="Save" style="padding: 4px 8px; background: #16a34a; color: white; border: 0; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600;">💾</button>
-                                                        <button @click="cancelEdit()" title="Cancel" style="padding: 4px 8px; background: #9ca3af; color: white; border: 0; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600;">✖</button>
+                                                    <span class="row" style="justify-content: flex-end; gap: 4px;">
+                                                        <button class="btn primary xs" @click="saveEdit(item)">Save</button>
+                                                        <button class="btn ghost xs" @click="cancelEdit()">Cancel</button>
                                                     </span>
                                                 </template>
                                             </td>
@@ -407,36 +290,130 @@
                                     </template>
                                 </tbody>
                             </table>
+                        </div>
+                    </template>
+                    <template x-if="foundItems.length > 0">
+                        <div class="hint" style="margin-top: 8px;">Double-click a row to edit owner, post_id, source and URL. Enter saves, Esc cancels.</div>
+                    </template>
+                    <template x-if="foundItems.length === 0">
+                        <div class="empty">Nothing waiting. Run a scan to queue new posts.</div>
+                    </template>
+                </div>
+            </template>
+
+            <!-- SKIPPED TAB: source directories the last scan did not queue, with the reason -->
+            <template x-if="activeTab === 'skipped'">
+                <div>
+                    <div class="toolbar">
+                        <button class="chip" :class="{ active: skippedFilter === 'all' }" @click="skippedFilter = 'all'">
+                            All <span class="n" x-text="skipped.total"></span>
+                        </button>
+                        <template x-for="reason in skippedReasonsPresent()" :key="reason">
+                            <button class="chip" :class="{ active: skippedFilter === reason }" @click="skippedFilter = reason" :title="reasonInfo(reason).help">
+                                <span x-text="reasonInfo(reason).label"></span>
+                                <span class="n" x-text="skipped.counts[reason]"></span>
+                            </button>
                         </template>
-                        <template x-if="foundItems.length === 0">
-                            <div class="empty">📭 No raw items found. Run scan first.</div>
+                        <span class="spacer"></span>
+                        <template x-if="(skipped.counts.empty || 0) > 0">
+                            <button class="btn danger sm" @click="deleteSkipped(skippedByReason('empty'), 'empty')" :disabled="skippedBusy">
+                                <span x-text="`Delete ${skipped.counts.empty} empty`"></span>
+                            </button>
                         </template>
+                        <button class="btn ghost sm" @click="loadSkipped()" :disabled="skippedBusy">Reload</button>
                     </div>
+
+                    <div class="hint" style="margin: -4px 0 12px;" x-show="skipped.scanned_at">
+                        <span x-text="`Last scan ${skipped.scanned_at ? new Date(skipped.scanned_at).toLocaleString() : ''}`"></span>
+                        <span>· source</span> <span class="mono" x-text="skipped.source_dir"></span>
+                        <span>· refreshed by every scan</span>
+                    </div>
+
+                    <template x-if="skippedFilter !== 'all'">
+                        <div class="alert info" style="margin: 0 0 12px;" x-text="reasonInfo(skippedFilter).help"></div>
+                    </template>
+
+                    <template x-if="skippedVisible().length > 0">
+                        <div class="table-wrap">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Folder</th>
+                                        <th>Reason</th>
+                                        <th>Files</th>
+                                        <th>Owner</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <template x-for="entry in skippedVisible()" :key="entry.item_path">
+                                        <tr>
+                                            <td class="mono truncate" style="max-width: 220px;">
+                                                <template x-if="ncFolderUrl(entry)">
+                                                    <a :href="ncFolderUrl(entry)" target="_blank" rel="noopener noreferrer" x-text="entry.item_name" :title="`Open in Nextcloud: ${entry.item_path}`"></a>
+                                                </template>
+                                                <template x-if="!ncFolderUrl(entry)">
+                                                    <span x-text="entry.item_name" :title="entry.item_path"></span>
+                                                </template>
+                                            </td>
+                                            <td style="max-width: 320px;">
+                                                <span class="badge" :class="reasonInfo(entry.reason).tone" x-text="reasonInfo(entry.reason).label"></span>
+                                                <template x-if="entry.detail">
+                                                    <div class="reason-detail" x-text="entry.detail"></div>
+                                                </template>
+                                                <template x-if="entry.reason === 'ambiguous_id' && saveCount(entry.files) > 1">
+                                                    <div class="skipped-note" x-text="`${saveCount(entry.files)} separate saves mixed in one folder — the owner below belongs to the last one only`"></div>
+                                                </template>
+                                            </td>
+                                            <td class="small files-cell truncate" :title="(entry.files || []).join('\n')">
+                                                <span x-text="entry.file_count ? `${entry.file_count} · ${filesSummary(entry.files, 2)}` : '—'"></span>
+                                            </td>
+                                            <td class="nowrap">
+                                                <template x-if="entry.post_owner">
+                                                    <span class="mono" x-text="entry.post_owner"></span>
+                                                </template>
+                                                <template x-if="!entry.post_owner && entry.provider_url">
+                                                    <a :href="entry.provider_url" target="_blank" rel="noopener noreferrer" class="small" :title="entry.provider_url">Find on Instagram ↗</a>
+                                                </template>
+                                                <template x-if="!entry.post_owner && !entry.provider_url">
+                                                    <span class="muted">—</span>
+                                                </template>
+                                            </td>
+                                            <td class="nowrap" style="text-align: right;">
+                                                <template x-if="entry.deletable">
+                                                    <button class="btn danger xs" @click="deleteSkipped([entry], entry.reason)" :disabled="skippedBusy">Delete</button>
+                                                </template>
+                                            </td>
+                                        </tr>
+                                    </template>
+                                </tbody>
+                            </table>
+                        </div>
+                    </template>
+                    <template x-if="skippedVisible().length === 0">
+                        <div class="empty" x-text="skipped.scanned_at ? 'Every source folder made it into the queue.' : 'No report yet — run a scan.'"></div>
+                    </template>
                 </div>
             </template>
 
             <!-- PROCESSED TAB -->
             <template x-if="activeTab === 'processed'">
                 <div>
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid #e5e7eb;">
-                        <div style="color: #6b7280; font-size: 13px;">
-                            <span x-text="`Page ${processedPage} • Showing ${processedItems.length} of ${processedTotal}`"></span>
-                        </div>
-                        <div style="display: flex; gap: 6px;">
-                            <button @click="processedPrevPage()" :disabled="processedPage === 1" style="padding: 6px 12px; background: #e5e7eb; border: 0; border-radius: 6px; cursor: pointer; font-size: 12px;" :style="processedPage === 1 ? 'opacity: 0.5; cursor: not-allowed;' : ''">← Previous</button>
-                            <button @click="processedNextPage()" :disabled="!processedHasMore" style="padding: 6px 12px; background: #e5e7eb; border: 0; border-radius: 6px; cursor: pointer; font-size: 12px;" :style="!processedHasMore ? 'opacity: 0.5; cursor: not-allowed;' : ''">Next →</button>
+                    <div class="toolbar">
+                        <span class="spacer"></span>
+                        <span class="muted small" x-text="`Page ${processedPage} · ${processedItems.length} of ${processedTotal}`"></span>
+                        <div class="pager">
+                            <button class="btn sm" @click="processedPrevPage()" :disabled="processedPage === 1">←</button>
+                            <button class="btn sm" @click="processedNextPage()" :disabled="!processedHasMore">→</button>
                         </div>
                     </div>
-
-                    <div style="overflow-x: auto;">
-                        <template x-if="processedItems.length > 0">
-                            <table>
+                    <template x-if="processedItems.length > 0">
+                        <div class="table-wrap">
+                            <table class="table">
                                 <thead>
                                     <tr>
-                                        <th>ID</th>
-                                        <th>Item Name</th>
-                                        <th>Mode</th>
-                                        <th>Files Moved</th>
+                                        <th>Folder</th>
+                                        <th>Files moved</th>
                                         <th>Destination</th>
                                         <th>Completed</th>
                                     </tr>
@@ -444,104 +421,88 @@
                                 <tbody>
                                     <template x-for="item in processedItems" :key="item.id">
                                         <tr>
-                                            <td style="font-weight: 600; color: #4f46e5;"><span x-text="item.id"></span></td>
-                                            <td class="mono" style="max-width: 250px; overflow: hidden; text-overflow: ellipsis;"><span x-text="item.item_name"></span></td>
-                                            <td><span x-text="item.mode"></span></td>
-                                            <td style="text-align: center;"><span x-text="item.files_moved || 0"></span></td>
-                                            <td class="mono" style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; font-size: 12px;"><span x-text="item.destination || '-'"></span></td>
-                                            <td style="font-size: 12px; color: #6b7280;"><span x-text="item.updated_at ? new Date(item.updated_at).toLocaleString() : '-'"></span></td>
+                                            <td class="mono truncate" style="max-width: 250px;" :title="`id ${item.id}`"><span x-text="item.item_name"></span></td>
+                                            <td style="font-variant-numeric: tabular-nums;"><span x-text="item.files_moved || 0"></span></td>
+                                            <td class="mono truncate" style="max-width: 360px;"><span x-text="item.destination || '—'"></span></td>
+                                            <td class="small muted nowrap"><span x-text="item.updated_at ? new Date(item.updated_at).toLocaleString() : '—'"></span></td>
                                         </tr>
                                     </template>
                                 </tbody>
                             </table>
-                        </template>
-                        <template x-if="processedItems.length === 0">
-                            <div class="empty">✨ No processed items yet. Start processing to see results here.</div>
-                        </template>
-                    </div>
+                        </div>
+                    </template>
+                    <template x-if="processedItems.length === 0">
+                        <div class="empty">No processed posts yet.</div>
+                    </template>
                 </div>
             </template>
 
             <!-- LEGACY TAB -->
             <template x-if="activeTab === 'legacy'">
                 <div>
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid #e5e7eb;">
-                        <div style="color: #6b7280; font-size: 13px;">
-                            <span x-text="`Page ${legacyPage} • Showing ${legacyItems.length} of ${legacyTotal}`"></span>
-                            <span x-show="legacyRoot" style="margin-left: 8px;">• Root: <span class="mono" x-text="legacyRoot"></span></span>
-                        </div>
-                        <div style="display: flex; gap: 6px;">
-                            <button @click="legacyPrevPage()" :disabled="legacyPage === 1" style="padding: 6px 12px; background: #e5e7eb; border: 0; border-radius: 6px; cursor: pointer; font-size: 12px;" :style="legacyPage === 1 ? 'opacity: 0.5; cursor: not-allowed;' : ''">← Previous</button>
-                            <button @click="legacyNextPage()" :disabled="!legacyHasMore" style="padding: 6px 12px; background: #e5e7eb; border: 0; border-radius: 6px; cursor: pointer; font-size: 12px;" :style="!legacyHasMore ? 'opacity: 0.5; cursor: not-allowed;' : ''">Next →</button>
+                    <div class="toolbar">
+                        <span class="muted small" x-show="legacyRoot">Root: <span class="mono" x-text="legacyRoot"></span></span>
+                        <span class="spacer"></span>
+                        <span class="muted small" x-text="`Page ${legacyPage} · ${legacyItems.length} of ${legacyTotal}`"></span>
+                        <div class="pager">
+                            <button class="btn sm" @click="legacyPrevPage()" :disabled="legacyPage === 1">←</button>
+                            <button class="btn sm" @click="legacyNextPage()" :disabled="!legacyHasMore">→</button>
                         </div>
                     </div>
-
-                    <div style="overflow-x: auto;">
-                        <template x-if="legacyLoading">
-                            <div class="empty">Loading legacy data...</div>
-                        </template>
-                        <template x-if="!legacyLoading && legacyItems.length > 0">
-                            <table>
+                    <template x-if="legacyLoading">
+                        <div class="empty">Loading…</div>
+                    </template>
+                    <template x-if="!legacyLoading && legacyItems.length > 0">
+                        <div class="table-wrap">
+                            <table class="table">
                                 <thead>
                                     <tr>
-                                        <th>Filename</th>
+                                        <th>File</th>
                                         <th>Processed match</th>
-                                        <th>Action</th>
+                                        <th></th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <template x-for="item in legacyItems" :key="item.filename">
                                         <tr>
-                                            <td class="mono" style="max-width: 320px; overflow: hidden; text-overflow: ellipsis; vertical-align: top;">
-                                                <span x-text="item.filename"></span>
-                                            </td>
+                                            <td class="mono truncate" style="max-width: 320px; vertical-align: top;"><span x-text="item.filename"></span></td>
                                             <td style="vertical-align: top;">
                                                 <template x-if="item.data && item.data.length > 0">
-                                                    <ul style="margin: 0; padding-left: 18px;">
+                                                    <div style="display: grid; gap: 4px;">
                                                         <template x-for="row in item.data" :key="row.id + '-' + row.message_id">
-                                                            <li style="margin-bottom: 6px; font-size: 12px; line-height: 1.4;">
+                                                            <div class="small row" style="gap: 6px;">
                                                                 <template x-if="row.post_id">
-                                                                    <a :href="row.post_link || buildLegacyPostUrl(row.post_id)" target="_blank" rel="noopener noreferrer" style="color: #2563eb; text-decoration: none; font-weight: 600;" :title="row.post_link || buildLegacyPostUrl(row.post_id)">
-                                                                        <span x-text="row.post_id"></span>
-                                                                    </a>
+                                                                    <a :href="row.post_link || buildLegacyPostUrl(row.post_id)" target="_blank" rel="noopener noreferrer" class="mono" x-text="row.post_id"></a>
                                                                 </template>
                                                                 <template x-if="!row.post_id">
-                                                                    <span style="color: #9ca3af;">No post_id</span>
+                                                                    <span class="muted">no post_id</span>
                                                                 </template>
-                                                                <span style="margin-left: 8px; color: #6b7280;">•</span>
-                                                                <span style="margin-left: 8px; color: #374151;" x-text="row.state || '-'"></span>
-                                                                <span style="margin-left: 8px; color: #6b7280;">•</span>
-                                                                <span style="margin-left: 8px; color: #374151;" x-text="row.timestamp ? new Date(row.timestamp).toLocaleString() : '-'"></span>
-                                                            </li>
+                                                                <span class="badge" x-text="row.state || '—'"></span>
+                                                                <span class="muted" x-text="row.timestamp ? new Date(row.timestamp).toLocaleString() : ''"></span>
+                                                            </div>
                                                         </template>
-                                                    </ul>
+                                                    </div>
                                                 </template>
                                                 <template x-if="!item.data || item.data.length === 0">
-                                                    <span style="color: #9ca3af;">No matches in processed</span>
+                                                    <span class="muted">No matches in processed</span>
                                                 </template>
                                             </td>
-                                            <td style="vertical-align: top; white-space: nowrap;">
-                                                <button
-                                                    @click="cleanupLegacyItem(item)"
-                                                    :disabled="busy"
-                                                    style="padding: 6px 10px; background: #dc2626; color: white; border: 0; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;"
-                                                >
-                                                    🧹 Cleanup
-                                                </button>
+                                            <td style="vertical-align: top; text-align: right;">
+                                                <button class="btn danger xs" @click="cleanupLegacyItem(item)" :disabled="busy">Clean up</button>
                                             </td>
                                         </tr>
                                     </template>
                                 </tbody>
                             </table>
-                        </template>
-                        <template x-if="!legacyLoading && legacyItems.length === 0">
-                            <div class="empty">No files found in legacy root.</div>
-                        </template>
-                    </div>
+                        </div>
+                    </template>
+                    <template x-if="!legacyLoading && legacyItems.length === 0">
+                        <div class="empty">No files in the legacy root.</div>
+                    </template>
                 </div>
             </template>
         </div>
-    </div>
+    </main>
 
     <script>
         function rawContentPage() {
@@ -602,6 +563,14 @@
 
                 // Stats
                 foundStats: { total: 0, scanned: 0, processing: 0, completed: 0, error: 0 },
+
+                // Found table ordering, applied server-side because the table is paginated
+                foundSort: { key: 'id', order: 'asc' },
+
+                // Last scan's report of source folders that did not make it into the queue
+                skipped: { items: [], total: 0, counts: {}, scanned_at: null, source_dir: null },
+                skippedFilter: 'all',
+                skippedBusy: false,
 
                 async loadConfig() {
                     try {
@@ -953,7 +922,8 @@
                 async loadFoundPage(page) {
                     try {
                         const offset = (page - 1) * this.foundItemsPerPage;
-                        const response = await fetch(`/api/raw-content/queue?offset=${offset}&limit=${this.foundItemsPerPage}&exclude_completed=true`);
+                        const sort = `&sort=${this.foundSort.key}&order=${this.foundSort.order}`;
+                        const response = await fetch(`/api/raw-content/queue?offset=${offset}&limit=${this.foundItemsPerPage}&exclude_completed=true${sort}`);
                         const data = await response.json();
                         this.foundItems = data.items || [];
                         this.foundTotal = data.total || 0;
@@ -1139,6 +1109,7 @@
                         };
                         await this.updateFoundStats();
                         await this.loadFoundPage(1);
+                        await this.loadSkipped();
                         setTimeout(() => { this.progress.show = false; }, 1200);
                     } catch (e) {
                         this.progress.show = false;
@@ -1340,10 +1311,17 @@
                 },
 
                 async init() {
+                    // ?tab=skipped (or found / processed / legacy) opens that tab directly
+                    const tab = new URLSearchParams(window.location.search).get('tab');
+                    if (['found', 'skipped', 'processed', 'legacy'].includes(tab)) {
+                        this.activeTab = tab;
+                        if (tab === 'legacy') this.loadLegacyPage(1);
+                    }
                     await this.loadConfig();
                     await this.updateFoundStats();
                     await this.loadFoundPage(1);
                     await this.loadProcessedPage(1);
+                    await this.loadSkipped();
 
                     // If items are 'processing' server-side (e.g. the page was reloaded mid-batch),
                     // keep refreshing until the queue drains so the lock releases on its own.
@@ -1367,6 +1345,117 @@
                     if (!base || !path) return '';
                     const dir = '/' + path.replace(/^\/+/, '');
                     return `${base}/index.php/apps/files/?dir=${encodeURIComponent(dir)}`;
+                },
+
+                // Clicking the active column flips the direction; a new column starts ascending,
+                // which for owner puts rows without an owner first - the ones that need fixing
+                setFoundSort(key) {
+                    if (this.isTableLocked()) return;
+                    if (this.foundSort.key === key) {
+                        this.foundSort.order = this.foundSort.order === 'asc' ? 'desc' : 'asc';
+                    } else {
+                        this.foundSort = { key, order: 'asc' };
+                    }
+                    this.loadFoundPage(1);
+                },
+
+                sortIndicator(key) {
+                    if (this.foundSort.key !== key) return '';
+                    return this.foundSort.order === 'asc' ? '↑' : '↓';
+                },
+
+                filesSummary(files, shown = 3) {
+                    if (!files || files.length === 0) return '—';
+                    const extra = files.length > shown ? ` +${files.length - shown}` : '';
+                    return files.slice(0, shown).join(', ') + extra;
+                },
+
+                // The extension suffixes every file with the save timestamp (video_001_1700000000001.mp4),
+                // so distinct suffixes in one folder mean distinct saves dumped into it
+                saveCount(files) {
+                    const stamps = new Set();
+                    (files || []).forEach(name => {
+                        const match = /_(\d{10,})\.[^.]+$/.exec(name);
+                        if (match) stamps.add(match[1]);
+                    });
+                    return stamps.size;
+                },
+
+                reasonInfo(reason) {
+                    const map = {
+                        empty: { label: 'Empty', tone: '', help: 'The folder has no files. Safe to delete.' },
+                        no_metadata: { label: 'No metadata', tone: 'warning', help: 'Media without metadata.txt, so the owner is unknown. Open the post on Instagram to find the owner, then move the files by hand or delete the folder.' },
+                        ambiguous_id: { label: 'URL fallback (p / reel)', tone: 'danger', help: 'The extension could not read the post shortcode from the URL and used "p" or "reel" as the folder name. Every such save lands in this one folder and overwrites its metadata, so the owner is reliable only for the last save. Sort the files by hand, then delete the folder.' },
+                        already_completed: { label: 'Already processed', tone: 'info', help: 'This folder was processed earlier but is still in the source. Usually a leftover; delete it after a quick look.' },
+                        not_directory: { label: 'Loose file', tone: '', help: 'A file in the source root, outside any post folder.' },
+                        probe_error: { label: 'Read error', tone: 'danger', help: 'The folder could not be read over WebDAV during the scan. Rescan; if it repeats, check it in Nextcloud.' }
+                    };
+                    return map[reason] || { label: reason, tone: '', help: '' };
+                },
+
+                skippedReasonsPresent() {
+                    const order = ['ambiguous_id', 'no_metadata', 'empty', 'already_completed', 'not_directory', 'probe_error'];
+                    return order.filter(reason => (this.skipped.counts[reason] || 0) > 0);
+                },
+
+                skippedVisible() {
+                    const items = this.skipped.items || [];
+                    return this.skippedFilter === 'all' ? items : items.filter(e => e.reason === this.skippedFilter);
+                },
+
+                skippedByReason(reason) {
+                    return (this.skipped.items || []).filter(e => e.reason === reason && e.deletable);
+                },
+
+                async loadSkipped() {
+                    try {
+                        const response = await fetch('/api/raw-content/skipped');
+                        if (!response.ok) return;
+                        const data = await response.json();
+                        this.skipped = {
+                            items: data.items || [],
+                            total: data.total || 0,
+                            counts: data.counts || {},
+                            scanned_at: data.scanned_at || null,
+                            source_dir: data.source_dir || null
+                        };
+                        if (this.skippedFilter !== 'all' && !(this.skipped.counts[this.skippedFilter] > 0)) {
+                            this.skippedFilter = 'all';
+                        }
+                    } catch (e) {
+                        console.error('Error loading skipped items:', e);
+                    }
+                },
+
+                async deleteSkipped(entries, reason) {
+                    if (!entries || entries.length === 0) return;
+                    const what = entries.length === 1 ? `'${entries[0].item_name}'` : `${entries.length} folders`;
+                    const warn = reason === 'empty'
+                        ? ''
+                        : `\n\nThis folder still has ${entries.reduce((n, e) => n + (e.file_count || 0), 0) || 'some'} file(s). They will be deleted too, and trash is off for the bot account.`;
+                    if (!confirm(`Delete ${what} from the source directory?${warn}`)) return;
+
+                    this.skippedBusy = true;
+                    try {
+                        const response = await fetch('/api/raw-content/skipped/delete', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ item_paths: entries.map(e => e.item_path) })
+                        });
+                        const data = await response.json();
+                        if (!response.ok) throw new Error(data.message || 'Delete failed');
+                        this.alert = {
+                            show: true,
+                            type: data.status === 'success' ? 'success' : 'partial',
+                            message: data.message,
+                            details: { errors: (data.failed || []).map(f => `${f.item_path}: ${f.error}`) }
+                        };
+                        await this.loadSkipped();
+                    } catch (e) {
+                        this.alert = { show: true, type: 'error', message: e.message || 'Delete failed', details: null };
+                    } finally {
+                        this.skippedBusy = false;
+                    }
                 },
 
                 // Drives the "this cell can be edited" styling: dropped while the row is already in
