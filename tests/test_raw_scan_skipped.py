@@ -109,3 +109,49 @@ def test_owner_sort_is_whitelisted_and_case_insensitive():
     assert order('owner', 'asc') == "LOWER(NULLIF(TRIM(post_owner), '')) ASC NULLS FIRST, id ASC"
     assert order('owner', 'desc').startswith("LOWER(NULLIF(TRIM(post_owner), '')) DESC NULLS LAST")
     assert order('id; DROP TABLE x', 'asc') == 'id ASC'
+
+
+def _route(webui, path):
+    return next(r.endpoint for r in webui.app.routes if getattr(r, 'path', None) == path)
+
+
+def test_requeue_resets_completed_folder_and_queues_it_again():
+    import asyncio  # pylint: disable=import-outside-toplevel
+    from unittest.mock import MagicMock  # pylint: disable=import-outside-toplevel
+    from src.modules.webui import WebUI  # pylint: disable=import-outside-toplevel
+
+    tree = {
+        SOURCE: ['AAAAAAAAAA1/'],
+        f'{SOURCE}/AAAAAAAAAA1': ['metadata.txt', 'video_001.mp4'],
+    }
+    files = {f'{SOURCE}/AAAAAAAAAA1/metadata.txt': META_OK}
+    database = MagicMock()
+    database.get_user_config.return_value = {'config': {'scan_id': 's1', 'items': [
+        {'item_name': 'AAAAAAAAAA1', 'item_path': f'{SOURCE}/AAAAAAAAAA1', 'reason': 'already_completed'},
+        {'item_name': 'AAAAAAAAAA3', 'item_path': f'{SOURCE}/AAAAAAAAAA3', 'reason': 'empty'},
+    ]}}
+    database.reset_raw_content_items_to_scanned.return_value = 1
+    database.upsert_raw_content_scan_items.return_value = {'inserted': 0, 'updated': 1}
+    users = {'auth': MagicMock(), 'rate_limited': MagicMock()}
+    webui = WebUI(database=database, vault=MagicMock(), users=users, session_secret='x', port=0, bot_token='t', bot_username='b')
+    webui.content_processor = RawContentProcessor(webdav_client=FakeWebdav(tree, files), source_dir=SOURCE, dest_dir='d')
+
+    class Req:  # pylint: disable=too-few-public-methods
+        def __init__(self, body):
+            self.body = body
+
+        async def json(self):
+            return self.body
+
+    endpoint = _route(webui, '/api/raw-content/skipped/requeue')
+    paths = [f'{SOURCE}/AAAAAAAAAA1', f'{SOURCE}/AAAAAAAAAA3']
+    response = asyncio.run(endpoint(request=Req({'item_paths': paths}), user={'id': 1}))
+    body = __import__('json').loads(response.body)
+
+    assert body['requeued'] == [f'{SOURCE}/AAAAAAAAAA1']
+    assert [f['item_path'] for f in body['failed']] == [f'{SOURCE}/AAAAAAAAAA3']
+    database.reset_raw_content_items_to_scanned.assert_called_once_with('1', [f'{SOURCE}/AAAAAAAAAA1'])
+    queued = database.upsert_raw_content_scan_items.call_args.kwargs['items']
+    assert [c['post_owner'] for c in queued] == ['user_alpha']
+    saved = database.set_user_config.call_args.kwargs['config']['items']
+    assert [e['item_name'] for e in saved] == ['AAAAAAAAAA3']

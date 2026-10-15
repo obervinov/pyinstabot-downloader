@@ -315,6 +315,11 @@
                             </button>
                         </template>
                         <span class="spacer"></span>
+                        <template x-if="skippedFilter === 'already_completed' && (skipped.counts.already_completed || 0) > 0">
+                            <button class="btn primary sm" @click="requeueSkipped(skippedByReason('already_completed'))" :disabled="skippedBusy">
+                                <span x-text="`Process ${skipped.counts.already_completed} again`"></span>
+                            </button>
+                        </template>
                         <template x-if="(skipped.counts.empty || 0) > 0">
                             <button class="btn danger sm" @click="deleteSkipped(skippedByReason('empty'), 'empty')" :disabled="skippedBusy">
                                 <span x-text="`Delete ${skipped.counts.empty} empty`"></span>
@@ -380,6 +385,9 @@
                                                 </template>
                                             </td>
                                             <td class="nowrap" style="text-align: right;">
+                                                <template x-if="entry.reason === 'already_completed'">
+                                                    <button class="btn xs" @click="requeueSkipped([entry])" :disabled="skippedBusy" title="Re-read the folder and put it back into the queue">Process again</button>
+                                                </template>
                                                 <template x-if="entry.deletable">
                                                     <button class="btn danger xs" @click="deleteSkipped([entry], entry.reason)" :disabled="skippedBusy">Delete</button>
                                                 </template>
@@ -1386,7 +1394,7 @@
                         empty: { label: 'Empty', tone: '', help: 'The folder has no files. Safe to delete.' },
                         no_metadata: { label: 'No metadata', tone: 'warning', help: 'Media without metadata.txt, so the owner is unknown. Open the post on Instagram to find the owner, then move the files by hand or delete the folder.' },
                         ambiguous_id: { label: 'URL fallback (p / reel)', tone: 'danger', help: 'The extension could not read the post shortcode from the URL and used "p" or "reel" as the folder name. Every such save lands in this one folder and overwrites its metadata, so the owner is reliable only for the last save. Sort the files by hand, then delete the folder.' },
-                        already_completed: { label: 'Already processed', tone: 'info', help: 'This folder was processed earlier but is still in the source. Usually a leftover; delete it after a quick look.' },
+                        already_completed: { label: 'Already processed', tone: 'info', help: 'This folder was processed earlier but is still in the source. Process it again to move its files once more, or delete it if it is a leftover.' },
                         not_directory: { label: 'Loose file', tone: '', help: 'A file in the source root, outside any post folder.' },
                         probe_error: { label: 'Read error', tone: 'danger', help: 'The folder could not be read over WebDAV during the scan. Rescan; if it repeats, check it in Nextcloud.' }
                     };
@@ -1453,6 +1461,38 @@
                         await this.loadSkipped();
                     } catch (e) {
                         this.alert = { show: true, type: 'error', message: e.message || 'Delete failed', details: null };
+                    } finally {
+                        this.skippedBusy = false;
+                    }
+                },
+
+                // Already-processed folders that are still in the source can be queued again on
+                // purpose: the server re-reads them and resets their rows to 'scanned'
+                async requeueSkipped(entries) {
+                    if (!entries || entries.length === 0) return;
+                    const what = entries.length === 1 ? `'${entries[0].item_name}'` : `${entries.length} folders`;
+                    if (!confirm(`Process ${what} again?\n\nThe folder is re-read and goes back to the Found tab; files are moved into the owner folder once more.`)) return;
+
+                    this.skippedBusy = true;
+                    try {
+                        const response = await fetch('/api/raw-content/skipped/requeue', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ item_paths: entries.map(e => e.item_path) })
+                        });
+                        const data = await response.json();
+                        if (!response.ok) throw new Error(data.message || 'Requeue failed');
+                        this.alert = {
+                            show: true,
+                            type: data.status === 'success' ? 'success' : 'partial',
+                            message: data.message,
+                            details: { errors: (data.failed || []).map(f => `${f.item_path}: ${f.error}`) }
+                        };
+                        await this.loadSkipped();
+                        await this.updateFoundStats();
+                        await this.loadFoundPage(1);
+                    } catch (e) {
+                        this.alert = { show: true, type: 'error', message: e.message || 'Requeue failed', details: null };
                     } finally {
                         this.skippedBusy = false;
                     }

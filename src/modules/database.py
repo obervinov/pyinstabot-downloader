@@ -1148,6 +1148,35 @@ class DatabaseClient:
         self.close_connection(conn)
         return deleted
 
+    def reset_raw_content_items_to_scanned(self, user_id: str, item_paths: list[str]) -> int:
+        """
+        Put completed raw content items back into the queue so they can be processed again.
+
+        Args:
+            user_id: User ID owning the items
+            item_paths: item_path values to reset
+
+        Returns:
+            Number of rows reset
+        """
+        if not item_paths:
+            return 0
+        conn = self.get_connection()
+        with conn.cursor() as cursor:
+            cursor.execute(
+                """
+                UPDATE raw_content_queue
+                SET status = 'scanned', error_message = NULL, finished_at = NULL,
+                    files_moved = 0, updated_at = CURRENT_TIMESTAMP
+                WHERE user_id = %s AND item_path = ANY(%s) AND status = 'completed'
+                """,
+                (user_id, list(item_paths))
+            )
+            count = cursor.rowcount
+        conn.commit()
+        self.close_connection(conn)
+        return count
+
     def get_completed_raw_content_paths(self, user_id: str) -> set:
         """
         Get all completed raw content item paths for a user.

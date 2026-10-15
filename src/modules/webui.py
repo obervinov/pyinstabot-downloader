@@ -1444,6 +1444,91 @@ class WebUI:
                     content={"status": "error", "message": f"Failed to delete: {str(e)}"}
                 )
 
+        @self.app.post("/api/raw-content/skipped/requeue")
+        async def requeue_raw_content_skipped(
+            request: Request,
+            user: dict = Depends(self.get_current_user)
+        ):
+            """
+            Process an already-completed source folder again.
+
+            Only 'already_completed' entries of the user's last scan report qualify: their source
+            folder is still there, so it is re-read and put back into the queue as 'scanned'.
+            A folder that no longer yields a post (emptied, metadata gone) is not requeued.
+            """
+            if not self.content_processor:
+                return JSONResponse(
+                    status_code=503,
+                    content={"status": "error", "message": "Raw content processing is not configured"}
+                )
+
+            user_id = str(user['id'])
+            try:
+                body = await request.json()
+                requested = {str(p) for p in (body.get('item_paths') or []) if p}
+                if not requested:
+                    return JSONResponse(
+                        status_code=400,
+                        content={"status": "error", "message": "item_paths is required"}
+                    )
+
+                config_row = self.database.get_user_config(user_id, RAW_SKIPPED_COMPONENT) or {}
+                report = dict(config_row.get('config') or {})
+                known = {entry.get('item_path'): entry for entry in report.get('items') or []}
+                processor = self.content_processor
+                factory = processor.client_factory
+
+                def _probe(paths: list) -> dict:
+                    found, failed = [], []
+                    client = factory() if factory else processor.webdav_client
+                    for path in paths:
+                        entry = known.get(path)
+                        if not entry or entry.get('reason') != 'already_completed':
+                            failed.append({'item_path': path, 'error': 'not an already-processed folder in the last scan report'})
+                            continue
+                        parent, name = path.rstrip('/').rsplit('/', 1)
+                        output = processor._scan_directory(parent, name, client)  # pylint: disable=protected-access
+                        if output.get('candidates'):
+                            found.extend(output['candidates'])
+                        else:
+                            reasons = ', '.join(sorted({e['reason'] for e in output.get('skipped_items', [])})) or 'nothing to process'
+                            failed.append({'item_path': path, 'error': reasons})
+                    return {'candidates': found, 'failed': failed}
+
+                # WebDAV reads block: keep them off the event loop; DB writes stay on it
+                probe = await asyncio.to_thread(_probe, sorted(requested))
+                candidates = probe['candidates']
+                requeued_paths = sorted({c['item_path'] for c in candidates})
+                # A container folder expands into nested posts: reset their rows, not the folder's
+                reset = self.database.reset_raw_content_items_to_scanned(user_id, requeued_paths)
+                upsert = self.database.upsert_raw_content_scan_items(
+                    user_id=user_id, items=candidates, scan_id=report.get('scan_id') or str(uuid4())
+                )
+
+                done = {p for p in requested if p not in {f['item_path'] for f in probe['failed']}}
+                if done:
+                    report['items'] = [e for e in report.get('items') or [] if e.get('item_path') not in done]
+                    self.database.set_user_config(user_id=user_id, component=RAW_SKIPPED_COMPONENT, config=report)
+                log.info(
+                    '[WebUI]: User %s requeued %d completed folder(s) as %d candidate(s) (reset=%d, inserted=%d), %d failed',
+                    user_id, len(done), len(candidates), reset, upsert.get('inserted', 0), len(probe['failed'])
+                )
+                return JSONResponse(
+                    status_code=200,
+                    content={
+                        "status": "success" if not probe['failed'] else "partial",
+                        "message": f"Queued again: {len(candidates)} post(s), failed {len(probe['failed'])}",
+                        "requeued": requeued_paths,
+                        "failed": probe['failed']
+                    }
+                )
+            except Exception as e:
+                log.error('[WebUI]: Failed to requeue raw content for user %s: %s', user_id, str(e), exc_info=True)
+                return JSONResponse(
+                    status_code=500,
+                    content={"status": "error", "message": f"Failed to requeue: {str(e)}"}
+                )
+
         @self.app.get("/api/raw-content/stats")
         async def get_raw_content_stats(
             request: Request,
