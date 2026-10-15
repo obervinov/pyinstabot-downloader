@@ -10,8 +10,9 @@ import hmac
 import time
 import io
 import json
+import re
 import asyncio
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 from uuid import uuid4
 from urllib.parse import urlparse
@@ -22,8 +23,27 @@ from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 from logger import log
 from src.configs.constants import ROLES_MAP
-from src.modules.content_processor import RawContentProcessor
+from src.modules.content_processor import RawContentProcessor, AMBIGUOUS_POST_IDS
 import uvicorn
+
+# app_config component holding the last scan's "left out of the queue" report, per user
+RAW_SKIPPED_COMPONENT = 'raw_processing_skipped'
+# Skip reasons whose source directory may be deleted from the Skipped tab
+RAW_SKIPPED_DELETABLE = frozenset({'empty', 'already_completed', 'no_metadata', 'ambiguous_id', 'not_directory'})
+# Order of the Skipped tab: what needs a decision first, safe-to-delete leftovers last
+RAW_SKIPPED_ORDER = {
+    'ambiguous_id': 0, 'no_metadata': 1, 'probe_error': 2,
+    'not_directory': 3, 'already_completed': 4, 'empty': 5
+}
+# Sort keys accepted by /api/raw-content/queue -> SQL column
+RAW_QUEUE_SORT_COLUMNS = {
+    'id': 'id',
+    'owner': 'post_owner',
+    'name': 'item_name',
+    'status': 'status',
+    'updated': 'updated_at'
+}
+INSTAGRAM_SHORTCODE_RE = re.compile(r'^[A-Za-z0-9_-]{5,64}$')
 
 
 class WebUI:
@@ -314,6 +334,39 @@ class WebUI:
         if exclude_completed:
             condition += " AND status = 'scanned'"
         return condition
+
+    @staticmethod
+    def _build_raw_queue_order(sort: str, order: str) -> str:
+        """
+        Build a whitelisted ORDER BY clause for raw_content_queue listings.
+
+        Owner sorting is case-insensitive and keeps rows without an owner on top in ascending
+        order: those are the ones that need a manual fix before they can be processed.
+        """
+        column = RAW_QUEUE_SORT_COLUMNS.get(sort, RAW_QUEUE_SORT_COLUMNS['id'])
+        direction = 'DESC' if str(order).lower() == 'desc' else 'ASC'
+        nulls = 'NULLS FIRST' if direction == 'ASC' else 'NULLS LAST'
+        if sort == 'owner':
+            column = "LOWER(NULLIF(TRIM(post_owner), ''))"
+        if column == 'id':
+            return f"id {direction}"
+        return f"{column} {direction} {nulls}, id ASC"
+
+    @staticmethod
+    def _skipped_provider_url(entry: dict) -> Optional[str]:
+        """
+        Link to the post on its provider so the owner can be looked up by hand.
+
+        Only for folders that hold media but no owner: an empty folder has nothing to attribute.
+        Source directories are named after the post shortcode, so the name alone is enough.
+        Fallback names (p, reel, ...) carry no shortcode and get no link.
+        """
+        if entry.get('reason') != 'no_metadata':
+            return None
+        name = str(entry.get('item_name') or '').strip()
+        if not name or name.lower() in AMBIGUOUS_POST_IDS or not INSTAGRAM_SHORTCODE_RE.match(name):
+            return None
+        return f"https://www.instagram.com/p/{name}/"
 
     def _get_user_raw_processing_dirs(self, user_id: str) -> tuple[Optional[str], Optional[str]]:
         """
@@ -1203,6 +1256,22 @@ class WebUI:
                 log.debug('[WebUI]: Upsert result: inserted=%d, updated=%d',
                           upsert_result.get('inserted', 0), upsert_result.get('updated', 0))
 
+                skipped_items = scan_result.get('skipped_items', [])
+                try:
+                    self.database.set_user_config(
+                        user_id=user_id,
+                        component=RAW_SKIPPED_COMPONENT,
+                        config={
+                            'scan_id': scan_id,
+                            'scanned_at': datetime.now(timezone.utc).isoformat(),
+                            'source_dir': source_dir_override or self.content_processor.source_dir,
+                            'items': skipped_items
+                        }
+                    )
+                except Exception as skipped_error:  # pylint: disable=broad-exception-caught
+                    # The report is advisory: a failed write must not fail the scan itself
+                    log.warning('[WebUI]: Failed to store skipped scan items for user %s: %s', user_id, str(skipped_error))
+
                 stats = self.database.get_user_raw_content_stats(user_id=user_id)
                 log.debug('[WebUI]: User stats after scan: %s', stats)
 
@@ -1229,6 +1298,7 @@ class WebUI:
                             "scanned_items": scan_result.get('scanned_items', 0),
                             "processable_count": scan_result.get('processable_count', 0),
                             "skipped_count": scan_result.get('skipped_count', 0),
+                            "skipped_reported": len(skipped_items),
                             "inserted": upsert_result.get('inserted', 0),
                             "updated": upsert_result.get('updated', 0),
                             "stats": stats
@@ -1244,6 +1314,134 @@ class WebUI:
                         "message": f"Scan failed: {str(e)}",
                         "details": {"exception_type": type(e).__name__}
                     }
+                )
+
+        @self.app.get("/api/raw-content/skipped")
+        async def get_raw_content_skipped(
+            request: Request,
+            user: dict = Depends(self.get_current_user)
+        ):
+            """
+            Source directories the last scan left out of the queue, each with the reason.
+            """
+            user_id = str(user['id'])
+            try:
+                report = (self.database.get_user_config(user_id, RAW_SKIPPED_COMPONENT) or {}).get('config') or {}
+                items = []
+                for entry in sorted(
+                    report.get('items') or [],
+                    key=lambda e: (RAW_SKIPPED_ORDER.get(e.get('reason'), 99), str(e.get('item_name') or '').lower())
+                ):
+                    entry = dict(entry)
+                    entry['provider_url'] = self._skipped_provider_url(entry)
+                    entry['deletable'] = entry.get('reason') in RAW_SKIPPED_DELETABLE
+                    items.append(entry)
+                counts: dict = {}
+                for entry in items:
+                    counts[entry['reason']] = counts.get(entry['reason'], 0) + 1
+                return JSONResponse(
+                    status_code=200,
+                    content={
+                        'scan_id': report.get('scan_id'),
+                        'scanned_at': report.get('scanned_at'),
+                        'source_dir': report.get('source_dir'),
+                        'items': items,
+                        'total': len(items),
+                        'counts': counts
+                    }
+                )
+            except Exception as e:
+                log.error('[WebUI]: Failed to get skipped raw content for user %s: %s', user_id, str(e))
+                return JSONResponse(
+                    status_code=500,
+                    content={"status": "error", "message": f"Failed to get skipped items: {str(e)}"}
+                )
+
+        @self.app.post("/api/raw-content/skipped/delete")
+        async def delete_raw_content_skipped(
+            request: Request,
+            user: dict = Depends(self.get_current_user)
+        ):
+            """
+            Delete skipped source directories.
+
+            Only paths listed in the user's last scan report can be deleted, never an arbitrary
+            path from the request. An 'empty' directory is re-checked first and kept if files
+            appeared in it since the scan.
+            """
+            if not self.content_processor:
+                return JSONResponse(
+                    status_code=503,
+                    content={"status": "error", "message": "Raw content processing is not configured"}
+                )
+
+            user_id = str(user['id'])
+            try:
+                body = await request.json()
+                requested = {str(p) for p in (body.get('item_paths') or []) if p}
+                if not requested:
+                    return JSONResponse(
+                        status_code=400,
+                        content={"status": "error", "message": "item_paths is required"}
+                    )
+
+                config_row = self.database.get_user_config(user_id, RAW_SKIPPED_COMPONENT) or {}
+                report = dict(config_row.get('config') or {})
+                known = {entry.get('item_path'): entry for entry in report.get('items') or []}
+                # webdav3 clients are not thread-safe: take a fresh one when the factory exists
+                factory = self.content_processor.client_factory
+                client = factory() if factory else self.content_processor.webdav_client
+
+                def _delete(paths: list) -> dict:
+                    done, failed = [], []
+                    for path in paths:
+                        entry = known.get(path)
+                        if not entry:
+                            failed.append({'item_path': path, 'error': 'not in the last scan report'})
+                            continue
+                        if entry.get('reason') not in RAW_SKIPPED_DELETABLE:
+                            failed.append({'item_path': path, 'error': f"reason '{entry.get('reason')}' is not deletable"})
+                            continue
+                        try:
+                            if entry.get('reason') == 'empty':
+                                listing = client.list(path) or []
+                                leftovers = [
+                                    n for n in (RawContentProcessor._normalize_webdav_name(i) for i in listing)
+                                    if n and n != entry.get('item_name')
+                                ]
+                                if leftovers:
+                                    failed.append({'item_path': path, 'error': f'not empty anymore ({len(leftovers)} entries)'})
+                                    continue
+                            client.clean(path)
+                            done.append(path)
+                        except Exception as delete_error:  # pylint: disable=broad-exception-caught
+                            failed.append({'item_path': path, 'error': str(delete_error)})
+                    return {'deleted': done, 'failed': failed}
+
+                # WebDAV calls block: keep them off the event loop
+                result = await asyncio.to_thread(_delete, sorted(requested))
+
+                if result['deleted']:
+                    deleted = set(result['deleted'])
+                    report['items'] = [e for e in report.get('items') or [] if e.get('item_path') not in deleted]
+                    self.database.set_user_config(user_id=user_id, component=RAW_SKIPPED_COMPONENT, config=report)
+                log.info(
+                    '[WebUI]: User %s deleted %d skipped source dir(s), %d failed',
+                    user_id, len(result['deleted']), len(result['failed'])
+                )
+                return JSONResponse(
+                    status_code=200,
+                    content={
+                        "status": "success" if not result['failed'] else "partial",
+                        "message": f"Deleted {len(result['deleted'])}, failed {len(result['failed'])}",
+                        **result
+                    }
+                )
+            except Exception as e:
+                log.error('[WebUI]: Failed to delete skipped raw content for user %s: %s', user_id, str(e), exc_info=True)
+                return JSONResponse(
+                    status_code=500,
+                    content={"status": "error", "message": f"Failed to delete: {str(e)}"}
                 )
 
         @self.app.get("/api/raw-content/stats")
@@ -1619,6 +1817,8 @@ class WebUI:
             offset: int = 0,
             limit: int = 20,
             exclude_completed: bool = False,
+            sort: str = 'id',
+            order: str = 'asc',
             user: dict = Depends(self.get_current_user)
         ):
             """
@@ -1628,6 +1828,8 @@ class WebUI:
                 offset: Pagination offset
                 limit: Items per page
                 exclude_completed: If True, exclude items with status='completed'
+                sort: Sort column key, one of RAW_QUEUE_SORT_COLUMNS (unknown keys fall back to id)
+                order: 'asc' or 'desc'
             """
             if not self.content_processor:
                 return JSONResponse(
@@ -1653,7 +1855,7 @@ class WebUI:
                         'scanned_at', 'started_at', 'finished_at', 'updated_at', 'content_files'
                     ),
                     condition=self._build_raw_content_condition(user_id, exclude_completed),
-                    order_by='id ASC',
+                    order_by=self._build_raw_queue_order(sort, order),
                     limit=limit,
                     offset=offset
                 )
@@ -1697,7 +1899,9 @@ class WebUI:
                         'items': formatted_items,
                         'total': total or 0,
                         'offset': offset,
-                        'limit': limit
+                        'limit': limit,
+                        'sort': sort if sort in RAW_QUEUE_SORT_COLUMNS else 'id',
+                        'order': 'desc' if str(order).lower() == 'desc' else 'asc'
                     }
                 )
             except Exception as e:

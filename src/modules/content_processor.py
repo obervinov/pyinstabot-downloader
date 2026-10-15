@@ -59,6 +59,12 @@ DEDUPE_HASH_WORKERS = 8
 # kept modest so Nextcloud is not flooded with parallel PROPFIND/GET requests.
 SCAN_MAX_WORKERS = 8
 
+# Directory names (and metadata post_ids) the Firefox extension falls back to when it could not
+# parse the real post shortcode out of the URL, e.g. https://www.instagram.com/reel/<id>/ stored as
+# post_id "reel". Every such save lands in the same folder and overwrites its metadata, so the
+# owner in it describes only the last save. These are reported as skipped, never processed.
+AMBIGUOUS_POST_IDS = frozenset({'p', 'reel', 'reels', 'tv', 'stories'})
+
 
 class ContentProcessor:
     """
@@ -384,10 +390,11 @@ class RawContentProcessor:
             - a directory with no metadata anywhere yields none (skipped=1).
         """
         file_path = f"{source_dir}/{file_name}"
-        out: Dict[str, Any] = {'candidates': [], 'skipped': 0}
+        out: Dict[str, Any] = {'candidates': [], 'skipped': 0, 'skipped_items': []}
         content_files: list = []
         metadata_file = None
         nested_added = 0
+        nested_dirs = 0
         try:
             items_in_dir = client.list(file_path)
             if items_in_dir:
@@ -430,31 +437,87 @@ class RawContentProcessor:
                             if not nname.endswith(('.json', '.txt')):
                                 nested_content_files.append(nname)
 
+                    nested_dirs += 1
                     if not nested_metadata_file:
+                        out['skipped_items'].append(self._skipped_entry(
+                            nested_name, nested_path,
+                            'empty' if not nested_content_files else 'no_metadata',
+                            files=nested_content_files
+                        ))
                         continue
 
                     metadata = self._read_metadata(client, f"{nested_path}/{nested_metadata_file}", nested_metadata_file)
-                    out['candidates'].append(
-                        self._candidate_from_metadata(nested_name, nested_path, metadata, nested_content_files)
+                    self._collect_candidate(
+                        out, self._candidate_from_metadata(nested_name, nested_path, metadata, nested_content_files)
                     )
                     nested_added += 1
 
-                if nested_added > 0:
+                if nested_added > 0 or nested_dirs > 0:
+                    out['skipped'] += len(out['skipped_items'])
                     log.info('[RawContentProcessor]: Container directory %s expanded into %d grouped candidates', file_name, nested_added)
                     return out
 
             if metadata_file:
                 metadata = self._read_metadata(client, f"{file_path}/{metadata_file}", metadata_file)
-                out['candidates'].append(
-                    self._candidate_from_metadata(file_name, file_path, metadata, content_files)
+                self._collect_candidate(
+                    out, self._candidate_from_metadata(file_name, file_path, metadata, content_files)
                 )
+                out['skipped'] += len(out['skipped_items'])
                 return out
+
+            reason = 'empty' if not content_files else 'no_metadata'
+            out['skipped_items'].append(self._skipped_entry(file_name, file_path, reason, files=content_files))
         except Exception as scan_error:
             log.warning('[RawContentProcessor]: Failed to probe directory %s: %s', file_name, str(scan_error))
+            out['skipped_items'].append(self._skipped_entry(file_name, file_path, 'probe_error', detail=str(scan_error)))
 
-        # No metadata at this level and no nested posts -> container/empty directory, skip.
+        # No processable post at this level and no nested posts -> report why it was left out.
         out['skipped'] += 1
         return out
+
+    @staticmethod
+    def _skipped_entry(
+        item_name: str,
+        item_path: str,
+        reason: str,
+        files: Optional[list] = None,
+        detail: Optional[str] = None,
+        **extra: Any
+    ) -> Dict[str, Any]:
+        """
+        Describe a source directory the scan left out of the queue, and why.
+
+        Reasons: empty, no_metadata, ambiguous_id, already_completed, not_directory, probe_error.
+        """
+        files = list(files or [])
+        entry = {
+            'item_name': item_name,
+            'item_path': item_path,
+            'reason': reason,
+            'file_count': len(files),
+            # Enough to recognise the content; the full list can be long for carousels
+            'files': files[:20],
+            'detail': detail
+        }
+        entry.update({k: v for k, v in extra.items() if v is not None})
+        return entry
+
+    def _collect_candidate(self, out: Dict[str, Any], candidate: Dict[str, Any]) -> None:
+        """Add a candidate to a probe result, diverting fallback post_ids (p/reel/...) to skipped."""
+        post_id = str(candidate.get('post_id') or '').strip().lower()
+        item_name = str(candidate.get('item_name') or '').strip().lower()
+        if post_id in AMBIGUOUS_POST_IDS or item_name in AMBIGUOUS_POST_IDS:
+            files = json.loads(candidate.get('content_files_json') or '[]')
+            out['skipped_items'].append(self._skipped_entry(
+                candidate['item_name'], candidate['item_path'], 'ambiguous_id',
+                files=files,
+                detail=f"post_id '{candidate.get('post_id')}' is a URL fallback, not a shortcode",
+                post_owner=candidate.get('post_owner'),
+                post_url=candidate.get('post_url'),
+                source=candidate.get('source')
+            ))
+            return
+        out['candidates'].append(candidate)
 
     def scan_source(
         self,
@@ -494,6 +557,7 @@ class RawContentProcessor:
             'processable_count': 0,
             'skipped_count': 0,
             'processable_items': [],
+            'skipped_items': [],
             'errors': []
         }
 
@@ -537,11 +601,20 @@ class RawContentProcessor:
             dirs_to_probe = []
             for file_name in normalized_items:
                 file_path = f"{source_dir}/{file_name}"
+                # Hidden entries (.DS_Store, .sync_*, ...) are client artefacts, not posts: not reported
+                if file_name.startswith('.'):
+                    result['skipped_count'] += 1
+                    continue
                 if file_path in completed_paths:
                     result['skipped_count'] += 1
+                    result['skipped_items'].append(self._skipped_entry(
+                        file_name, file_path, 'already_completed',
+                        detail='Processed earlier, but the source directory is still there'
+                    ))
                     continue
                 if not self._is_directory(file_path=file_path, file_name=file_name, is_dir_hint=dir_hints.get(file_name)):
                     result['skipped_count'] += 1
+                    result['skipped_items'].append(self._skipped_entry(file_name, file_path, 'not_directory'))
                     continue
                 dirs_to_probe.append(file_name)
 
@@ -572,11 +645,16 @@ class RawContentProcessor:
                     scan_outputs[i] = _probe(name)
 
             # Assemble candidates preserving the source listing order.
-            for output in scan_outputs:
+            for idx, output in enumerate(scan_outputs):
                 if not output:
                     result['skipped_count'] += 1
+                    name = dirs_to_probe[idx]
+                    result['skipped_items'].append(
+                        self._skipped_entry(name, f"{source_dir}/{name}", 'probe_error', detail='Probe crashed')
+                    )
                     continue
                 result['processable_items'].extend(output.get('candidates', []))
+                result['skipped_items'].extend(output.get('skipped_items', []))
                 result['skipped_count'] += output.get('skipped', 0)
 
             # Apply offset/limit to processable items AFTER filtering
