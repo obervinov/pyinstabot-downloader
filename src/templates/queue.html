@@ -24,6 +24,8 @@
     {% include '_topbar.html' %}
 
     <main class="page">
+        <!-- Retry feedback: in-page, because window.alert() can be muted by the browser -->
+        <div id="retry-alert" class="alert" style="margin: 0 0 16px;" hidden></div>
         <div class="page-head">
             <div>
                 <h1 class="page-title">Queue</h1>
@@ -105,6 +107,14 @@
     </main>
 
     <script>
+        function showRetryAlert(message) {
+            const box = document.getElementById('retry-alert');
+            box.className = 'alert error';
+            box.textContent = message;
+            box.hidden = false;
+            box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
         async function retryPost(postId, button) {
             // Disable button during request
             button.disabled = true;
@@ -121,19 +131,16 @@
                 const data = await response.json();
 
                 if (response.ok) {
-                    // Show success message
-                    alert(data.message || 'Post reset successfully!');
                     // Reload page to show updated status
                     window.location.reload();
                 } else {
-                    // Show error message
-                    alert(data.message || 'Failed to retry post');
+                    showRetryAlert(data.message || 'Failed to retry post');
                     button.disabled = false;
                     button.textContent = 'Retry';
                 }
             } catch (error) {
                 console.error('Error retrying post:', error);
-                alert('Network error. Please try again.');
+                showRetryAlert('Network error. Please try again.');
                 button.disabled = false;
                 button.textContent = 'Retry';
             }

@@ -510,6 +510,20 @@
                 </div>
             </template>
         </div>
+
+        <!-- Confirmation dialog, see askConfirm() -->
+        <template x-if="dialog.show">
+            <div class="modal-backdrop" @click.self="closeDialog(false)" @keydown.escape.window="closeDialog(false)">
+                <div class="modal" role="dialog" aria-modal="true">
+                    <div class="modal-title" x-text="dialog.title"></div>
+                    <div class="modal-text" x-text="dialog.text"></div>
+                    <div class="modal-actions">
+                        <button class="btn" @click="closeDialog(false)">Cancel</button>
+                        <button class="btn" :class="dialog.danger ? 'danger-solid' : 'primary'" x-text="dialog.confirmLabel" @click="closeDialog(true)" x-init="$nextTick(() => $el.focus())"></button>
+                    </div>
+                </div>
+            </div>
+        </template>
     </main>
 
     <script>
@@ -571,6 +585,9 @@
 
                 // Stats
                 foundStats: { total: 0, scanned: 0, processing: 0, completed: 0, error: 0 },
+
+                // In-page confirmation dialog (askConfirm); window.confirm() can be muted by the browser
+                dialog: { show: false, title: '', text: '', confirmLabel: 'OK', danger: false, resolve: null },
 
                 // Found table ordering, applied server-side because the table is paginated
                 foundSort: { key: 'id', order: 'asc' },
@@ -716,7 +733,7 @@
 
                 async processSelected(runAsync = true) {
                     if (this.getSelectedCount() === 0) {
-                        alert('Please select items to process');
+                        this.alert = { show: true, type: 'error', message: 'Select items to process first', details: null };
                         return;
                     }
 
@@ -986,7 +1003,12 @@
                         return;
                     }
 
-                    const ok = confirm(`Cleanup artifact '${item.filename}'?\n\nThis will remove file from Nextcloud and matching rows from processed table.`);
+                    const ok = await this.askConfirm({
+                        title: `Clean up '${item.filename}'?`,
+                        text: 'The file is removed from Nextcloud together with its matching rows in the processed table.',
+                        confirmLabel: 'Clean up',
+                        danger: true
+                    });
                     if (!ok) {
                         return;
                     }
@@ -1440,8 +1462,14 @@
                     const what = entries.length === 1 ? `'${entries[0].item_name}'` : `${entries.length} folders`;
                     const warn = reason === 'empty'
                         ? ''
-                        : `\n\nThis folder still has ${entries.reduce((n, e) => n + (e.file_count || 0), 0) || 'some'} file(s). They will be deleted too, and trash is off for the bot account.`;
-                    if (!confirm(`Delete ${what} from the source directory?${warn}`)) return;
+                        : ` This folder still has ${entries.reduce((n, e) => n + (e.file_count || 0), 0) || 'some'} file(s). They will be deleted too, and trash is off for the bot account.`;
+                    const ok = await this.askConfirm({
+                        title: `Delete ${what}?`,
+                        text: `The folder${entries.length === 1 ? ' is' : 's are'} removed from the source directory.${warn}`,
+                        confirmLabel: 'Delete',
+                        danger: true
+                    });
+                    if (!ok) return;
 
                     this.skippedBusy = true;
                     try {
@@ -1466,12 +1494,33 @@
                     }
                 },
 
+                // Resolves true/false from the in-page dialog. Used instead of window.confirm(): once
+                // the user ticks the browser's "don't ask again", confirm() returns false without
+                // showing anything and every guarded button silently stops working.
+                askConfirm({ title, text = '', confirmLabel = 'OK', danger = false }) {
+                    if (this.dialog.resolve) this.dialog.resolve(false);
+                    return new Promise(resolve => {
+                        this.dialog = { show: true, title, text, confirmLabel, danger, resolve };
+                    });
+                },
+
+                closeDialog(result) {
+                    const resolve = this.dialog.resolve;
+                    this.dialog = { show: false, title: '', text: '', confirmLabel: 'OK', danger: false, resolve: null };
+                    if (resolve) resolve(result);
+                },
+
                 // Already-processed folders that are still in the source can be queued again on
                 // purpose: the server re-reads them and resets their rows to 'scanned'
                 async requeueSkipped(entries) {
                     if (!entries || entries.length === 0) return;
                     const what = entries.length === 1 ? `'${entries[0].item_name}'` : `${entries.length} folders`;
-                    if (!confirm(`Process ${what} again?\n\nThe folder is re-read and goes back to the Found tab; files are moved into the owner folder once more.`)) return;
+                    const ok = await this.askConfirm({
+                        title: `Process ${what} again?`,
+                        text: 'The folder is re-read and goes back to the Found tab; its files are moved into the owner folder once more.',
+                        confirmLabel: 'Process again'
+                    });
+                    if (!ok) return;
 
                     this.skippedBusy = true;
                     try {
