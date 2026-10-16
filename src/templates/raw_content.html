@@ -165,9 +165,6 @@
                 <button class="tab" :class="{ active: activeTab === 'processed' }" @click="activeTab = 'processed'">
                     Processed<span class="count" x-text="foundStats.completed ?? 0"></span>
                 </button>
-                <button class="tab" :class="{ active: activeTab === 'legacy' }" @click="activeTab = 'legacy'; loadLegacyPage(1)">
-                    Legacy errors<span class="count" x-text="legacyTotal"></span>
-                </button>
             </div>
 
             <!-- FOUND TAB -->
@@ -444,71 +441,6 @@
                     </template>
                 </div>
             </template>
-
-            <!-- LEGACY TAB -->
-            <template x-if="activeTab === 'legacy'">
-                <div>
-                    <div class="toolbar">
-                        <span class="muted small" x-show="legacyRoot">Root: <span class="mono" x-text="legacyRoot"></span></span>
-                        <span class="spacer"></span>
-                        <span class="muted small" x-text="`Page ${legacyPage} · ${legacyItems.length} of ${legacyTotal}`"></span>
-                        <div class="pager">
-                            <button class="btn sm" @click="legacyPrevPage()" :disabled="legacyPage === 1">←</button>
-                            <button class="btn sm" @click="legacyNextPage()" :disabled="!legacyHasMore">→</button>
-                        </div>
-                    </div>
-                    <template x-if="legacyLoading">
-                        <div class="empty">Loading…</div>
-                    </template>
-                    <template x-if="!legacyLoading && legacyItems.length > 0">
-                        <div class="table-wrap">
-                            <table class="table">
-                                <thead>
-                                    <tr>
-                                        <th>File</th>
-                                        <th>Processed match</th>
-                                        <th></th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <template x-for="item in legacyItems" :key="item.filename">
-                                        <tr>
-                                            <td class="mono truncate" style="max-width: 320px; vertical-align: top;"><span x-text="item.filename"></span></td>
-                                            <td style="vertical-align: top;">
-                                                <template x-if="item.data && item.data.length > 0">
-                                                    <div style="display: grid; gap: 4px;">
-                                                        <template x-for="row in item.data" :key="row.id + '-' + row.message_id">
-                                                            <div class="small row" style="gap: 6px;">
-                                                                <template x-if="row.post_id">
-                                                                    <a :href="row.post_link || buildLegacyPostUrl(row.post_id)" target="_blank" rel="noopener noreferrer" class="mono" x-text="row.post_id"></a>
-                                                                </template>
-                                                                <template x-if="!row.post_id">
-                                                                    <span class="muted">no post_id</span>
-                                                                </template>
-                                                                <span class="badge" x-text="row.state || '—'"></span>
-                                                                <span class="muted" x-text="row.timestamp ? new Date(row.timestamp).toLocaleString() : ''"></span>
-                                                            </div>
-                                                        </template>
-                                                    </div>
-                                                </template>
-                                                <template x-if="!item.data || item.data.length === 0">
-                                                    <span class="muted">No matches in processed</span>
-                                                </template>
-                                            </td>
-                                            <td style="vertical-align: top; text-align: right;">
-                                                <button class="btn danger xs" @click="cleanupLegacyItem(item)" :disabled="busy">Clean up</button>
-                                            </td>
-                                        </tr>
-                                    </template>
-                                </tbody>
-                            </table>
-                        </div>
-                    </template>
-                    <template x-if="!legacyLoading && legacyItems.length === 0">
-                        <div class="empty">No files in the legacy root.</div>
-                    </template>
-                </div>
-            </template>
         </div>
 
         <!-- Confirmation dialog, see askConfirm() -->
@@ -573,15 +505,6 @@
                 processedPage: 1,
                 processedItemsPerPage: 20,
                 processedHasMore: false,
-
-                // Legacy root files + processed data matches
-                legacyItems: [],
-                legacyTotal: 0,
-                legacyPage: 1,
-                legacyItemsPerPage: 20,
-                legacyHasMore: false,
-                legacyRoot: null,
-                legacyLoading: false,
 
                 // Stats
                 foundStats: { total: 0, scanned: 0, processing: 0, completed: 0, error: 0 },
@@ -975,83 +898,6 @@
                     }
                 },
 
-                async loadLegacyPage(page) {
-                    try {
-                        this.legacyLoading = true;
-                        const offset = (page - 1) * this.legacyItemsPerPage;
-                        const response = await fetch(`/api/raw-content/legacy-errors?offset=${offset}&limit=${this.legacyItemsPerPage}`);
-                        const data = await response.json();
-                        this.legacyItems = data.items || [];
-                        this.legacyTotal = data.total || 0;
-                        this.legacyRoot = data.root || null;
-                        this.legacyPage = page;
-                        this.legacyHasMore = (page * this.legacyItemsPerPage) < this.legacyTotal;
-                    } catch (e) {
-                        console.error('Error loading legacy page:', e);
-                    } finally {
-                        this.legacyLoading = false;
-                    }
-                },
-
-                buildLegacyPostUrl(postId) {
-                    if (!postId) return '#';
-                    return `https://www.instagram.com/p/${postId}/`;
-                },
-
-                async cleanupLegacyItem(item) {
-                    if (!item || !item.filename) {
-                        return;
-                    }
-
-                    const ok = await this.askConfirm({
-                        title: `Clean up '${item.filename}'?`,
-                        text: 'The file is removed from Nextcloud together with its matching rows in the processed table.',
-                        confirmLabel: 'Clean up',
-                        danger: true
-                    });
-                    if (!ok) {
-                        return;
-                    }
-
-                    try {
-                        this.busy = true;
-                        const processedIds = (item.data || []).map(row => row.id).filter(Boolean);
-                        const response = await fetch('/api/raw-content/legacy-errors/cleanup', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                filename: item.filename,
-                                root: this.legacyRoot,
-                                processed_ids: processedIds
-                            })
-                        });
-
-                        const data = await response.json();
-                        if (!response.ok) {
-                            throw new Error(data.message || 'Cleanup failed');
-                        }
-
-                        this.alert = {
-                            show: true,
-                            type: 'success',
-                            message: `Cleanup done: file_deleted=${data.file_deleted ? 'yes' : 'no'}, db_deleted=${data.db_deleted_count || 0}`,
-                            details: null
-                        };
-
-                        await this.loadLegacyPage(this.legacyPage);
-                    } catch (e) {
-                        console.error('Error cleaning legacy item:', e);
-                        this.alert = {
-                            show: true,
-                            type: 'error',
-                            message: e.message || 'Cleanup failed',
-                            details: null
-                        };
-                    } finally {
-                        this.busy = false;
-                    }
-                },
-
                 foundNextPage() {
                     if (this.foundHasMore) {
                         this.loadFoundPage(this.foundPage + 1);
@@ -1073,18 +919,6 @@
                 processedPrevPage() {
                     if (this.processedPage > 1) {
                         this.loadProcessedPage(this.processedPage - 1);
-                    }
-                },
-
-                legacyNextPage() {
-                    if (this.legacyHasMore) {
-                        this.loadLegacyPage(this.legacyPage + 1);
-                    }
-                },
-
-                legacyPrevPage() {
-                    if (this.legacyPage > 1) {
-                        this.loadLegacyPage(this.legacyPage - 1);
                     }
                 },
 
@@ -1341,11 +1175,10 @@
                 },
 
                 async init() {
-                    // ?tab=skipped (or found / processed / legacy) opens that tab directly
+                    // ?tab=skipped (or found / processed) opens that tab directly
                     const tab = new URLSearchParams(window.location.search).get('tab');
-                    if (['found', 'skipped', 'processed', 'legacy'].includes(tab)) {
+                    if (['found', 'skipped', 'processed'].includes(tab)) {
                         this.activeTab = tab;
-                        if (tab === 'legacy') this.loadLegacyPage(1);
                     }
                     await this.loadConfig();
                     await this.updateFoundStats();
