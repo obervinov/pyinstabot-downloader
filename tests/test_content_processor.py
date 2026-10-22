@@ -378,3 +378,51 @@ class TestRawContentProcessorConfigOverrides:
         # Verify that list was called with the override path
         mock_webdav_client.list.assert_called_once_with('/custom-source')
         assert result['status'] == 'success'
+
+
+class TestOwnerAliases:
+    """Tests for the owner -> folder name mapping applied on scan."""
+
+    @pytest.fixture
+    def processor(self):
+        """Create a RawContentProcessor with a mocked WebDAV client."""
+        return RawContentProcessor(webdav_client=MagicMock(), source_dir='/src', dest_dir='/dst')
+
+    def test_normalize_lowercases_owners_and_drops_empty_pairs(self):
+        """Owner keys are lowercased and pairs with an empty side are dropped."""
+        aliases = RawContentProcessor.normalize_owner_aliases({' Test12 ': ' test123 ', 'a': '', '': 'b'})
+        assert aliases == {'test12': 'test123'}
+
+    def test_normalize_rejects_non_dict(self):
+        """Anything but a dict yields no aliases."""
+        assert not RawContentProcessor.normalize_owner_aliases(None)
+        assert not RawContentProcessor.normalize_owner_aliases(['test12'])
+
+    def test_apply_matches_case_insensitively(self):
+        """An owner is replaced by its alias regardless of case; unknown owners are kept."""
+        aliases = {'test12': 'test123'}
+        assert RawContentProcessor.apply_owner_alias('TEST12', aliases) == 'test123'
+        assert RawContentProcessor.apply_owner_alias('other', aliases) == 'other'
+        assert RawContentProcessor.apply_owner_alias(None, aliases) is None
+
+    def test_scan_applies_aliases_to_candidates(self, processor):
+        """scan_source rewrites post_owner of processable candidates with the alias."""
+        processor.webdav_client.list.return_value = ['post1/', 'post2/']
+        processor._scan_directory = MagicMock(side_effect=[
+            {'candidates': [{'item_name': 'post1', 'post_owner': 'Test12'}], 'skipped': 0},
+            {'candidates': [{'item_name': 'post2', 'post_owner': 'other'}], 'skipped': 0},
+        ])
+        with patch.object(processor, '_is_directory', return_value=True):
+            result = processor.scan_source(owner_aliases={'test12': 'test123'})
+        owners = [item['post_owner'] for item in result['processable_items']]
+        assert owners == ['test123', 'other']
+
+    def test_scan_without_aliases_keeps_owner(self, processor):
+        """Without aliases the owner from metadata is kept as is."""
+        processor.webdav_client.list.return_value = ['post1/']
+        processor._scan_directory = MagicMock(return_value={
+            'candidates': [{'item_name': 'post1', 'post_owner': 'Test12'}], 'skipped': 0
+        })
+        with patch.object(processor, '_is_directory', return_value=True):
+            result = processor.scan_source()
+        assert result['processable_items'][0]['post_owner'] == 'Test12'

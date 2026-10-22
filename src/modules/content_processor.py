@@ -528,7 +528,8 @@ class RawContentProcessor:
         database: Optional[object] = None,
         new_format_only: bool = False,
         source_dir_override: Optional[str] = None,
-        dest_dir_override: Optional[str] = None
+        dest_dir_override: Optional[str] = None,
+        owner_aliases: Optional[Dict[str, str]] = None
     ) -> Dict[str, Any]:
         """
         Scan source directory and return processable candidates without processing files.
@@ -547,6 +548,9 @@ class RawContentProcessor:
             new_format_only: Deprecated parameter, kept for backward compatibility. Only grouped format is supported.
             source_dir_override: Override source directory for this scan (e.g., from user config).
             dest_dir_override: Override destination directory for this scan (e.g., from user config).
+            owner_aliases: Owner -> folder name mapping from user config. An owner resolved from
+                metadata is replaced by its alias (matched case-insensitively), so the post lands
+                in the aliased folder. Applied at scan time only: rows already queued keep their owner.
 
         Returns:
             Dict with scan counters and candidate items.
@@ -659,6 +663,11 @@ class RawContentProcessor:
                 result['processable_items'].extend(output.get('candidates', []))
                 result['skipped_items'].extend(output.get('skipped_items', []))
                 result['skipped_count'] += output.get('skipped', 0)
+
+            aliases = self.normalize_owner_aliases(owner_aliases)
+            if aliases:
+                for candidate in result['processable_items']:
+                    candidate['post_owner'] = self.apply_owner_alias(candidate.get('post_owner'), aliases)
 
             # Apply offset/limit to processable items AFTER filtering
             all_processable = result['processable_items']
@@ -1178,6 +1187,29 @@ class RawContentProcessor:
         if match:
             return match.group(1).strip() or None
         return None
+
+    @staticmethod
+    def normalize_owner_aliases(raw: Any) -> Dict[str, str]:
+        """
+        Turn a stored owner alias mapping into {lowercased owner: folder name}.
+        Pairs with an empty side are dropped.
+        """
+        if not isinstance(raw, dict):
+            return {}
+        aliases = {}
+        for owner, alias in raw.items():
+            owner = str(owner or '').strip().lower()
+            alias = str(alias or '').strip()
+            if owner and alias:
+                aliases[owner] = alias
+        return aliases
+
+    @staticmethod
+    def apply_owner_alias(owner: Optional[str], aliases: Dict[str, str]) -> Optional[str]:
+        """Return the alias for owner (case-insensitive), or owner unchanged when it has none."""
+        if not owner or not aliases:
+            return owner
+        return aliases.get(str(owner).strip().lower(), owner)
 
     def _resolve_owner(self, metadata: Dict[str, Any]) -> Optional[str]:
         """

@@ -151,6 +151,29 @@
                         </template>
                     </div>
                 </div>
+
+                <div style="margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--border);">
+                    <div class="card-title" style="margin-bottom: 2px;">Owner folders</div>
+                    <div class="hint" style="margin-bottom: 12px;">Send an owner's posts to a folder with another name. Owners match ignoring case; applies from the next scan.</div>
+                    <template x-for="(row, idx) in aliases" :key="idx">
+                        <div class="row" style="margin-bottom: 8px;">
+                            <input class="input sm mono" type="text" x-model="row.owner" placeholder="owner from metadata">
+                            <span class="muted">→</span>
+                            <input class="input sm mono" type="text" x-model="row.alias" placeholder="folder name">
+                            <button class="btn sm" @click="aliases.splice(idx, 1)" :disabled="aliasesBusy" title="Remove">✕</button>
+                        </div>
+                    </template>
+                    <template x-if="aliases.length === 0">
+                        <div class="hint" style="margin-bottom: 8px;">No mappings yet.</div>
+                    </template>
+                    <div class="row" style="margin-top: 12px;">
+                        <button class="btn sm" @click="aliases.push({ owner: '', alias: '' })" :disabled="aliasesBusy">Add</button>
+                        <button class="btn primary sm" @click="saveAliases()" :disabled="aliasesBusy">Save</button>
+                        <template x-if="aliasesAlert.show">
+                            <span class="badge" :class="aliasesAlert.type === 'error' ? 'danger' : 'success'" x-text="aliasesAlert.message"></span>
+                        </template>
+                    </div>
+                </div>
             </div>
         </details>
 
@@ -485,6 +508,11 @@
                 config: { source_dir: '', dest_dir: '', nc_base_url: '' },
                 configAlert: { show: false, type: 'success', message: '' },
 
+                // Owner -> folder name mapping, applied on scan
+                aliases: [],
+                aliasesBusy: false,
+                aliasesAlert: { show: false, type: 'success', message: '' },
+
                 // Active tab: 'found' or 'processed'
                 activeTab: 'found',
 
@@ -538,6 +566,52 @@
                         this.configAlert = { show: true, type: 'error', message: 'Failed to load configuration' };
                     } finally {
                         this.configBusy = false;
+                    }
+                },
+
+                async loadAliases() {
+                    try {
+                        this.aliasesBusy = true;
+                        const response = await fetch('/api/raw-content/owner-aliases');
+                        const data = await response.json();
+                        this.aliases = Object.entries(data.aliases || {})
+                            .map(([owner, alias]) => ({ owner, alias }))
+                            .sort((a, b) => a.owner.localeCompare(b.owner));
+                    } catch (e) {
+                        console.error('Error loading owner aliases:', e);
+                        this.aliasesAlert = { show: true, type: 'error', message: 'Failed to load owner folders' };
+                    } finally {
+                        this.aliasesBusy = false;
+                    }
+                },
+
+                async saveAliases() {
+                    try {
+                        this.aliasesBusy = true;
+                        const aliases = {};
+                        for (const row of this.aliases) {
+                            const owner = (row.owner || '').trim();
+                            const alias = (row.alias || '').trim();
+                            if (owner || alias) aliases[owner] = alias;
+                        }
+                        const response = await fetch('/api/raw-content/owner-aliases', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ aliases })
+                        });
+                        const data = await response.json();
+                        if (response.ok) {
+                            this.aliasesAlert = { show: true, type: 'success', message: 'Owner folders saved' };
+                            await this.loadAliases();
+                        } else {
+                            this.aliasesAlert = { show: true, type: 'error', message: data.message || 'Failed to save owner folders' };
+                        }
+                        setTimeout(() => { this.aliasesAlert.show = false; }, 3000);
+                    } catch (e) {
+                        console.error('Error saving owner aliases:', e);
+                        this.aliasesAlert = { show: true, type: 'error', message: 'Failed to save owner folders' };
+                    } finally {
+                        this.aliasesBusy = false;
                     }
                 },
 
@@ -1181,6 +1255,7 @@
                         this.activeTab = tab;
                     }
                     await this.loadConfig();
+                    await this.loadAliases();
                     await this.updateFoundStats();
                     await this.loadFoundPage(1);
                     await this.loadProcessedPage(1);

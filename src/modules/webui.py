@@ -28,6 +28,8 @@ import uvicorn
 
 # app_config component holding the last scan's "left out of the queue" report, per user
 RAW_SKIPPED_COMPONENT = 'raw_processing_skipped'
+# app_config component holding the owner -> folder name mapping applied on scan, per user
+RAW_OWNER_ALIASES_COMPONENT = 'raw_processing_owner_aliases'
 # Skip reasons whose source directory may be deleted from the Skipped tab
 RAW_SKIPPED_DELETABLE = frozenset({'empty', 'already_completed', 'no_metadata', 'ambiguous_id', 'not_directory'})
 # Order of the Skipped tab: what needs a decision first, safe-to-delete leftovers last
@@ -387,6 +389,20 @@ class WebUI:
         except Exception as e:
             log.warning('[WebUI]: Failed to read raw_processing config for user %s: %s', user_id, str(e))
             return None, None
+
+    def _get_user_owner_aliases(self, user_id: str) -> dict:
+        """
+        Get the user's owner -> folder name mapping from app_config.
+
+        Returns:
+            Normalized mapping (lowercased owner keys), empty when nothing is saved.
+        """
+        try:
+            config_row = self.database.get_user_config(user_id, RAW_OWNER_ALIASES_COMPONENT) or {}
+            return RawContentProcessor.normalize_owner_aliases((config_row.get('config') or {}).get('aliases'))
+        except Exception as e:
+            log.warning('[WebUI]: Failed to read owner aliases for user %s: %s', user_id, str(e))
+            return {}
 
     def _derive_nextcloud_base_url(self) -> str:
         """
@@ -1230,6 +1246,10 @@ class WebUI:
                     scan_kwargs['source_dir_override'] = source_dir_override
                 if dest_dir_override:
                     scan_kwargs['dest_dir_override'] = dest_dir_override
+                owner_aliases = self._get_user_owner_aliases(user_id)
+                if owner_aliases:
+                    log.info('[WebUI]: Applying %d owner alias(es) for user %s', len(owner_aliases), user_id)
+                    scan_kwargs['owner_aliases'] = owner_aliases
 
                 log.info('[WebUI]: Calling content_processor.scan_source(**%s)', list(scan_kwargs.keys()))
                 scan_result = self.content_processor.scan_source(**scan_kwargs)
@@ -1684,6 +1704,91 @@ class WebUI:
                     content={
                         "status": "error",
                         "message": f"Failed to set config: {str(e)}"
+                    }
+                )
+
+        @self.app.get("/api/raw-content/owner-aliases")
+        async def get_raw_content_owner_aliases(
+            request: Request,
+            user: dict = Depends(self.get_current_user)
+        ):
+            """
+            Get the user's owner -> folder name mapping applied on scan.
+            """
+            user_id = str(user['id'])
+            try:
+                config_row = self.database.get_user_config(user_id=user_id, component=RAW_OWNER_ALIASES_COMPONENT) or {}
+                aliases = (config_row.get('config') or {}).get('aliases') or {}
+                return JSONResponse(status_code=200, content={"aliases": aliases})
+            except Exception as e:
+                log.error('[WebUI]: Failed to get owner aliases for user %s: %s', user_id, str(e))
+                return JSONResponse(
+                    status_code=500,
+                    content={
+                        "status": "error",
+                        "message": f"Failed to get owner aliases: {str(e)}"
+                    }
+                )
+
+        @self.app.post("/api/raw-content/owner-aliases")
+        async def set_raw_content_owner_aliases(
+            request: Request,
+            user: dict = Depends(self.get_current_user)
+        ):
+            """
+            Replace the user's owner -> folder name mapping.
+
+            Owners match case-insensitively. The mapping applies to the next scan;
+            rows already in the queue keep their owner.
+            """
+            user_id = str(user['id'])
+            try:
+                body = await request.json()
+                raw = body.get('aliases')
+                if not isinstance(raw, dict):
+                    return JSONResponse(
+                        status_code=400,
+                        content={"status": "error", "message": "aliases must be an object of owner -> folder name"}
+                    )
+
+                aliases = {}
+                for owner, alias in raw.items():
+                    owner = str(owner or '').strip()
+                    alias = str(alias or '').strip()
+                    if not owner and not alias:
+                        continue
+                    if not owner or not alias:
+                        return JSONResponse(
+                            status_code=400,
+                            content={"status": "error", "message": "Both owner and folder name are required in every row"}
+                        )
+                    # The alias becomes a folder name under the destination directory
+                    if '/' in alias or '\\' in alias or alias in ('.', '..'):
+                        return JSONResponse(
+                            status_code=400,
+                            content={"status": "error", "message": f"Invalid folder name: {alias}"}
+                        )
+                    if owner.lower() in {key.lower() for key in aliases}:
+                        return JSONResponse(
+                            status_code=400,
+                            content={"status": "error", "message": f"Duplicate owner: {owner}"}
+                        )
+                    aliases[owner] = alias
+
+                self.database.set_user_config(
+                    user_id=user_id,
+                    component=RAW_OWNER_ALIASES_COMPONENT,
+                    config={'aliases': aliases}
+                )
+                log.info('[WebUI]: Saved %d owner alias(es) for user %s', len(aliases), user_id)
+                return JSONResponse(status_code=200, content={"status": "success", "aliases": aliases})
+            except Exception as e:
+                log.error('[WebUI]: Failed to set owner aliases for user %s: %s', user_id, str(e))
+                return JSONResponse(
+                    status_code=500,
+                    content={
+                        "status": "error",
+                        "message": f"Failed to set owner aliases: {str(e)}"
                     }
                 )
 
@@ -2666,6 +2771,9 @@ class WebUI:
                     scan_kwargs['source_dir_override'] = source_dir_override
                 if dest_dir_override:
                     scan_kwargs['dest_dir_override'] = dest_dir_override
+                owner_aliases = self._get_user_owner_aliases(user_id)
+                if owner_aliases:
+                    scan_kwargs['owner_aliases'] = owner_aliases
 
                 scan_result = self.content_processor.scan_source(**scan_kwargs)
                 if scan_result.get('status') == 'error':
