@@ -214,6 +214,10 @@ class WebUI:
             kwargs.get('raw_process_max_workers', webui_secret.get('raw-content-process-max-workers', 4))
         ))
 
+        # Raw content item ids this process is working on right now. Anything else in 'processing'
+        # was left behind by a dead process and may be reset from the UI.
+        self._inflight_raw_ids: set[int] = set()
+
         # Host and port configuration
         self.host = host
         self.port = port
@@ -441,6 +445,14 @@ class WebUI:
             log.warning('[WebUI]: Could not derive Nextcloud base URL from the uploader config: %s', str(e))
             return ''
 
+    def _set_raw_item_status(self, item_id: int, status: str, **kwargs) -> None:
+        """Write a raw content item status and keep the in-flight id set in step with it."""
+        if status == 'processing':
+            self._inflight_raw_ids.add(int(item_id))
+        else:
+            self._inflight_raw_ids.discard(int(item_id))
+        self.database.update_raw_content_item_status(item_id=item_id, status=status, **kwargs)
+
     async def _process_raw_candidates_streaming(
         self,
         user_id: str,
@@ -501,7 +513,7 @@ class WebUI:
                 try:
                     if result.get('status') == 'success':
                         data = result.get('data', {})
-                        self.database.update_raw_content_item_status(
+                        self._set_raw_item_status(
                             item_id=item_id,
                             status='completed',
                             destination=data.get('destination'),
@@ -523,7 +535,7 @@ class WebUI:
                         )
                     else:
                         error_message = result.get('error', f'Failed to process {item_name}')
-                        self.database.update_raw_content_item_status(
+                        self._set_raw_item_status(
                             item_id=item_id,
                             status='error',
                             error_message=error_message
@@ -550,7 +562,7 @@ class WebUI:
             if candidate['id'] in handled_ids:
                 continue
             counts['errors'] += 1
-            self.database.update_raw_content_item_status(
+            self._set_raw_item_status(
                 item_id=candidate['id'],
                 status='error',
                 error_message=f"Processing aborted: {worker_error}" if worker_error else 'Processing aborted without result'
@@ -1464,6 +1476,33 @@ class WebUI:
                     content={"status": "error", "message": f"Failed to delete: {str(e)}"}
                 )
 
+        @self.app.post("/api/raw-content/reset-stuck")
+        async def reset_stuck_raw_content(user: dict = Depends(self.get_current_user)):
+            """
+            Put the user's items stuck in 'processing' back to 'scanned'.
+
+            Items a batch in this process is still working on are left alone, so this is safe to
+            press while something is genuinely running - it only clears what a dead process left.
+            """
+            user_id = str(user['id'])
+            try:
+                reset_ids = self.database.reset_stuck_raw_content_items(
+                    user_id=user_id, exclude_ids=set(self._inflight_raw_ids)
+                )
+                log.warning('[WebUI]: User %s reset %d stuck raw content item(s): %s', user_id, len(reset_ids), reset_ids)
+                return JSONResponse(
+                    status_code=200,
+                    content={
+                        "status": "success",
+                        "reset": len(reset_ids),
+                        "still_running": len(self._inflight_raw_ids),
+                        "message": f"Returned {len(reset_ids)} stuck item(s) to the queue"
+                    }
+                )
+            except Exception as e:  # pylint: disable=broad-exception-caught
+                log.error('[WebUI]: Failed to reset stuck raw content items: %s', str(e))
+                return JSONResponse(status_code=500, content={"status": "error", "message": str(e)})
+
         @self.app.post("/api/raw-content/skipped/requeue")
         async def requeue_raw_content_skipped(
             request: Request,
@@ -2249,7 +2288,7 @@ class WebUI:
                             'post_id': item.get('post_id'),
                             'source': item.get('source')
                         })
-                        self.database.update_raw_content_item_status(item_id=item['id'], status='processing')
+                        self._set_raw_item_status(item_id=item['id'], status='processing')
 
                     # Process candidates concurrently (one WebDAV client per worker). File I/O runs
                     # off the event loop; each item's status is written as soon as it finishes.
@@ -2363,7 +2402,7 @@ class WebUI:
                          item_id, item_name, mode, len(content_files), item_path)
 
                 # Update status to processing
-                self.database.update_raw_content_item_status(item_id=item_id, status='processing')
+                self._set_raw_item_status(item_id=item_id, status='processing')
 
                 # Process the item off the event loop - one post can take minutes of WebDAV
                 # work, and blocking here would freeze every other request (including the
@@ -2384,7 +2423,7 @@ class WebUI:
                 if result.get('status') == 'success':
                     log.info('[WebUI]: Item_id=%d processed successfully', item_id)
                     data = result.get('data', {})
-                    self.database.update_raw_content_item_status(
+                    self._set_raw_item_status(
                         item_id=item_id,
                         status='completed',
                         destination=data.get('destination'),
@@ -2417,7 +2456,7 @@ class WebUI:
                 else:
                     error_message = result.get('error', f'Failed to process {item_name}')
                     log.error('[WebUI]: Item_id=%d error: %s', item_id, error_message)
-                    self.database.update_raw_content_item_status(
+                    self._set_raw_item_status(
                         item_id=item_id,
                         status='error',
                         error_message=error_message
@@ -2438,7 +2477,7 @@ class WebUI:
             except Exception as e:
                 log.error('[WebUI]: Exception while processing item_id=%d: %s', item_id, str(e), exc_info=True)
                 try:
-                    self.database.update_raw_content_item_status(
+                    self._set_raw_item_status(
                         item_id=item_id,
                         status='error',
                         error_message=str(e)
@@ -2549,7 +2588,7 @@ class WebUI:
                                     'post_id': item.get('post_id'),
                                     'source': item.get('source')
                                 })
-                                self.database.update_raw_content_item_status(item_id=item['id'], status='processing')
+                                self._set_raw_item_status(item_id=item['id'], status='processing')
 
                             # Process concurrently off the event loop; each item's status is written
                             # as soon as it finishes so the UI progress poll can follow it live.
@@ -2610,7 +2649,7 @@ class WebUI:
                             'post_id': item.get('post_id'),
                             'source': item.get('source')
                         })
-                        self.database.update_raw_content_item_status(item_id=item['id'], status='processing')
+                        self._set_raw_item_status(item_id=item['id'], status='processing')
 
                     processed_count, error_count = await self._process_raw_candidates_streaming(
                         user_id=user_id,
@@ -2816,7 +2855,7 @@ class WebUI:
                         except (json.JSONDecodeError, ValueError):
                             content_files = []
 
-                    self.database.update_raw_content_item_status(item_id=item['id'], status='processing')
+                    self._set_raw_item_status(item_id=item['id'], status='processing')
                     result = await asyncio.to_thread(
                         self.content_processor.process_candidate,
                         item_path=item['item_path'],
@@ -2832,7 +2871,7 @@ class WebUI:
 
                     if result.get('status') == 'success':
                         data = result.get('data', {})
-                        self.database.update_raw_content_item_status(
+                        self._set_raw_item_status(
                             item_id=item['id'],
                             status='completed',
                             destination=data.get('destination'),
@@ -2850,7 +2889,7 @@ class WebUI:
                         processed_count += 1
                     else:
                         err = result.get('error', f"Failed to process {item['item_name']}")
-                        self.database.update_raw_content_item_status(item_id=item['id'], status='error', error_message=err)
+                        self._set_raw_item_status(item_id=item['id'], status='error', error_message=err)
                         error_count += 1
                         errors.append(err)
 

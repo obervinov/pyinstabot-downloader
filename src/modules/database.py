@@ -391,6 +391,15 @@ class DatabaseClient:
                 else:
                     log.info('[Database]: No stale status messages found')
 
+        # Raw content items left in 'processing' by a process that died mid-batch: nothing in this
+        # freshly started process is working on them, so they go back to the queue.
+        try:
+            reset_ids = self.reset_stuck_raw_content_items()
+            if reset_ids:
+                log.warning('[Database]: Reset %d raw content item(s) stuck in processing: %s', len(reset_ids), reset_ids)
+        except Exception as error:  # pylint: disable=broad-exception-caught
+            log.error('[Database]: Failed to reset stuck raw content items: %s', str(error))
+
     @staticmethod
     def create_queue_message_data(
         user_id: str,
@@ -1176,6 +1185,46 @@ class DatabaseClient:
         conn.commit()
         self.close_connection(conn)
         return count
+
+    def reset_stuck_raw_content_items(self, user_id: str | None = None, exclude_ids: set | None = None) -> list[int]:
+        """
+        Put items stuck in 'processing' back to 'scanned'.
+
+        An item is stuck when the process that marked it 'processing' died before writing a terminal
+        status (OOM kill, pod restart): nothing will ever finish it, and the WebUI keeps the table
+        locked while any item is 'processing'.
+
+        Args:
+            user_id: Limit to this user's items. None resets every user's items (startup).
+            exclude_ids: Item ids a live batch in this process is still working on - left untouched.
+
+        Returns:
+            Ids of the rows that were reset.
+        """
+        conditions = ["status = 'processing'"]
+        params: list = []
+        if user_id is not None:
+            conditions.append("user_id = %s")
+            params.append(user_id)
+        if exclude_ids:
+            conditions.append("NOT (id = ANY(%s))")
+            params.append(sorted(int(i) for i in exclude_ids))
+        conn = self.get_connection()
+        with conn.cursor() as cursor:
+            cursor.execute(
+                f"""
+                UPDATE raw_content_queue
+                SET status = 'scanned', started_at = NULL, error_message = NULL,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE {' AND '.join(conditions)}
+                RETURNING id
+                """,
+                tuple(params)
+            )
+            reset_ids = [row[0] for row in cursor.fetchall()]
+        conn.commit()
+        self.close_connection(conn)
+        return reset_ids
 
     def get_completed_raw_content_paths(self, user_id: str) -> set:
         """

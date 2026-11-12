@@ -200,7 +200,12 @@
                             <div class="lock-title" x-text="lockTitle()"></div>
                             <div class="lock-text" x-text="lockText()"></div>
                             <div class="muted small">Selection and actions are disabled until it finishes</div>
-                            <button class="btn xs" @click="unlockTable()">Unlock anyway</button>
+                            <div style="display: flex; gap: 8px; justify-content: center;">
+                                <button class="btn xs" x-show="(foundStats.processing || 0) > 0 && !busy && !backgroundProcessing"
+                                        title="Return items left in 'processing' by a crashed or restarted run to the queue. Items a live batch is still working on are not touched."
+                                        @click="resetStuck()">Reset stuck items</button>
+                                <button class="btn xs" @click="unlockTable()">Unlock anyway</button>
+                            </div>
                         </div>
                     </template>
 
@@ -726,6 +731,22 @@
 
                 unlockTable() {
                     this.lockOverride = true;
+                },
+
+                async resetStuck() {
+                    try {
+                        const response = await fetch('/api/raw-content/reset-stuck', { method: 'POST' });
+                        const data = await response.json();
+                        if (!response.ok) {
+                            throw new Error(data.message || `HTTP ${response.status}`);
+                        }
+                        const running = data.still_running > 0 ? ` (${data.still_running} still running, left as is)` : '';
+                        this.alert = { show: true, type: 'success', message: data.message + running, details: null };
+                        await this.updateFoundStats();
+                        await this.loadFoundPage(this.foundPage || 1);
+                    } catch (e) {
+                        this.alert = { show: true, type: 'error', message: `Reset failed: ${e.message}`, details: null };
+                    }
                 },
 
                 async processSelected(runAsync = true) {
